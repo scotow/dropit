@@ -1,0 +1,27 @@
+<html>
+<head>
+</head>
+<body style="height: 100%; background: gray;">
+<h1>
+    Hello, World!
+</h1>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+$('body').on('drag dragstart dragend dragover dragenter dragleave drop', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }).on('drop', function(event) {
+    console.log(event.originalEvent.dataTransfer.items);
+    for (let file of event.originalEvent.dataTransfer.items) {
+        file = file.getAsFile();
+        console.log(file);
+
+        const req = new XMLHttpRequest();
+        req.open('POST', 'http://localhost:3001/upload');
+        req.setRequestHeader('X-Filename', file.name);
+        req.send(file);
+    }
+});
+    </script>
+</body>
+</html>
