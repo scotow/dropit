@@ -13,6 +13,10 @@ lazy_static! {
     ).unwrap();
 }
 
+pub fn is_match(alias: &str) -> bool {
+    REGEX.is_match(alias)
+}
+
 pub fn random() -> Option<String> {
     let mut rng = thread_rng();
     let mut alias = String::with_capacity(6);

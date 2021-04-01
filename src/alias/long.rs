@@ -15,6 +15,10 @@ lazy_static! {
     static ref REGEX: Regex = Regex::new("^[a-z]{3,}(?:-[a-z]{3,}){2}$").unwrap();
 }
 
+pub fn is_match(alias: &str) -> bool {
+    REGEX.is_match(alias)
+}
+
 pub fn random() -> Option<String> {
     let chosen = WORDS.choose_multiple(&mut thread_rng(), 3)
         .copied()
