@@ -1,9 +1,9 @@
-use hyper::{Request, Response, Body};
+use hyper::{Request, Response, Body, StatusCode};
 use std::convert::Infallible;
 use futures::TryStreamExt;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tokio::fs::File;
-use hyper::header::CONTENT_LENGTH;
+use hyper::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use uuid::Uuid;
 use crate::alias;
 use sqlx::SqlitePool;
@@ -30,13 +30,19 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
-        .bind(name)
+        .bind(&name)
         .bind(size as i64)
-        .bind(short)
-        .bind(long)
+        .bind(&short)
+        .bind(&long)
         .execute(&mut conn).await.unwrap();
 
-    Ok(Response::new(Body::from("Upload page")))
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_TYPE, "text/plain")
+            .body(format!("http://localhost:3001/{}", &short).into())
+            .unwrap()
+    )
 }
 
 // body.fold(file, |mut f, chunk| async move {

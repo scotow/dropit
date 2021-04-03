@@ -27,10 +27,6 @@ async fn home_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> 
     )
 }
 
-async fn about_handler(_: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new(Body::from("About page")))
-}
-
 async fn archive(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let (w, r) = io::duplex(1024);
 
@@ -69,9 +65,10 @@ async fn router() -> Router<Body, Infallible> {
         .middleware(Middleware::post(remove_powered_header))
         .get("/", home_handler)
         .get("/index.html", home_handler)
-        .get("/about", about_handler)
+        // .get("/about", about_handler)
         .get("/:alias", download::download_handler)
-        .get("/archive", archive)
+        // .get("/archive", archive)
+        .post("/", upload::upload_handler)
         .post("/upload", upload::upload_handler)
         .build()
         .unwrap()

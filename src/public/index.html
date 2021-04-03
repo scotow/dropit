@@ -1,27 +1,217 @@
 <html>
 <head>
-</head>
-<body style="height: 100%; background: gray;">
-<h1>
-    Hello, World!
-</h1>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="text/javascript">
-$('body').on('drag dragstart dragend dragover dragenter dragleave drop', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }).on('drop', function(event) {
-    console.log(event.originalEvent.dataTransfer.items);
-    for (let file of event.originalEvent.dataTransfer.items) {
-        file = file.getAsFile();
-        console.log(file);
+    <title>Drost | File Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro);
+        /* @import url('https://fonts.googleapis.com/css?family=Gloria+Hallelujah'); */
 
-        const req = new XMLHttpRequest();
-        req.open('POST', 'http://localhost:3001/upload');
-        req.setRequestHeader('X-Filename', file.name);
-        req.send(file);
-    }
-});
+        html {
+            font-size: 0;
+            font-family: 'Source Sans Pro', sans-serif;
+            color: white;
+            background: #131313;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #15b154;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: calc(100% - 32px);
+            height: calc(100% - 36px);
+            margin: 14px 10px 10px 10px;
+            border: 6px dashed #15b154;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 250ms;
+        }
+
+        body.dragging::after {
+            opacity: 1;
+        }
+
+        .files {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 auto;
+            width: 800px;
+            padding: 200px 0 0;
+        }
+
+        .files > .file {
+            position: relative;
+            flex: 1 0 40%;
+            margin: 0 14px 60px;
+            padding: 14px 10px 10px;
+            box-sizing: border-box;
+            border: 1px solid #15b154;
+            border-radius: 6px;
+        }
+
+        .files > .file > .name {
+            position: absolute;
+            top: -12px;
+            left: 6px;
+            padding: 0 4px;
+            font-size: 16px;
+            color: lightgrey;
+            background: #131313;
+        }
+
+        .files > .file > .progress-bar {
+            width: 0;
+            height: 28px;
+            background: #ffc61d;
+            box-sizing: content-box;
+            border-radius: 4px;
+            transition: background-color linear 1s, width ease-out 1s;
+        }
+
+        .files > .file > .progress-bar.completed {
+            animation: fade-out ease-out 500ms forwards;
+        }
+
+        .files > .file > .link {
+            font-size: 22px;
+            animation: fade-in ease-out 500ms forwards;
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-out {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', documentReady, false);
+
+        function documentReady() {
+            const orange = [0xff, 0xc6, 0x1d];
+            const green = [0x15, 0xb1, 0x54];
+
+            class File {
+                constructor(fileRef) {
+                    this.fileRef = fileRef;
+                }
+
+                appendToDocument() {
+                    const file = document.createElement('div');
+                    file.classList.add('file');
+                    
+                    const name = document.createElement('div');
+                    name.classList.add('name');
+                    name.innerText = this.fileRef.name;
+                    file.appendChild(name);
+
+                    this.progressBar = document.createElement('div');
+                    this.progressBar.classList.add('progress-bar');
+                    file.appendChild(this.progressBar);
+
+                    document.querySelector('.files').appendChild(file);
+                }
+
+                startUpload() {
+                    const req = new XMLHttpRequest();
+                    req.open('POST', 'http://localhost:3001', true);
+                    req.setRequestHeader('X-Filename', this.fileRef.name);
+                    req.setRequestHeader('Content-Type', this.fileRef.type);
+
+                    req.upload.onprogress = (event) => {
+                        const progress = event.loaded / event.total;
+                        console.log(progress);
+                        this.progressBar.style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress + orange[0]}, ${(green[1] - orange[1]) * progress + orange[1]}, ${(green[2] - orange[2]) * progress + orange[2]})`;
+                        this.progressBar.style.width = `${progress * 100}%`;
+                    };
+                    req.onload = (event) => {
+                        setTimeout(() => {
+                            this.uploadsucceeded(req.responseText);
+                        }, 1200);
+                    };
+                    req.send(this.fileRef);
+                }
+
+                uploadsucceeded(data) {
+                    this.link = document.createElement('div');
+                    this.link.classList.add('link');
+                    this.link.innerText = data;
+                    this.progressBar.classList.add('completed');
+                    this.progressBar.replaceWith(this.link);
+                }
+            }
+
+            ['drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop'].forEach(name => {
+                document.body.addEventListener(name, event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                })
+            });
+            ['dragover', 'dragenter'].forEach(name => {
+                document.body.addEventListener(name, event => {
+                    document.body.classList.add('dragging');
+                })
+            });
+            ['dragleave', 'dragend', 'drop'].forEach(name => {
+                document.body.addEventListener(name, event => {
+                    document.body.classList.remove('dragging');
+                })
+            });
+            document.body.addEventListener('drop', (event) => {
+                for (let item of event.dataTransfer.items) {
+                    if (item.kind !== 'file') continue;
+                    const fileRef = item.getAsFile();
+                    if (!fileRef.name) continue;
+
+                    const file = new File(fileRef);
+                    file.appendToDocument();
+                    file.startUpload();
+                }
+            });
+
+            let progress = 0;
+            setInterval(() => {
+                if (progress <= 100) {
+                    document.querySelector('.file > .progress-bar').style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress / 100 + orange[0]}, ${(green[1] - orange[1]) * progress / 100 + orange[1]}, ${(green[2] - orange[2]) * progress / 100 + orange[2]})`;
+                    document.querySelector('.file > .progress-bar').style.width = `${progress}%`;
+                    progress += 5;
+                }
+            }, 250);
+        }
     </script>
+</head>
+<body>
+    <div class="files">
+        <div class="file uploading">
+            <div class="name">my-file.png</div>
+            <div class="progress-bar"></div>
+        </div>
+        <div class="file uploaded">
+            <div class="name">my-app.zip</div>
+            <div class="link">http://localhost:3001/rQSMx9</div>
+        </div>
+    </div>
 </body>
 </html>
