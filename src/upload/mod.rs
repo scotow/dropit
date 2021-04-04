@@ -13,8 +13,11 @@ use serde::Serialize;
 use bytesize::ByteSize;
 use std::time::Duration;
 use rand::Rng;
+use lazy_static::lazy_static;
+use crate::upload::expiration::{Determiner, Threshold};
 
 pub mod origin;
+pub mod expiration;
 
 pub struct UploadRequest {
     name: String,
@@ -61,6 +64,15 @@ struct Expiration {
     readable: String,
 }
 
+lazy_static! {
+    static ref DEFAULT_EXPIRATION: Determiner = Determiner::new(
+        vec![
+            Threshold { size: 64 * 1024 * 1024, duration: Duration::from_secs(24 * 60 * 60) },
+            Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(6 * 60 * 60) }
+        ]
+    ).unwrap();
+}
+
 pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
     let (head, body) = req.into_parts();
@@ -69,6 +81,7 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
     let name = head.headers.get("X-Filename").unwrap().to_str().unwrap();
     let size = head.headers.get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
     let (short, long) = alias::random_aliases().unwrap();
+    let expiration = DEFAULT_EXPIRATION.determine(size).unwrap();
     dbg!(&id, name, size, &short, &long);
 
     let mut ar = body
@@ -88,7 +101,6 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .execute(&mut conn).await.unwrap();
 
     let link_base = origin::upload_base(&head.headers).unwrap();
-    let duration = rand::thread_rng().gen_range(2..=12);
     let resp = UploadResponse {
         success: true,
         data: UploadInfo {
@@ -106,8 +118,8 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
                 long: format!("{}/{}", link_base, &long),
             },
             expiration: Expiration {
-                duration: duration*60*60,
-                readable: humantime::format_duration(Duration::new(duration*60*60, 0)).to_string().replace(' ', ""),
+                duration: expiration.as_secs(),
+                readable: humantime::format_duration(expiration).to_string().replace(' ', ""),
             }
         }
     };
