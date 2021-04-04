@@ -109,12 +109,11 @@
         }
 
         .files > .file > .info > .qrcode img {
-            transition: filter ease-out 150ms, transform ease-out 500ms;
+            transition: filter ease-out 150ms;
         }
 
         .files > .file > .info > .qrcode.hidden img {
             filter: blur(5px);
-            /* transform: scale(0.98); */
         }
 
         .files > .file > .info > .qrcode.hidden::after {
@@ -162,6 +161,15 @@
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
+            transition: opacity 125ms;
+
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        .files > .file > .info > .right > .actions > .button:active {
+            opacity: 0.8;
         }
 
         .files > .file > .info > .right > .actions > .button.fill {
@@ -193,6 +201,7 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', documentReady, false);
 
@@ -305,8 +314,9 @@
                     revokeButton.innerText = 'Revoke';
 
                     const copyLinkButton = document.createElement('div');
-                    copyLinkButton.classList.add('button', 'fill');
+                    copyLinkButton.classList.add('button', 'fill', 'copy');
                     copyLinkButton.innerText = 'Copy Link';
+                    copyLinkButton.setAttribute('data-clipboard-text', data);
 
                     info.append(qrcode, right);
                     right.append(details, actions);
@@ -368,6 +378,8 @@
             //     colorLight : '#15b154',
             //     correctLevel : QRCode.CorrectLevel.L
             // });
+
+            new ClipboardJS('.copy');
         }
     </script>
 </head>
@@ -376,8 +388,8 @@
         <!-- <div class="file uploading">
             <div class="name">my-file.png</div>
             <div class="progress-bar"></div>
-        </div>
-        <div class="file uploaded">
+        </div> -->
+        <!-- <div class="file uploaded">
             <div class="name">my-app.zip</div>
             <div class="link">http://localhost:3001/rQSMx9</div>
             <div class="info">
@@ -399,7 +411,7 @@
                     </div>
                     <div class="actions">
                         <div class="button outline">Revoke</div>
-                        <div class="button fill">Copy Link</div>
+                        <div class="button fill copy">Copy Link</div>
                     </div>
                 </div>
             </div>
