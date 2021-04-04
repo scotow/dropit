@@ -9,6 +9,48 @@ use crate::alias;
 use sqlx::SqlitePool;
 use routerify::ext::RequestExt;
 use crate::include_query;
+use serde::Serialize;
+use bytesize::ByteSize;
+use std::time::Duration;
+use rand::Rng;
+
+pub struct UploadRequest {
+    name: String,
+    size: u64,
+}
+
+#[derive(Serialize)]
+pub struct UploadResponse<T: Serialize> {
+    pub success: bool,
+    #[serde(flatten)]
+    pub data: T,
+}
+
+#[derive(Serialize)]
+pub struct UploadInfo {
+    name: String,
+    alias: Aliases,
+    size: Size,
+    expiration: Expiration,
+}
+
+#[derive(Serialize)]
+struct Aliases {
+    short: String,
+    long: String,
+}
+
+#[derive(Serialize)]
+struct Size {
+    bytes: u64,
+    readable: String,
+}
+
+#[derive(Serialize)]
+struct Expiration {
+    duration: u64,
+    readable: String,
+}
 
 pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
@@ -36,11 +78,32 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(&long)
         .execute(&mut conn).await.unwrap();
 
+    let duration = rand::thread_rng().gen_range(2..=12);
+    let resp = UploadResponse {
+        success: true,
+        data: UploadInfo {
+            name: name.to_owned(),
+            alias: Aliases {
+                short,
+                long,
+            },
+            size: Size {
+                bytes: size,
+                readable: ByteSize::b(size).to_string().replace(' ', ""),
+            },
+            expiration: Expiration {
+                duration: duration*60*60,
+                readable: humantime::format_duration(Duration::new(duration*60*60, 0)).to_string().replace(' ', ""),
+            }
+        }
+    };
+    let resp = serde_json::to_string(&resp).unwrap();
+
     Ok(
         Response::builder()
             .status(StatusCode::OK)
-            .header(CONTENT_TYPE, "text/plain")
-            .body(format!("http://localhost:3001/{}", &short).into())
+            .header(CONTENT_TYPE, "application/json")
+            .body(resp.into())
             .unwrap()
     )
 }

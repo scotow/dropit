@@ -17,6 +17,8 @@ use tokio_util::codec::{BytesCodec, FramedRead};
 use async_tar::{Builder, Header, HeaderMode};
 use tokio::io;
 use tokio_util::io::ReaderStream;
+use bytesize::ByteSize;
+use std::time::Duration;
 
 async fn home_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(
@@ -79,6 +81,8 @@ async fn main() {
     for _ in 1..10 {
         println!("{} {}", alias::short::random().unwrap(), alias::long::random().unwrap());
     }
+    println!("{}", ByteSize::b(5345));
+    println!("{}", humantime::Duration::from(Duration::new(6*60*60 + 30, 0)));
 
     let uploads_dir = "uploads";
     if let Err(e) = File::open(uploads_dir).await {

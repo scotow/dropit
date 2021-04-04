@@ -149,6 +149,10 @@
             color: lightgray;
         }
 
+        .files > .file > .info > .right > .details > .item > .content {
+            cursor: pointer;
+        }
+
         .files > .file > .info > .right > .actions {
             text-align: right;
         }
@@ -235,6 +239,7 @@
                     req.open('POST', 'http://localhost:3001', true);
                     req.setRequestHeader('X-Filename', this.fileRef.name);
                     req.setRequestHeader('Content-Type', this.fileRef.type);
+                    req.responseType = 'json';
 
                     req.upload.onprogress = (event) => {
                         const progress = event.loaded / event.total;
@@ -243,7 +248,7 @@
                     };
                     req.onload = (event) => {
                         setTimeout(() => {
-                            this.uploadsucceeded(req.responseText);
+                            this.uploadsucceeded(req.response);
                         }, 1200);
                     };
                     req.send(this.fileRef);
@@ -252,7 +257,7 @@
                 uploadsucceeded(data) {
                     this.link = document.createElement('div');
                     this.link.classList.add('link');
-                    this.link.innerText = data;
+                    this.link.innerText = `http://localhost:3001/${data.alias.short}`;
                     this.progressBar.classList.add('completed');
                     this.progressBar.replaceWith(this.link);
 
@@ -262,7 +267,7 @@
                     const qrcode = document.createElement('div');
                     qrcode.classList.add('qrcode', 'hidden');
                     new QRCode(qrcode, {
-                        text: data,
+                        text: `http://localhost:3001/${data.alias.short}`,
                         width: 128,
                         height: 128,
                         colorDark : '#131313',
@@ -286,7 +291,7 @@
                     sizeLabel.innerText = 'Size';
                     const sizeContent = document.createElement('div');
                     sizeContent.classList.add('content');
-                    sizeContent.innerText = '13.4KB';
+                    sizeContent.innerText = data.size.readable;
 
                     const longAlias = document.createElement('div');
                     longAlias.classList.add('item');
@@ -294,8 +299,9 @@
                     longAliasLabel.classList.add('label');
                     longAliasLabel.innerText = 'Long alias';
                     const longAliasContent = document.createElement('div');
-                    longAliasContent.classList.add('content');
-                    longAliasContent.innerText = 'ran-tree-very';
+                    longAliasContent.classList.add('content', 'clickable', 'copy');
+                    longAliasContent.setAttribute('data-clipboard-text', `http://localhost:3001/${data.alias.long}`);
+                    longAliasContent.innerText = data.alias.long;
                     
                     const expiration = document.createElement('div');
                     expiration.classList.add('item');
@@ -304,7 +310,7 @@
                     expirationLabel.innerText = 'Expiration duration';
                     const expirationContent = document.createElement('div');
                     expirationContent.classList.add('content');
-                    expirationContent.innerText = '6h';
+                    expirationContent.innerText = data.expiration.readable;
 
                     const actions = document.createElement('div');
                     actions.classList.add('actions');
@@ -315,8 +321,8 @@
 
                     const copyLinkButton = document.createElement('div');
                     copyLinkButton.classList.add('button', 'fill', 'copy');
+                    copyLinkButton.setAttribute('data-clipboard-text', `http://localhost:3001/${data.alias.short}`);
                     copyLinkButton.innerText = 'Copy Link';
-                    copyLinkButton.setAttribute('data-clipboard-text', data);
 
                     info.append(qrcode, right);
                     right.append(details, actions);
