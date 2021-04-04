@@ -14,6 +14,8 @@ use bytesize::ByteSize;
 use std::time::Duration;
 use rand::Rng;
 
+pub mod origin;
+
 pub struct UploadRequest {
     name: String,
     size: u64,
@@ -29,13 +31,20 @@ pub struct UploadResponse<T: Serialize> {
 #[derive(Serialize)]
 pub struct UploadInfo {
     name: String,
-    alias: Aliases,
     size: Size,
+    alias: Aliases,
+    link: Links,
     expiration: Expiration,
 }
 
 #[derive(Serialize)]
 struct Aliases {
+    short: String,
+    long: String,
+}
+
+#[derive(Serialize)]
+struct Links {
     short: String,
     long: String,
 }
@@ -78,18 +87,23 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(&long)
         .execute(&mut conn).await.unwrap();
 
+    let link_base = origin::upload_base(&head.headers).unwrap();
     let duration = rand::thread_rng().gen_range(2..=12);
     let resp = UploadResponse {
         success: true,
         data: UploadInfo {
             name: name.to_owned(),
-            alias: Aliases {
-                short,
-                long,
-            },
             size: Size {
                 bytes: size,
                 readable: ByteSize::b(size).to_string().replace(' ', ""),
+            },
+            alias: Aliases {
+                short: short.clone(),
+                long: long.clone(),
+            },
+            link: Links {
+                short: format!("{}/{}", link_base, &short),
+                long: format!("{}/{}", link_base, &long),
             },
             expiration: Expiration {
                 duration: duration*60*60,

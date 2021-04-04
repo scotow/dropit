@@ -149,7 +149,7 @@
             color: lightgray;
         }
 
-        .files > .file > .info > .right > .details > .item > .content {
+        .files > .file > .info > .right > .details > .item > .content.clickable {
             cursor: pointer;
         }
 
@@ -257,7 +257,7 @@
                 uploadsucceeded(data) {
                     this.link = document.createElement('div');
                     this.link.classList.add('link');
-                    this.link.innerText = `http://localhost:3001/${data.alias.short}`;
+                    this.link.innerText = data.link.short;
                     this.progressBar.classList.add('completed');
                     this.progressBar.replaceWith(this.link);
 
@@ -267,7 +267,7 @@
                     const qrcode = document.createElement('div');
                     qrcode.classList.add('qrcode', 'hidden');
                     new QRCode(qrcode, {
-                        text: `http://localhost:3001/${data.alias.short}`,
+                        text: data.link.short,
                         width: 128,
                         height: 128,
                         colorDark : '#131313',
@@ -300,7 +300,7 @@
                     longAliasLabel.innerText = 'Long alias';
                     const longAliasContent = document.createElement('div');
                     longAliasContent.classList.add('content', 'clickable', 'copy');
-                    longAliasContent.setAttribute('data-clipboard-text', `http://localhost:3001/${data.alias.long}`);
+                    longAliasContent.setAttribute('data-clipboard-text', data.link.long);
                     longAliasContent.innerText = data.alias.long;
                     
                     const expiration = document.createElement('div');
@@ -321,7 +321,7 @@
 
                     const copyLinkButton = document.createElement('div');
                     copyLinkButton.classList.add('button', 'fill', 'copy');
-                    copyLinkButton.setAttribute('data-clipboard-text', `http://localhost:3001/${data.alias.short}`);
+                    copyLinkButton.setAttribute('data-clipboard-text', data.link.short);
                     copyLinkButton.innerText = 'Copy Link';
 
                     info.append(qrcode, right);
@@ -354,6 +354,7 @@
             });
             document.body.addEventListener('drop', (event) => {
                 for (let item of event.dataTransfer.items) {
+                    console.log(item.kind);
                     if (item.kind !== 'file') continue;
                     const fileRef = item.getAsFile();
                     if (!fileRef.name) continue;
