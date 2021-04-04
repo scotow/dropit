@@ -37,6 +37,42 @@
             transition: opacity 250ms;
         }
 
+        .first-upload {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .first-upload > .indicator {
+            width: 115px;
+            height: 115px;
+            margin: 0 auto 26px;
+            background: #15b154;
+            border-radius: 50%;
+            animation: float 1000ms infinite alternate;
+            /* cursor: pointer; */
+        }
+
+        .first-upload > .indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 44px;
+            height: 44px;
+            background-image: url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJdmlld0JveD0iMCAwIDEwMCAxMDAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDEwMCAxMDA7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KCTxnPgoJCTxnPgoJCQk8cGF0aCBzdHlsZT0iZmlsbDp3aGl0ZTsiIGQ9Ik01MC4wMDEsNy41bC0yNiwyNC4zOThoMTYuNVY1Ny41aDE5VjMxLjg5OGgxNi41TDUwLjAwMSw3LjV6IE05Ni42OTgsNjUuMjExTDgwLjc4LDU0LjVoLTkuODE2CgkJCQlsMTcuMDAyLDEzLjA0M0g3MC4yNDNjLTAuNTA4LDAtMC45NjksMC4yNTgtMS4xOTcsMC42NjRMNjQuOTYsNzkuMzgzSDM1LjAzOGwtNC4wODYtMTEuMTc2Yy0wLjIyNy0wLjQwNi0wLjY4OS0wLjY2NC0xLjE5Ny0wLjY2NAoJCQkJSDEyLjAzMkwyOS4wMzYsNTQuNWgtOS44MThMMy4zMDIsNjUuMjExYy0yLjM2OSwxLjQxNS0zLjc4NSw0LjY3Ni0zLjE1LDcuMjQ2bDIuODA3LDE1LjM2OWMwLjYzNiwyLjU3LDMuNDUyLDQuNjc0LDYuMjU3LDQuNjc0CgkJCQloODEuNTY4YzIuODA1LDAsNS42MjEtMi4xMDQsNi4yNTgtNC42NzRsMi44MDUtMTUuMzY5QzEwMC40ODUsNjkuODg3LDk5LjA2Nyw2Ni42MjYsOTYuNjk4LDY1LjIxMXoiLz4KCQkJPC9nPgoJCTwvZz4KCTwvc3ZnPg==);
+            transform: translate(-50%, -50%);
+        }
+
+        .first-upload > .indication {
+
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;            
+        }
+
         body.dragging::after {
             opacity: 1;
         }
@@ -53,7 +89,7 @@
         .files > .file {
             position: relative;
             flex: 1 0 40%;
-            margin: 0 14px 60px;
+            margin: 0 14px 34px;
             padding: 14px 10px 10px;
             box-sizing: border-box;
             border: 1px solid #15b154;
@@ -184,6 +220,12 @@
         .files > .file > .info > .right > .actions > .button.outline {
             border: 1px solid #ffc61d;
             color: #ffc61d;
+        }
+
+        @keyframes float {
+            100% {
+                transform: translateY(-8px);
+            }
         }
 
         @keyframes fade-in {
@@ -356,10 +398,11 @@
                 for (let item of event.dataTransfer.items) {
                     if (item.kind !== 'file') continue;
                     if (item.webkitGetAsEntry && item.webkitGetAsEntry().isDirectory) continue;
-                    
+
                     const fileRef = item.getAsFile();
                     if (!fileRef.name) continue;
 
+                    document.querySelector('.first-upload').style.display = 'none';
                     const file = new File(fileRef);
                     file.appendToDocument();
                     file.startUpload();
@@ -392,6 +435,10 @@
     </script>
 </head>
 <body>
+    <div class="first-upload">
+        <div class="indicator"></div>
+        <div class="indication">Drop some files<br/>to begin</div>
+    </div>
     <div class="files">
         <!-- <div class="file uploading">
             <div class="name">my-file.png</div>
