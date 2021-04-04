@@ -44,6 +44,7 @@
         .files {
             display: flex;
             flex-wrap: wrap;
+            align-items: flex-start;
             margin: 0 auto;
             width: 800px;
             padding: 200px 0 0;
@@ -83,8 +84,94 @@
         }
 
         .files > .file > .link {
+            position: relative;
             font-size: 22px;
             animation: fade-in ease-out 500ms forwards;
+        }
+
+        .files > .file > .link::after {
+            content: '';
+            display: block;
+            margin: 8px 0 12px 0;
+            width: 100%;
+            height: 1px;
+            background: #15b154;
+        }
+
+        .files > .file > .info {
+            display: flex;
+        }
+
+        .files > .file > .info > .qrcode {
+            position: relative;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .files > .file > .info > .qrcode img {
+            transition: filter ease-out 150ms, transform ease-out 500ms;
+        }
+
+        .files > .file > .info > .qrcode.hidden img {
+            filter: blur(5px);
+            /* transform: scale(0.98); */
+        }
+
+        .files > .file > .info > .qrcode.hidden::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 48px;
+            height: 48px;
+            opacity: 0.5;
+            background-size: contain;
+            background-image: url(data:image/png;base64,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);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .files > .file > .info > .right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .files > .file > .info > .right > .details {
+            flex: 1;
+        }
+
+        .files > .file > .info > .right > .details > .item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: lightgray;
+        }
+
+        .files > .file > .info > .right > .actions {
+            text-align: right;
+        }
+
+        .files > .file > .info > .right > .actions > .button {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 4px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .files > .file > .info > .right > .actions > .button.fill {
+            background: #15b154;
+            border: 1px solid #15b154;
+        }
+
+        .files > .file > .info > .right > .actions > .button.outline {
+            border: 1px solid #ffc61d;
+            color: #ffc61d;
         }
 
         @keyframes fade-in {
@@ -105,7 +192,7 @@
             }
         }
     </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous"></script>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', documentReady, false);
 
@@ -119,19 +206,19 @@
                 }
 
                 appendToDocument() {
-                    const file = document.createElement('div');
-                    file.classList.add('file');
+                    this.file = document.createElement('div');
+                    this.file.classList.add('file');
                     
                     const name = document.createElement('div');
                     name.classList.add('name');
                     name.innerText = this.fileRef.name;
-                    file.appendChild(name);
+                    this.file.appendChild(name);
 
                     this.progressBar = document.createElement('div');
                     this.progressBar.classList.add('progress-bar');
-                    file.appendChild(this.progressBar);
+                    this.file.appendChild(this.progressBar);
 
-                    document.querySelector('.files').appendChild(file);
+                    document.querySelector('.files').appendChild(this.file);
                 }
 
                 startUpload() {
@@ -142,7 +229,6 @@
 
                     req.upload.onprogress = (event) => {
                         const progress = event.loaded / event.total;
-                        console.log(progress);
                         this.progressBar.style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress + orange[0]}, ${(green[1] - orange[1]) * progress + orange[1]}, ${(green[2] - orange[2]) * progress + orange[2]})`;
                         this.progressBar.style.width = `${progress * 100}%`;
                     };
@@ -160,6 +246,77 @@
                     this.link.innerText = data;
                     this.progressBar.classList.add('completed');
                     this.progressBar.replaceWith(this.link);
+
+                    const info = document.createElement('div');
+                    info.classList.add('info');
+                    
+                    const qrcode = document.createElement('div');
+                    qrcode.classList.add('qrcode', 'hidden');
+                    new QRCode(qrcode, {
+                        text: data,
+                        width: 128,
+                        height: 128,
+                        colorDark : '#131313',
+                        colorLight : '#15b154',
+                        correctLevel : QRCode.CorrectLevel.L
+                    });
+                    qrcode.onclick = () => {
+                        qrcode.classList.toggle('hidden');
+                    };
+
+                    const right = document.createElement('div');
+                    right.classList.add('right');
+
+                    const details = document.createElement('div');
+                    details.classList.add('details');
+
+                    const size = document.createElement('div');
+                    size.classList.add('item');
+                    const sizeLabel = document.createElement('div');
+                    sizeLabel.classList.add('label');
+                    sizeLabel.innerText = 'Size';
+                    const sizeContent = document.createElement('div');
+                    sizeContent.classList.add('content');
+                    sizeContent.innerText = '13.4KB';
+
+                    const longAlias = document.createElement('div');
+                    longAlias.classList.add('item');
+                    const longAliasLabel = document.createElement('div');
+                    longAliasLabel.classList.add('label');
+                    longAliasLabel.innerText = 'Long alias';
+                    const longAliasContent = document.createElement('div');
+                    longAliasContent.classList.add('content');
+                    longAliasContent.innerText = 'ran-tree-very';
+                    
+                    const expiration = document.createElement('div');
+                    expiration.classList.add('item');
+                    const expirationLabel = document.createElement('div');
+                    expirationLabel.classList.add('label');
+                    expirationLabel.innerText = 'Expiration duration';
+                    const expirationContent = document.createElement('div');
+                    expirationContent.classList.add('content');
+                    expirationContent.innerText = '6h';
+
+                    const actions = document.createElement('div');
+                    actions.classList.add('actions');
+                    
+                    const revokeButton = document.createElement('div');
+                    revokeButton.classList.add('button', 'outline');
+                    revokeButton.innerText = 'Revoke';
+
+                    const copyLinkButton = document.createElement('div');
+                    copyLinkButton.classList.add('button', 'fill');
+                    copyLinkButton.innerText = 'Copy Link';
+
+                    info.append(qrcode, right);
+                    right.append(details, actions);
+                    details.append(size, longAlias, expiration);
+                    size.append(sizeLabel, sizeContent);
+                    longAlias.append(longAliasLabel, longAliasContent);
+                    expiration.append(expirationLabel, expirationContent);
+                    actions.append(revokeButton, copyLinkButton);
+
+                    this.file.append(info);
                 }
             }
 
@@ -191,27 +348,62 @@
                 }
             });
 
-            let progress = 0;
-            setInterval(() => {
-                if (progress <= 100) {
-                    document.querySelector('.file > .progress-bar').style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress / 100 + orange[0]}, ${(green[1] - orange[1]) * progress / 100 + orange[1]}, ${(green[2] - orange[2]) * progress / 100 + orange[2]})`;
-                    document.querySelector('.file > .progress-bar').style.width = `${progress}%`;
-                    progress += 5;
-                }
-            }, 250);
+            // let progress = 0;
+            // setInterval(() => {
+            //     if (progress <= 100) {
+            //         document.querySelector('.file > .progress-bar').style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress / 100 + orange[0]}, ${(green[1] - orange[1]) * progress / 100 + orange[1]}, ${(green[2] - orange[2]) * progress / 100 + orange[2]})`;
+            //         document.querySelector('.file > .progress-bar').style.width = `${progress}%`;
+            //         progress += 5;
+            //     }
+            // }, 250);
+            // setTimeout(() => {
+            //     document.querySelector('.qrcode').classList.remove('hidden');
+            // }, 1500);
+
+            // new QRCode(document.querySelector('.qrcode'), {
+            //     text: "http://localhost:3001/rQSMx9",
+            //     width: 128,
+            //     height: 128,
+            //     colorDark : '#131313',
+            //     colorLight : '#15b154',
+            //     correctLevel : QRCode.CorrectLevel.L
+            // });
         }
     </script>
 </head>
 <body>
     <div class="files">
-        <div class="file uploading">
+        <!-- <div class="file uploading">
             <div class="name">my-file.png</div>
             <div class="progress-bar"></div>
         </div>
         <div class="file uploaded">
             <div class="name">my-app.zip</div>
             <div class="link">http://localhost:3001/rQSMx9</div>
-        </div>
+            <div class="info">
+                <div class="qrcode hidden"></div>
+                <div class="right">
+                    <div class="details">
+                        <div class="item">
+                            <div class="label">Size</div>
+                            <div class="content">14.3KB</div>
+                        </div>
+                        <div class="item">
+                            <div class="label">Long alias</div>
+                            <div class="content">ran-tree-very</div>
+                        </div>
+                        <div class="item">
+                            <div class="label">Expire duration</div>
+                            <div class="content">6h</div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <div class="button outline">Revoke</div>
+                        <div class="button fill">Copy Link</div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
     </div>
 </body>
 </html>
