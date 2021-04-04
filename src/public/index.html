@@ -354,8 +354,9 @@
             });
             document.body.addEventListener('drop', (event) => {
                 for (let item of event.dataTransfer.items) {
-                    console.log(item.kind);
                     if (item.kind !== 'file') continue;
+                    if (item.webkitGetAsEntry && item.webkitGetAsEntry().isDirectory) continue;
+                    
                     const fileRef = item.getAsFile();
                     if (!fileRef.name) continue;
 
