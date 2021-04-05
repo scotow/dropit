@@ -6,11 +6,21 @@
         @import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro);
         /* @import url('https://fonts.googleapis.com/css?family=Gloria+Hallelujah'); */
 
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
         html {
             font-size: 0;
             font-family: 'Source Sans Pro', sans-serif;
             color: white;
             background: #131313;
+        }
+
+        body {
+            margin: 0;
         }
 
         body::before {
@@ -37,6 +47,18 @@
             transition: opacity 250ms;
         }
 
+        body.has-files > .first-upload {
+            display: none;
+        }
+
+        body.dragging::after {
+            opacity: 1;
+        }
+
+        body.dragging > .form-files {
+            opacity: 0;
+        }
+
         .first-upload {
             position: absolute;
             top: 50%;
@@ -45,13 +67,14 @@
         }
 
         .first-upload > .indicator {
+            display: block;
             width: 115px;
             height: 115px;
             margin: 0 auto 26px;
             background: #15b154;
             border-radius: 50%;
+            cursor: pointer;
             animation: float 1000ms infinite alternate;
-            /* cursor: pointer; */
         }
 
         .first-upload > .indicator::after {
@@ -65,6 +88,10 @@
             transform: translate(-50%, -50%);
         }
 
+        .first-upload > .indicator > input {
+            display: none;
+        }
+
         .first-upload > .indication {
             font-size: 22px;
             font-weight: bold;
@@ -72,8 +99,57 @@
             text-transform: uppercase;            
         }
 
-        body.dragging::after {
+        .form-files {
+            position: relative;
+            display: inline-block;
+            margin: 12px 0 0 8px;
+            padding: 4px 12px 4px 28px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #15b154;
+            border: 1px solid #15b154;
+            border-radius: 3px;
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 125ms;
+        }
+
+        .form-files.visible {
             opacity: 1;
+        }
+
+        .form-files:hover {
+            opacity: 0.9;
+        }
+
+        .form-files:active {
+            opacity: 0.8;
+        }
+
+        .form-files::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            width: 2px;
+            height: 12px;
+            background: white;
+            transform: translate(-50%, -50%);
+        }
+
+        .form-files::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            width: 12px;
+            height: 2px;
+            background: white;
+            transform: translate(-50%, -50%);
+        }
+
+        .form-files > input {
+            display: none;
         }
 
         .files {
@@ -201,10 +277,10 @@
             border-radius: 3px;
             cursor: pointer;
             transition: opacity 125ms;
+        }
 
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            user-select: none;
+        .files > .file > .info > .right > .actions > .button:hover {
+            opacity: 0.9;
         }
 
         .files > .file > .info > .right > .actions > .button:active {
@@ -390,11 +466,11 @@
                     actions.classList.add('actions');
                     
                     const revokeButton = document.createElement('div');
-                    revokeButton.classList.add('button', 'outline');
+                    revokeButton.classList.add('button', 'outline', 'no-select');
                     revokeButton.innerText = 'Revoke';
 
                     const copyLinkButton = document.createElement('div');
-                    copyLinkButton.classList.add('button', 'fill', 'copy');
+                    copyLinkButton.classList.add('button', 'fill', 'no-select', 'copy');
                     copyLinkButton.setAttribute('data-clipboard-text', data.link.short);
                     copyLinkButton.innerText = 'Copy Link';
 
@@ -410,35 +486,53 @@
                 }
             }
 
-            ['drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop'].forEach(name => {
+            function uploadFiles(files) {
+                for (const f of files) {
+                    if (!f.name) continue;
+
+                    document.body.classList.add('has-files');
+                    setTimeout(() => {
+                        document.querySelector('.form-files').classList.add('visible');
+                    }, 1000);
+
+                    const file = new File(f);
+                    file.appendToDocument();
+                    file.startUpload();
+                }
+            }
+
+            // Form input.
+            document.querySelectorAll('input[type=file]').forEach((elem) => {
+                elem.addEventListener('change', (event) => {
+                    uploadFiles(event.target.files);
+                });
+            });
+
+            // Drag and drop.
+            ['drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop'].forEach((name) => {
                 document.body.addEventListener(name, event => {
                     event.preventDefault();
                     event.stopPropagation();
                 })
             });
-            ['dragover', 'dragenter'].forEach(name => {
+            ['dragover', 'dragenter'].forEach((name) => {
                 document.body.addEventListener(name, event => {
                     document.body.classList.add('dragging');
                 })
             });
-            ['dragleave', 'dragend', 'drop'].forEach(name => {
+            ['dragleave', 'dragend', 'drop'].forEach((name) => {
                 document.body.addEventListener(name, event => {
                     document.body.classList.remove('dragging');
                 })
             });
             document.body.addEventListener('drop', (event) => {
+                const files = [];
                 for (let item of event.dataTransfer.items) {
                     if (item.kind !== 'file') continue;
                     if (item.webkitGetAsEntry && item.webkitGetAsEntry().isDirectory) continue;
-
-                    const fileRef = item.getAsFile();
-                    if (!fileRef.name) continue;
-
-                    document.querySelector('.first-upload').style.display = 'none';
-                    const file = new File(fileRef);
-                    file.appendToDocument();
-                    file.startUpload();
+                    files.push(item.getAsFile());
                 }
+                uploadFiles(files);
             });
 
             // let progress = 0;
@@ -467,10 +561,16 @@
     </script>
 </head>
 <body>
-    <div class="first-upload">
-        <div class="indicator"></div>
+    <div class="first-upload no-select">
+        <label class="indicator">
+            <input type="file" multiple>
+        </label>
         <div class="indication">Drop some files<br/>to begin</div>
     </div>
+    <label class="form-files no-select">
+        Add files
+        <input type="file" multiple>
+    </label>
     <div class="files">
         <!-- <div class="file uploading">
             <div class="name">my-file.png</div>
