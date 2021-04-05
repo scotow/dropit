@@ -83,6 +83,11 @@ lazy_static! {
             Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(6 * 60 * 60) }
         ]
     ).unwrap();
+    static ref DEV_EXPIRATION_DETERMINER: Determiner = Determiner::new(
+        vec![
+            Threshold { size: 1024 * 1024 * 1024, duration: Duration::from_secs(30) },
+        ]
+    ).unwrap();
 }
 
 pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
@@ -92,7 +97,7 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
     let name = head.headers.get("X-Filename").unwrap().to_str().unwrap();
     let size = head.headers.get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
-    let duration = DEFAULT_EXPIRATION_DETERMINER.determine(size).unwrap();
+    let duration = DEV_EXPIRATION_DETERMINER.determine(size).unwrap();
     let expiration = SystemTime::now() + duration;
     let expiration_timestamp = expiration.duration_since(UNIX_EPOCH).unwrap().as_secs();
     let (short, long) = alias::random_aliases().unwrap();

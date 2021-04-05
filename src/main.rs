@@ -20,35 +20,7 @@ use tokio::io;
 use tokio_util::io::ReaderStream;
 use bytesize::ByteSize;
 use std::time::Duration;
-
-async fn home_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(Body::from(include_str!("public/index.html")))
-            .unwrap()
-    )
-}
-
-async fn archive(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let (w, r) = io::duplex(1024);
-
-    tokio::spawn(async move {
-        let mut ar = Builder::new(w.compat());
-        ar.mode(HeaderMode::Deterministic);
-
-        let mut header = Header::new_gnu();
-        header.set_path("README.md").unwrap();
-        header.set_mode(0o400);
-        header.set_size(12);
-        header.set_cksum();
-        ar.append(&mut header, &b"Hello, World"[..]).await.unwrap();
-
-        ar.finish().await.unwrap();
-    });
-
-    Ok(Response::new(Body::wrap_stream(ReaderStream::new(r))))
-}
+use crate::storage::clean::Cleaner;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -60,17 +32,23 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
     Ok(res)
 }
 
-async fn router() -> Router<Body, Infallible> {
-    let pool = SqlitePool::connect("database.db").await.unwrap();
+async fn index_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from(include_str!("public/index.html")))
+            .unwrap()
+    )
+}
+
+async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
     Router::builder()
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
-        .get("/", home_handler)
-        .get("/index.html", home_handler)
-        // .get("/about", about_handler)
-        .get("/:alias", download::download_handler)
-        // .get("/archive", archive)
+        .get("/", index_handler)
+        .get("/index.html", index_handler)
+        .get("/:alias", download::file::download_handler)
         .post("/", upload::upload_handler)
         .post("/upload", upload::upload_handler)
         .build()
@@ -92,18 +70,18 @@ async fn main() {
         }
     }
 
-    let router = router().await;
+    let pool = SqlitePool::connect("database.db").await.unwrap();
+    let cleaner = Cleaner::new(pool.clone());
+    tokio::task::spawn(async move {
+        cleaner.start().await;
+    });
 
-    // Create a Service from the router above to handle incoming requests.
+    let address = SocketAddr::from(([127, 0, 0, 1], 3001));
+    let router = router(pool).await;
     let service = RouterService::new(router).unwrap();
+    let server = Server::bind(&address).serve(service);
 
-    // The address on which the server will be listening.
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
-
-    // Create a server by passing the created service to `.serve` method.
-    let server = Server::bind(&addr).serve(service);
-
-    println!("App is running on: {}", addr);
+    println!("App is running on: {}", address);
     if let Err(err) = server.await {
         eprintln!("Server error: {}", err);
     }
