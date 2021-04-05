@@ -11,7 +11,7 @@ use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
 use bytesize::ByteSize;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::Rng;
 use lazy_static::lazy_static;
 use crate::upload::expiration::{Determiner, Threshold};
@@ -60,12 +60,24 @@ struct Size {
 
 #[derive(Serialize)]
 struct Expiration {
-    duration: u64,
+    duration: ExpirationDuration,
+    date: ExpirationDate,
+}
+
+#[derive(Serialize)]
+struct ExpirationDuration {
+    seconds: u64,
+    readable: String,
+}
+
+#[derive(Serialize)]
+struct ExpirationDate {
+    timestamp: u64,
     readable: String,
 }
 
 lazy_static! {
-    static ref DEFAULT_EXPIRATION: Determiner = Determiner::new(
+    static ref DEFAULT_EXPIRATION_DETERMINER: Determiner = Determiner::new(
         vec![
             Threshold { size: 64 * 1024 * 1024, duration: Duration::from_secs(24 * 60 * 60) },
             Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(6 * 60 * 60) }
@@ -80,9 +92,11 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
     let name = head.headers.get("X-Filename").unwrap().to_str().unwrap();
     let size = head.headers.get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
+    let duration = DEFAULT_EXPIRATION_DETERMINER.determine(size).unwrap();
+    let expiration = SystemTime::now() + duration;
+    let expiration_timestamp = expiration.duration_since(UNIX_EPOCH).unwrap().as_secs();
     let (short, long) = alias::random_aliases().unwrap();
-    let expiration = DEFAULT_EXPIRATION.determine(size).unwrap();
-    dbg!(&id, name, size, &short, &long);
+    dbg!(&id, name, size, duration, expiration, &short, &long);
 
     let mut ar = body
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
@@ -96,6 +110,7 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(&id)
         .bind(&name)
         .bind(size as i64)
+        .bind(expiration_timestamp as i64)
         .bind(&short)
         .bind(&long)
         .execute(&mut conn).await.unwrap();
@@ -118,9 +133,19 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
                 long: format!("{}/{}", link_base, &long),
             },
             expiration: Expiration {
-                duration: expiration.as_secs(),
-                readable: humantime::format_duration(expiration).to_string().replace(' ', ""),
-            }
+                duration: ExpirationDuration {
+                    seconds: duration.as_secs(),
+                    readable: humantime::format_duration(duration).to_string().replace(' ', ""),
+                },
+                date: ExpirationDate {
+                    timestamp: expiration_timestamp,
+                    readable: {
+                        let mut full = humantime::format_rfc3339_seconds(expiration).to_string();
+                        full.truncate(full.len() - 4);
+                        full.replace('T', " ").replace('-', "/")
+                    },
+                },
+            },
         }
     };
     let resp = serde_json::to_string(&resp).unwrap();

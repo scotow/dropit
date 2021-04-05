@@ -1,6 +1,7 @@
 mod alias;
 mod download;
 mod upload;
+mod storage;
 mod query;
 
 use hyper::{Body, Request, Response, Server, StatusCode};

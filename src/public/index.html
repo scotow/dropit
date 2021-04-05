@@ -66,7 +66,6 @@
         }
 
         .first-upload > .indication {
-
             font-size: 22px;
             font-weight: bold;
             text-align: center;
@@ -185,7 +184,7 @@
             color: lightgray;
         }
 
-        .files > .file > .info > .right > .details > .item > .content.clickable {
+        .files > .file > .info > .right > .details > .item > *.clickable {
             cursor: pointer;
         }
 
@@ -341,6 +340,7 @@
                     longAliasLabel.classList.add('label');
                     longAliasLabel.innerText = 'Long alias';
                     const longAliasContent = document.createElement('div');
+                    longAlias.title = 'Click to copy to clipboard';
                     longAliasContent.classList.add('content', 'clickable', 'copy');
                     longAliasContent.setAttribute('data-clipboard-text', data.link.long);
                     longAliasContent.innerText = data.alias.long;
@@ -348,11 +348,29 @@
                     const expiration = document.createElement('div');
                     expiration.classList.add('item');
                     const expirationLabel = document.createElement('div');
-                    expirationLabel.classList.add('label');
-                    expirationLabel.innerText = 'Expiration duration';
+                    expirationLabel.classList.add('label', 'clickable');
+                    expirationLabel.innerText = 'Duration';
                     const expirationContent = document.createElement('div');
-                    expirationContent.classList.add('content');
-                    expirationContent.innerText = data.expiration.readable;
+                    expirationContent.classList.add('content', 'clickable');
+                    expirationContent.innerText = data.expiration.duration.readable;
+                    let expirationFormat = 'duration';
+                    [expirationLabel, expirationContent].forEach((elem) => {
+                        elem.title = 'Click to toggle between formats';
+                        elem.addEventListener('click', () => {
+                            switch (expirationFormat) {
+                                case 'duration':
+                                    expirationLabel.innerText = 'Expiration'
+                                    expirationContent.innerText = data.expiration.date.readable;
+                                    expirationFormat = 'date';
+                                    break;
+                                case 'date':
+                                    expirationLabel.innerText = 'Duration'
+                                    expirationContent.innerText = data.expiration.duration.readable;
+                                    expirationFormat = 'duration';
+                                    break;
+                            }
+                        });
+                    });
 
                     const actions = document.createElement('div');
                     actions.classList.add('actions');
