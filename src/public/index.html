@@ -331,8 +331,22 @@
                     sizeLabel.classList.add('label');
                     sizeLabel.innerText = 'Size';
                     const sizeContent = document.createElement('div');
-                    sizeContent.classList.add('content');
+                    sizeContent.title = 'Click to toggle between formats';
+                    sizeContent.classList.add('content', 'clickable');
                     sizeContent.innerText = data.size.readable;
+                    let sizeFormat = 'readable';
+                    sizeContent.addEventListener('click', () => {
+                        switch (sizeFormat) {
+                            case 'readable':
+                                sizeContent.innerText = `${data.size.bytes.toLocaleString()}B`;
+                                sizeFormat = 'bytes';
+                                break;
+                            case 'bytes':
+                                sizeContent.innerText = data.size.readable;
+                                sizeFormat = 'readable';
+                                break;
+                        }
+                    });
 
                     const longAlias = document.createElement('div');
                     longAlias.classList.add('item');
