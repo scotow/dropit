@@ -12,7 +12,7 @@ fn target_protocol(headers: &HeaderMap<HeaderValue>) -> Result<String, ()> {
 }
 
 fn target_host(headers: &HeaderMap<HeaderValue>) -> Result<String, ()> {
-    if let Some(header) = headers.get("X-Forwarded-For") {
+    if let Some(header) = headers.get("X-Forwarded-Host") {
         header.to_str().map(|s| s.to_owned()).map_err(|_| ())
     } else if let Some(header) = headers.get("Host") {
         header.to_str().map(|s| s.to_owned()).map_err(|_| ())
