@@ -21,6 +21,7 @@ use tokio_util::io::ReaderStream;
 use bytesize::ByteSize;
 use std::time::Duration;
 use crate::storage::clean::Cleaner;
+use crate::upload::limit::IpLimiter;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -43,6 +44,7 @@ async fn index_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
 
 async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
     Router::builder()
+        .data(IpLimiter::new(512 * 1024 * 1024, 16, pool.clone()))
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))

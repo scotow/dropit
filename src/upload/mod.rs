@@ -10,12 +10,15 @@ use sqlx::SqlitePool;
 use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
+use serde_json::json;
 use bytesize::ByteSize;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::Rng;
 use lazy_static::lazy_static;
 use crate::upload::expiration::{Determiner, Threshold};
+use crate::upload::limit::{IpLimiter, Limiter};
 
+pub mod limit;
 pub mod origin;
 pub mod expiration;
 
@@ -91,25 +94,36 @@ lazy_static! {
 }
 
 pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
-    let (head, body) = req.into_parts();
-
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let name = head.headers.get("X-Filename").unwrap().to_str().unwrap();
-    let size = head.headers.get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
+    let name = req.headers().get("X-Filename").unwrap().to_str().unwrap().to_owned();
+    let size = req.headers().get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
     let duration = DEV_EXPIRATION_DETERMINER.determine(size).unwrap();
     let expiration = SystemTime::now() + duration;
     let expiration_timestamp = expiration.duration_since(UNIX_EPOCH).unwrap().as_secs();
     let (short, long) = alias::random_aliases().unwrap();
-    dbg!(&id, name, size, duration, expiration, &short, &long);
+    let origin = origin::real_ip(&req).unwrap().to_string();
+    dbg!(&id, &name, size, duration, expiration, &short, &long, &origin);
 
-    let mut ar = body
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
-        .into_async_read()
-        .compat();
+    let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
+    let limiter = req.data::<IpLimiter>().unwrap();
 
-    let mut file = File::create(format!("uploads/{}", id)).await.unwrap();
-    tokio::io::copy(&mut ar, &mut file).await.unwrap();
+    if !limiter.accept(&req, size).await {
+        return Ok(
+            Response::builder()
+                .status(StatusCode::TOO_MANY_REQUESTS)
+                .header(CONTENT_TYPE, "application/json")
+                .body(
+                    serde_json::to_string(
+                        &UploadResponse {
+                            success: false,
+                            data: json!({
+                                "error": "too many uploads"
+                            }),
+                        }
+                    ).unwrap().into()
+                ).unwrap()
+        )
+    }
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
@@ -118,7 +132,17 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(expiration_timestamp as i64)
         .bind(&short)
         .bind(&long)
+        .bind(&origin)
         .execute(&mut conn).await.unwrap();
+
+    let (head, body) = req.into_parts();
+    let mut ar = body
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+        .into_async_read()
+        .compat();
+
+    let mut file = File::create(format!("uploads/{}", id)).await.unwrap();
+    tokio::io::copy(&mut ar, &mut file).await.unwrap();
 
     let link_base = origin::upload_base(&head.headers).unwrap();
     let resp = UploadResponse {

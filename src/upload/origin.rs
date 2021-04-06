@@ -1,5 +1,17 @@
 use hyper::{Request, Body, HeaderMap};
 use hyper::http::HeaderValue;
+use std::net::IpAddr;
+use routerify::ext::RequestExt;
+
+pub fn real_ip(req: &Request<Body>) -> Result<IpAddr, ()> {
+    Ok(
+        if let Some(header) = req.headers().get("X-Forwarded-For") {
+            header.to_str().map_err(|_| ())?.parse::<IpAddr>().map_err(|_| ())?
+        } else {
+            req.remote_addr().ip()
+        }
+    )
+}
 
 fn target_protocol(headers: &HeaderMap<HeaderValue>) -> Result<String, ()> {
     Ok(
