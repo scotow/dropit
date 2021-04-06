@@ -22,6 +22,8 @@ use bytesize::ByteSize;
 use std::time::Duration;
 use crate::storage::clean::Cleaner;
 use crate::upload::limit::IpLimiter;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::pool::PoolOptions;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -44,7 +46,7 @@ async fn index_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
 
 async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
     Router::builder()
-        .data(IpLimiter::new(512 * 1024 * 1024, 16, pool.clone()))
+        .data(IpLimiter::new(512 * 1024 * 1024, 16))
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
@@ -59,12 +61,6 @@ async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
 
 #[tokio::main]
 async fn main() {
-    for _ in 1..10 {
-        println!("{} {}", alias::short::random().unwrap(), alias::long::random().unwrap());
-    }
-    println!("{}", ByteSize::b(5345));
-    println!("{}", humantime::Duration::from(Duration::new(6*60*60 + 30, 0)));
-
     let uploads_dir = "uploads";
     if let Err(e) = File::open(uploads_dir).await {
         if e.kind() == ErrorKind::NotFound {
@@ -72,7 +68,16 @@ async fn main() {
         }
     }
 
-    let pool = SqlitePool::connect("database.db").await.unwrap();
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new()
+                .filename("database.db")
+                .create_if_missing(true)
+                .busy_timeout(Duration::from_secs(30))
+        ).await.unwrap();
+    sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
+
     let cleaner = Cleaner::new(pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;

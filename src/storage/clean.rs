@@ -28,6 +28,7 @@ impl Cleaner {
                         .execute(&mut conn).await.unwrap();
                 }
             }
+            drop(conn);
 
             tokio::time::sleep(Duration::from_secs(10)).await;
         }

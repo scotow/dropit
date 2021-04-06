@@ -6,7 +6,7 @@ use tokio::fs::File;
 use hyper::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use uuid::Uuid;
 use crate::alias;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Connection};
 use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
@@ -107,7 +107,7 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
     let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
     let limiter = req.data::<IpLimiter>().unwrap();
 
-    if !limiter.accept(&req, size).await {
+    if !limiter.accept(&req, size, &mut conn).await {
         return Ok(
             Response::builder()
                 .status(StatusCode::TOO_MANY_REQUESTS)
@@ -134,6 +134,7 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(&long)
         .bind(&origin)
         .execute(&mut conn).await.unwrap();
+    drop(conn);
 
     let (head, body) = req.into_parts();
     let mut ar = body
