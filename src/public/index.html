@@ -31,11 +31,12 @@
             right: 0;
             height: 4px;
             background: #15b154;
+            z-index: 10;
         }
 
         body::after {
             content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: calc(100% - 32px);
@@ -43,7 +44,8 @@
             margin: 14px 10px 10px 10px;
             border: 6px dashed #15b154;
             opacity: 0;
-            z-index: -1;
+            z-index: 10;
+            pointer-events: none;
             transition: opacity 250ms;
         }
 
@@ -57,6 +59,10 @@
 
         body.dragging > .form-files {
             opacity: 0;
+        }
+
+        body.dragging > .files {
+            opacity: 0.3;
         }
 
         .first-upload {
@@ -100,7 +106,7 @@
         }
 
         .form-files {
-            position: relative;
+            position: fixed;
             display: inline-block;
             margin: 12px 0 0 8px;
             padding: 4px 12px 4px 28px;
@@ -157,13 +163,15 @@
             flex-wrap: wrap;
             align-items: flex-start;
             margin: 0 auto;
-            width: 800px;
+            max-width: 860px;
+            width: 98%;
             padding: 200px 0 0;
+            transition: opacity 125ms;
         }
 
         .files > .file {
             position: relative;
-            flex: 1 0 40%;
+            flex: 1 0 360px;
             margin: 0 14px 34px;
             padding: 14px 10px 10px;
             box-sizing: border-box;
