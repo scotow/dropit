@@ -162,16 +162,18 @@
             display: flex;
             flex-wrap: wrap;
             align-items: flex-start;
-            margin: 0 auto;
+            justify-content: center;
+            width: 100%;
             max-width: 860px;
-            width: 98%;
-            padding: 200px 0 0;
+            margin: 0 auto;
+            padding: 200px 12px 0;
+            box-sizing: border-box;
             transition: opacity 125ms;
         }
 
         .files > .file {
             position: relative;
-            flex: 1 0 360px;
+            width: 360px;
             margin: 0 14px 34px;
             padding: 14px 10px 10px;
             box-sizing: border-box;
@@ -179,14 +181,24 @@
             border-radius: 6px;
         }
 
+        @media only screen and (max-width: 768px) {
+            .files > .file {
+                flex: 1 0 auto;
+            }
+        }
+
         .files > .file > .name {
             position: absolute;
             top: -12px;
             left: 6px;
+            max-width: calc(100% - 20px);
             padding: 0 4px;
             font-size: 16px;
             color: lightgrey;
             background: #131313;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .files > .file > .progress-bar {
@@ -198,14 +210,9 @@
             transition: background-color linear 1s, width ease-out 1s;
         }
 
-        .files > .file > .progress-bar.completed {
-            animation: fade-out ease-out 500ms forwards;
-        }
-
         .files > .file > .link {
             position: relative;
             font-size: 22px;
-            animation: fade-in ease-out 500ms forwards;
         }
 
         .files > .file > .link::after {
@@ -254,10 +261,11 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            overflow: hidden;
         }
 
         .files > .file > .info > .right > .details {
-            flex: 1;
+            flex: 1 1;
         }
 
         .files > .file > .info > .right > .details > .item {
@@ -268,7 +276,18 @@
             color: lightgray;
         }
 
-        .files > .file > .info > .right > .details > .item > *.clickable {
+        .files > .file > .info > .right > .details > .item > .label {
+            white-space: nowrap;
+        }
+
+        .files > .file > .info > .right > .details > .item > .content {
+            margin-left: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .files > .file > .info > .right > .details > .item > .clickable {
             cursor: pointer;
         }
 
@@ -308,24 +327,6 @@
         @keyframes float {
             100% {
                 transform: translateY(-8px);
-            }
-        }
-
-        @keyframes fade-in {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-
-        @keyframes fade-out {
-            0% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
             }
         }
     </style>
@@ -383,7 +384,6 @@
                     this.link = document.createElement('div');
                     this.link.classList.add('link');
                     this.link.innerText = data.link.short;
-                    this.progressBar.classList.add('completed');
                     this.progressBar.replaceWith(this.link);
 
                     const info = document.createElement('div');
