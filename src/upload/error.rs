@@ -34,7 +34,7 @@ pub enum Error {
 impl Error {
     pub fn status_code(&self) -> StatusCode {
         use Error::*;
-        match &self {
+        match self {
             FilenameHeader => StatusCode::BAD_REQUEST,
             ContentLength => StatusCode::BAD_REQUEST,
             TooLarge => StatusCode::BAD_REQUEST,
