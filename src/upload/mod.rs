@@ -1,4 +1,4 @@
-use hyper::{Request, Response, Body, StatusCode};
+use hyper::{Request, Response, Body, StatusCode, HeaderMap, header};
 use std::convert::Infallible;
 use futures::TryStreamExt;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
@@ -17,10 +17,13 @@ use rand::Rng;
 use lazy_static::lazy_static;
 use crate::upload::expiration::{Determiner, Threshold};
 use crate::upload::limit::{IpLimiter, Limiter};
+use crate::upload::error::{Error as UploadError, Error};
+use std::borrow::Cow::Owned;
 
 pub mod limit;
 pub mod origin;
 pub mod expiration;
+pub mod error;
 
 pub struct UploadRequest {
     name: String,
@@ -32,6 +35,24 @@ pub struct UploadResponse<T: Serialize> {
     pub success: bool,
     #[serde(flatten)]
     pub data: T,
+}
+
+impl From<UploadInfo> for UploadResponse<UploadInfo> {
+    fn from(info: UploadInfo) -> Self {
+        Self {
+            success: true,
+            data: info,
+        }
+    }
+}
+
+impl From<UploadError> for UploadResponse<UploadError> {
+    fn from(err: Error) -> Self {
+        Self {
+            success: false,
+            data: err
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -93,36 +114,26 @@ lazy_static! {
     ).unwrap();
 }
 
-pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let name = req.headers().get("X-Filename").unwrap().to_str().unwrap().to_owned();
-    let size = req.headers().get(CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
-    let duration = DEV_EXPIRATION_DETERMINER.determine(size).unwrap();
+    let name = parse_filename_header(req.headers())?;
+    let size = parse_file_size(req.headers())?;
+    let duration = DEV_EXPIRATION_DETERMINER.determine(size).ok_or(UploadError::TooLarge)?;
     let expiration = SystemTime::now() + duration;
-    let expiration_timestamp = expiration.duration_since(UNIX_EPOCH).unwrap().as_secs();
-    let (short, long) = alias::random_aliases().unwrap();
-    let origin = origin::real_ip(&req).unwrap().to_string();
-    dbg!(&id, &name, size, duration, expiration, &short, &long, &origin);
+    let expiration_timestamp = expiration.duration_since(UNIX_EPOCH).map_err(|_| UploadError::TimeCalculation)?.as_secs();
+    let (short, long) = alias::random_aliases().ok_or(UploadError::AliasGeneration)?;
+    let origin = origin::real_ip(&req).ok_or(UploadError::Origin)?.to_string();
+    let link_base = origin::upload_base(req.headers()).ok_or(UploadError::Target)?;
+    dbg!(&id, &name, size, duration, expiration, &short, &long, &origin, &link_base);
 
-    let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
-    let limiter = req.data::<IpLimiter>().unwrap();
+    let mut conn = req.data::<SqlitePool>()
+        .ok_or(UploadError::Database)?
+        .acquire().await
+        .map_err(|_| UploadError::Database)?;
 
+    let limiter = req.data::<IpLimiter>().ok_or(UploadError::QuotaAccess)?;
     if !limiter.accept(&req, size, &mut conn).await {
-        return Ok(
-            Response::builder()
-                .status(StatusCode::TOO_MANY_REQUESTS)
-                .header(CONTENT_TYPE, "application/json")
-                .body(
-                    serde_json::to_string(
-                        &UploadResponse {
-                            success: false,
-                            data: json!({
-                                "error": "too many uploads"
-                            }),
-                        }
-                    ).unwrap().into()
-                ).unwrap()
-        )
+        return Err(UploadError::QuotaExceeded);
     }
 
     sqlx::query(include_query!("insert_file"))
@@ -133,22 +144,20 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
         .bind(&short)
         .bind(&long)
         .bind(&origin)
-        .execute(&mut conn).await.unwrap();
+        .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
     drop(conn);
 
-    let (head, body) = req.into_parts();
+    let (_, body) = req.into_parts();
     let mut ar = body
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         .into_async_read()
         .compat();
 
-    let mut file = File::create(format!("uploads/{}", id)).await.unwrap();
-    tokio::io::copy(&mut ar, &mut file).await.unwrap();
+    let mut file = File::create(format!("uploads/{}", id)).await.map_err(|_| UploadError::CreateFile)?;
+    tokio::io::copy(&mut ar, &mut file).await.map_err(|_| UploadError::CopyFile)?;
 
-    let link_base = origin::upload_base(&head.headers).unwrap();
-    let resp = UploadResponse {
-        success: true,
-        data: UploadInfo {
+    Ok(
+        UploadInfo {
             name: name.to_owned(),
             size: Size {
                 bytes: size,
@@ -177,16 +186,43 @@ pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infall
                 },
             },
         }
-    };
-    let resp = serde_json::to_string(&resp).unwrap();
-
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(CONTENT_TYPE, "application/json")
-            .body(resp.into())
-            .unwrap()
     )
+}
+
+pub async fn upload_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    Ok (
+        match process_upload(req).await {
+            Ok(info) => {
+                Response::builder()
+                    .status(StatusCode::CREATED)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(serde_json::to_string(&UploadResponse::from(info)).unwrap().into())
+            },
+            Err(err) => {
+                Response::builder()
+                    .status(err.status_code())
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(serde_json::to_string(&UploadResponse::from(err)).unwrap().into())
+            }
+        }.unwrap()
+    )
+}
+
+fn parse_filename_header(headers: &HeaderMap) -> Result<String, UploadError> {
+    headers.get("X-Filename")
+        .ok_or(UploadError::FilenameHeader)?
+        .to_str()
+        .map(ToOwned::to_owned)
+        .map_err(|_| UploadError::FilenameHeader)
+}
+
+fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
+    headers.get(header::CONTENT_LENGTH)
+        .ok_or(UploadError::ContentLength)?
+        .to_str()
+        .map_err(|_| UploadError::ContentLength)?
+        .parse::<u64>()
+        .map_err(|_| UploadError::ContentLength)
 }
 
 // body.fold(file, |mut f, chunk| async move {
