@@ -20,7 +20,6 @@ impl Cleaner {
                 .fetch_all(&mut conn).await.unwrap();
 
             if !files.is_empty() {
-                dbg!(&files);
                 for (id,) in files {
                     tokio::fs::remove_file(format!("uploads/{}", &id)).await.unwrap();
                     sqlx::query(include_query!("delete_file"))

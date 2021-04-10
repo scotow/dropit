@@ -53,8 +53,8 @@ async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
         .get("/", index_handler)
         .get("/index.html", index_handler)
         .get("/:alias", download::file::download_handler)
-        .post("/", upload::upload_handler)
-        .post("/upload", upload::upload_handler)
+        .post("/", upload::handler::upload)
+        .post("/upload", upload::handler::upload)
         .build()
         .unwrap()
 }

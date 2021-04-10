@@ -29,6 +29,8 @@ pub enum Error {
     CreateFile,
     #[error("cannot copy file")]
     CopyFile,
+    #[error("not matching file size")]
+    SizeMismatch,
 }
 
 impl Error {
@@ -47,6 +49,7 @@ impl Error {
             QuotaExceeded => StatusCode::TOO_MANY_REQUESTS,
             CreateFile => StatusCode::INTERNAL_SERVER_ERROR,
             CopyFile => StatusCode::INTERNAL_SERVER_ERROR,
+            SizeMismatch => StatusCode::BAD_REQUEST,
         }
     }
 }
