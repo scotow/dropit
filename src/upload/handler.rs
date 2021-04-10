@@ -1,6 +1,6 @@
 use hyper::{Request, Response, Body, StatusCode, HeaderMap, header};
 use std::convert::{Infallible, TryFrom};
-use futures::TryStreamExt;
+use futures::{TryStreamExt, StreamExt};
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tokio::fs::File;
 use hyper::header::{CONTENT_LENGTH, CONTENT_TYPE};
@@ -102,16 +102,30 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
     let mut body = req.into_body().map_err(|_| UploadError::CopyFile);
 
     let mut written = 0;
-    while let Some(chunk) = body.try_next().await? {
-        if written + chunk.len() as u64 > size {
+    while let Some(chunk) = body.next().await {
+        let data = match chunk {
+            Ok(data) => data,
+            Err(_) => {
+                clean_failed_upload(&file_path, &id, &pool).await;
+                return Err(UploadError::CopyFile);
+            }
+        };
+
+        if written + data.len() as u64 > size {
             clean_failed_upload(&file_path, &id, &pool).await;
             return Err(UploadError::SizeMismatch);
         }
+        written += data.len() as u64;
 
-        if file.write_all(&chunk).await.is_err() {
+        if file.write_all(&data).await.is_err() {
             clean_failed_upload(&file_path, &id, &pool).await;
             return Err(UploadError::CopyFile);
         }
+    }
+    // Check difference just in case, but inferior check should be enough.
+    if written != size {
+        clean_failed_upload(&file_path, &id, &pool).await;
+        return Err(UploadError::SizeMismatch);
     }
 
     Ok(
@@ -162,6 +176,7 @@ fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
 }
 
 async fn clean_failed_upload(file_path: &str, id: &str, pool: &SqlitePool) {
+    dbg!(file_path, id);
     let _ = tokio::fs::remove_file(file_path).await;
     let _ = sqlx::query(include_query!("delete_file"))
         .bind(&id)
