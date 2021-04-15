@@ -176,9 +176,12 @@ fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
 }
 
 async fn clean_failed_upload(file_path: &str, id: &str, pool: &SqlitePool) {
-    dbg!(file_path, id);
-    let _ = tokio::fs::remove_file(file_path).await;
-    let _ = sqlx::query(include_query!("delete_file"))
+    if tokio::fs::remove_file(file_path).await.is_err() {
+        eprintln!("[UPLOAD] cannot remove file with id {}", id);
+    }
+    if sqlx::query(include_query!("delete_file"))
         .bind(&id)
-        .execute(pool).await;
+        .execute(pool).await.is_err() {
+        eprintln!("[UPLOAD] cannot remove file with id {} from database", id);
+    }
 }
