@@ -17,7 +17,7 @@ use rand::Rng;
 use lazy_static::lazy_static;
 use crate::upload::expiration::{Determiner, Threshold};
 use crate::upload::limit::{IpLimiter, Limiter};
-use crate::upload::error::{Error as UploadError, Error};
+use crate::upload::error::{Error as UploadError};
 use crate::upload::origin::{real_ip, upload_base};
 use crate::upload::file::{Size, UploadInfo, Expiration};
 use sqlx::pool::PoolConnection;
@@ -59,7 +59,7 @@ impl From<UploadInfo> for UploadResponse<UploadInfo> {
 }
 
 impl From<UploadError> for UploadResponse<UploadError> {
-    fn from(err: Error) -> Self {
+    fn from(err: UploadError) -> Self {
         Self {
             success: false,
             data: err
