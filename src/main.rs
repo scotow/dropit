@@ -78,7 +78,7 @@ async fn main() {
         ).await.unwrap();
     sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
 
-    let cleaner = Cleaner::new(pool.clone());
+    let cleaner = Cleaner::new("uploads".into(), pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;
     });
