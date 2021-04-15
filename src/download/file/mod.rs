@@ -6,8 +6,11 @@ use sqlx::{SqlitePool, Row};
 use crate::include_query;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
-use hyper::header::{CONTENT_DISPOSITION, CONTENT_LENGTH};
+use hyper::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
 use sqlx::FromRow;
+use crate::download::error::Error as DownloadError;
+use std::path::Path;
+use futures::TryFutureExt;
 
 #[derive(FromRow)]
 struct FileInfo {
@@ -17,27 +20,45 @@ struct FileInfo {
 }
 
 pub async fn download_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let alias = req.param("alias").unwrap().parse::<Alias>().unwrap();
-    dbg!(&alias);
+    Ok (
+        match process_download(req).await {
+            Ok((info, fd)) => {
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_LENGTH, info.size as u64)
+                    .header(CONTENT_DISPOSITION, format!(r#"attachment; filename="{}""#, info.name))
+                    .body(Body::wrap_stream(ReaderStream::new(fd)))
+            },
+            Err(err) => {
+                Response::builder()
+                    .status(err.status_code())
+                    .header(CONTENT_TYPE, "text/plain")
+                    .body(err.to_string().into())
+            }
+        }.unwrap() // How to remove this unwrap?
+    )
+}
+
+async fn process_download(req: Request<Body>) -> Result<(FileInfo, File), DownloadError> {
+    let alias = req.param("alias")
+        .ok_or(DownloadError::AliasExtract)?
+        .parse::<Alias>()
+        .map_err(|_| DownloadError::InvalidAlias)?;
 
     let query = match &alias {
         Alias::Short(_) => include_query!("get_file_short"),
         Alias::Long(_) => include_query!("get_file_long"),
     };
 
-    let mut conn = req.data::<SqlitePool>().unwrap().acquire().await.unwrap();
+    let mut conn = req.data::<SqlitePool>().ok_or(DownloadError::Database)?
+        .acquire().await.map_err(|_| DownloadError::Database)?;
     let info = sqlx::query_as::<_, FileInfo>(query)
         .bind(alias.inner())
-        .fetch_optional(&mut conn).await.unwrap().unwrap();
+        .fetch_optional(&mut conn).await.map_err(|_| DownloadError::Database)?
+        .ok_or(DownloadError::FileNotFound)?;
 
-    let file = File::open(format!("uploads/{}", info.id)).await.unwrap();
-
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(CONTENT_LENGTH, info.size as u64)
-            .header(CONTENT_DISPOSITION, format!(r#"attachment; filename="{}""#, info.name))
-            .body(Body::wrap_stream(ReaderStream::new(file)))
-            .unwrap()
-    )
+    let fd = File::open(
+        Path::new("uploads").join(&info.id)
+    ).await.map_err(|_| DownloadError::OpenFile)?;
+    Ok((info, fd))
 }
