@@ -24,6 +24,7 @@ use crate::storage::clean::Cleaner;
 use crate::upload::limit::IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::pool::PoolOptions;
+use crate::storage::dir::Dir;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -47,6 +48,7 @@ async fn index_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
 async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
     Router::builder()
         .data(IpLimiter::new(512 * 1024 * 1024, 16))
+        .data(Dir::new("uploads"))
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))

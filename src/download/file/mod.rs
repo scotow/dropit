@@ -11,6 +11,7 @@ use sqlx::FromRow;
 use crate::download::error::Error as DownloadError;
 use std::path::Path;
 use futures::TryFutureExt;
+use crate::storage::dir::Dir;
 
 #[derive(FromRow)]
 struct FileInfo {
@@ -58,7 +59,7 @@ async fn process_download(req: Request<Body>) -> Result<(FileInfo, File), Downlo
         .ok_or(DownloadError::FileNotFound)?;
 
     let fd = File::open(
-        Path::new("uploads").join(&info.id)
+        req.data::<Dir>().ok_or(DownloadError::OpenFile)?.file_path(&info.id)
     ).await.map_err(|_| DownloadError::OpenFile)?;
     Ok((info, fd))
 }

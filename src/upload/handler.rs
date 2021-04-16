@@ -22,6 +22,8 @@ use crate::upload::origin::{real_ip, upload_base};
 use crate::upload::file::{Size, UploadInfo, Expiration};
 use sqlx::pool::PoolConnection;
 use tokio::io::AsyncWriteExt;
+use std::path::Path;
+use crate::storage::dir::Dir;
 
 lazy_static! {
     static ref DEFAULT_EXPIRATION_DETERMINER: Determiner = Determiner::new(
@@ -86,6 +88,8 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         return Err(UploadError::QuotaExceeded);
     }
 
+    let file_path = req.data::<Dir>().ok_or(UploadError::CreateFile)?.file_path(&id);
+
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
         .bind(&name)
@@ -97,7 +101,6 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
     drop(conn);
 
-    let file_path = format!("uploads/{}", id);
     let mut file = File::create(&file_path).await.map_err(|_| UploadError::CreateFile)?;
     let mut body = req.into_body().map_err(|_| UploadError::CopyFile);
 
@@ -106,25 +109,25 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         let data = match chunk {
             Ok(data) => data,
             Err(_) => {
-                clean_failed_upload(&file_path, &id, &pool).await;
+                clean_failed_upload(file_path.as_path(), &id, &pool).await;
                 return Err(UploadError::CopyFile);
             }
         };
 
         if written + data.len() as u64 > size {
-            clean_failed_upload(&file_path, &id, &pool).await;
+            clean_failed_upload(file_path.as_path(), &id, &pool).await;
             return Err(UploadError::SizeMismatch);
         }
         written += data.len() as u64;
 
         if file.write_all(&data).await.is_err() {
-            clean_failed_upload(&file_path, &id, &pool).await;
+            clean_failed_upload(file_path.as_path(), &id, &pool).await;
             return Err(UploadError::CopyFile);
         }
     }
     // Check difference just in case, but inferior check should be enough.
     if written != size {
-        clean_failed_upload(&file_path, &id, &pool).await;
+        clean_failed_upload(file_path.as_path(), &id, &pool).await;
         return Err(UploadError::SizeMismatch);
     }
 
@@ -175,9 +178,10 @@ fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
         .map_err(|_| UploadError::ContentLength)
 }
 
-async fn clean_failed_upload(file_path: &str, id: &str, pool: &SqlitePool) {
+async fn clean_failed_upload(file_path: &Path, id: &str, pool: &SqlitePool) {
     if tokio::fs::remove_file(file_path).await.is_err() {
-        eprintln!("[UPLOAD] cannot remove file with id {}", id);
+        eprintln!("[UPLOAD] cannot remove file with id {}, file will retain quota", id);
+        return;
     }
     if sqlx::query(include_query!("delete_file"))
         .bind(&id)
