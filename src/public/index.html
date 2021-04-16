@@ -297,13 +297,16 @@
 
         .files > .file > .info > .right > .actions > .button {
             display: inline-block;
-            margin-left: 8px;
             padding: 4px 12px;
             font-size: 14px;
             font-weight: bold;
             border-radius: 3px;
             cursor: pointer;
             transition: opacity 125ms;
+        }
+
+        .files > .file > .info > .right > .actions > .button:nth-last-child(n+2) {
+            margin-right: 8px;
         }
 
         .files > .file > .info > .right > .actions > .button:hover {
@@ -492,7 +495,7 @@
                     size.append(sizeLabel, sizeContent);
                     longAlias.append(longAliasLabel, longAliasContent);
                     expiration.append(expirationLabel, expirationContent);
-                    actions.append(revokeButton, copyLinkButton);
+                    actions.append(/*revokeButton,*/ copyLinkButton);
 
                     this.file.append(info);
                 }
