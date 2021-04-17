@@ -27,11 +27,17 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
     Ok(res)
 }
 
-async fn index_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
+async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let content = match req.uri().path() {
+        "/" | "/index.html" => include_str!("public/index.html"),
+        "/style.css" => include_str!("public/style.css"),
+        "/app.js" => include_str!("public/app.js"),
+        _ => unreachable!(),
+    };
     Ok(
         Response::builder()
             .status(StatusCode::OK)
-            .body(Body::from(include_str!("public/index.html")))
+            .body(Body::from(content))
             .unwrap()
     )
 }
@@ -43,8 +49,10 @@ async fn router(upload_dir: PathBuf, pool: SqlitePool) -> Router<Body, Infallibl
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
-        .get("/", index_handler)
-        .get("/index.html", index_handler)
+        .get("/", asset_handler)
+        .get("/index.html", asset_handler)
+        .get("/style.css", asset_handler)
+        .get("/app.js", asset_handler)
         .get("/:alias", download::file::download_handler)
         .post("/", upload::handler::upload)
         .post("/upload", upload::handler::upload)
