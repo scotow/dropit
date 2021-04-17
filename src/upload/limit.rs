@@ -11,15 +11,15 @@ pub trait Limiter<'a> {
 }
 
 pub struct IpLimiter {
-    max_size: u64,
-    max_file: usize,
+    size_sum: u64,
+    file_count: usize,
 }
 
 impl IpLimiter {
-    pub fn new(max_size: u64, max_file: usize) -> Self {
+    pub fn new(size_sum: u64, file_count: usize) -> Self {
         Self {
-            max_size,
-            max_file,
+            size_sum,
+            file_count,
         }
     }
 }
@@ -31,7 +31,6 @@ impl<'a> Limiter<'a> for IpLimiter {
         let (size, file) = sqlx::query_as::<_, (i64, i64)>(include_query!("get_limit_origin"))
             .bind(real_ip(req).unwrap().to_string())
             .fetch_optional(conn).await.unwrap().unwrap();
-        dbg!(size, file);
-        size as u64 + upload_size <= self.max_size && file as usize + 1 <= self.max_file
+        size as u64 + upload_size <= self.size_sum && file as usize + 1 <= self.file_count
     }
 }

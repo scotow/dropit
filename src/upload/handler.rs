@@ -8,9 +8,7 @@ use sqlx::SqlitePool;
 use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
-use std::time::Duration;
-use lazy_static::lazy_static;
-use crate::upload::expiration::{Determiner, Threshold};
+use crate::upload::expiration::Determiner;
 use crate::upload::limit::{IpLimiter, Limiter};
 use crate::upload::error::{Error as UploadError};
 use crate::upload::origin::{real_ip, upload_base};
@@ -18,20 +16,6 @@ use crate::upload::file::{UploadInfo, Expiration};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
 use crate::storage::dir::Dir;
-
-lazy_static! {
-    static ref DEFAULT_EXPIRATION_DETERMINER: Determiner = Determiner::new(
-        vec![
-            Threshold { size: 64 * 1024 * 1024, duration: Duration::from_secs(24 * 60 * 60) },
-            Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(6 * 60 * 60) }
-        ]
-    ).unwrap();
-    static ref DEV_EXPIRATION_DETERMINER: Determiner = Determiner::new(
-        vec![
-            Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(30) },
-        ]
-    ).unwrap();
-}
 
 #[allow(unused)]
 pub struct UploadRequest {
@@ -68,9 +52,14 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
     let name = parse_filename_header(req.headers())?;
     let size = parse_file_size(req.headers())?;
+
+    // Expiration.
+    let determiner = req.data::<Determiner>().ok_or(UploadError::TimeCalculation)?;
     let expiration = Expiration::try_from(
-        DEV_EXPIRATION_DETERMINER.determine(size).ok_or(UploadError::TooLarge)?
+        determiner.determine(size).ok_or(UploadError::TooLarge)?
     )?;
+
+    // Aliases and links.
     let (short, long) = alias::random_aliases().ok_or(UploadError::AliasGeneration)?;
     let origin = real_ip(&req).ok_or(UploadError::Origin)?.to_string();
     let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;

@@ -3,6 +3,7 @@ mod download;
 mod upload;
 mod storage;
 mod query;
+mod option;
 
 use hyper::{Body, Request, Response, Server, StatusCode};
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
@@ -16,6 +17,9 @@ use crate::upload::limit::IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use crate::storage::dir::Dir;
 use std::path::PathBuf;
+use option::Options;
+use structopt::StructOpt;
+use crate::upload::expiration::Determiner;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -42,10 +46,16 @@ async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
     )
 }
 
-async fn router(upload_dir: PathBuf, pool: SqlitePool) -> Router<Body, Infallible> {
+async fn router(
+    uploads_dir: PathBuf,
+    limiter: IpLimiter,
+    determiner: Determiner,
+    pool: SqlitePool
+) -> Router<Body, Infallible> {
     Router::builder()
-        .data(IpLimiter::new(512 * 1024 * 1024, 16))
-        .data(Dir::new(upload_dir))
+        .data(Dir::new(uploads_dir))
+        .data(limiter)
+        .data(determiner)
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
@@ -62,12 +72,16 @@ async fn router(upload_dir: PathBuf, pool: SqlitePool) -> Router<Body, Infallibl
 
 #[tokio::main]
 async fn main() {
-    let uploads_dir = PathBuf::from("uploads");
-    if let Err(e) = File::open(&uploads_dir).await {
-        if e.kind() == ErrorKind::NotFound {
-            tokio::fs::create_dir_all(&uploads_dir).await.unwrap();
-        }
-    }
+    let Options {
+        uploads_dir,
+        address,
+        port,
+        thresholds,
+        ip_size_sum, ip_file_count,
+    } = Options::from_args();
+
+    let limiter = IpLimiter::new(ip_size_sum, ip_file_count);
+    let determiner = Determiner::new(thresholds).expect("invalid thresholds");
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -79,13 +93,18 @@ async fn main() {
         ).await.unwrap();
     sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
 
+    if let Err(e) = File::open(&uploads_dir).await {
+        if e.kind() == ErrorKind::NotFound {
+            tokio::fs::create_dir_all(&uploads_dir).await.unwrap();
+        }
+    }
     let cleaner = Cleaner::new(&uploads_dir, pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;
     });
 
-    let address = SocketAddr::from(([127, 0, 0, 1], 3001));
-    let router = router(uploads_dir, pool).await;
+    let address = SocketAddr::new(address, port);
+    let router = router(uploads_dir, limiter, determiner, pool).await;
     let service = RouterService::new(router).unwrap();
     let server = Server::bind(&address).serve(service);
 
