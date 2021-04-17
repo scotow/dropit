@@ -15,6 +15,7 @@ use crate::storage::clean::Cleaner;
 use crate::upload::limit::IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use crate::storage::dir::Dir;
+use std::path::PathBuf;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -35,10 +36,10 @@ async fn index_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible
     )
 }
 
-async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
+async fn router(upload_dir: PathBuf, pool: SqlitePool) -> Router<Body, Infallible> {
     Router::builder()
         .data(IpLimiter::new(512 * 1024 * 1024, 16))
-        .data(Dir::new("uploads"))
+        .data(Dir::new(upload_dir))
         .data(pool)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
@@ -53,10 +54,10 @@ async fn router(pool: SqlitePool) -> Router<Body, Infallible> {
 
 #[tokio::main]
 async fn main() {
-    let uploads_dir = "uploads";
-    if let Err(e) = File::open(uploads_dir).await {
+    let uploads_dir = PathBuf::from("uploads");
+    if let Err(e) = File::open(&uploads_dir).await {
         if e.kind() == ErrorKind::NotFound {
-            tokio::fs::create_dir_all(uploads_dir).await.unwrap();
+            tokio::fs::create_dir_all(&uploads_dir).await.unwrap();
         }
     }
 
@@ -70,13 +71,13 @@ async fn main() {
         ).await.unwrap();
     sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
 
-    let cleaner = Cleaner::new("uploads".into(), pool.clone());
+    let cleaner = Cleaner::new(&uploads_dir, pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;
     });
 
     let address = SocketAddr::from(([127, 0, 0, 1], 3001));
-    let router = router(pool).await;
+    let router = router(uploads_dir, pool).await;
     let service = RouterService::new(router).unwrap();
     let server = Server::bind(&address).serve(service);
 

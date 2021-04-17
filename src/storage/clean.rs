@@ -9,9 +9,9 @@ pub struct Cleaner {
 }
 
 impl Cleaner {
-    pub fn new(dir: PathBuf, pool: SqlitePool) -> Self {
+    pub fn new<P: Into<PathBuf>>(path: P, pool: SqlitePool) -> Self {
         Self {
-            dir,
+            dir: path.into(),
             pool,
         }
     }
