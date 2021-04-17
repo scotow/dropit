@@ -34,7 +34,7 @@ lazy_static! {
     ).unwrap();
     static ref DEV_EXPIRATION_DETERMINER: Determiner = Determiner::new(
         vec![
-            Threshold { size: 1024 * 1024 * 1024, duration: Duration::from_secs(30) },
+            Threshold { size: 256 * 1024 * 1024, duration: Duration::from_secs(30) },
         ]
     ).unwrap();
 }
@@ -152,6 +152,7 @@ pub async fn upload(req: Request<Body>) -> Result<Response<Body>, Infallible> {
                     .body(serde_json::to_string(&UploadResponse::from(info)).unwrap().into())
             },
             Err(err) => {
+                dbg!(&err);
                 Response::builder()
                     .status(err.status_code())
                     .header(CONTENT_TYPE, "application/json")
