@@ -1,9 +1,8 @@
 use hyper::{Request, Body};
 use async_trait::async_trait;
-use sqlx::{SqlitePool, Executor, SqliteConnection, Transaction, Sqlite};
+use sqlx::{Executor, Sqlite};
 use crate::upload::origin::real_ip;
 use crate::include_query;
-use sqlx::pool::PoolConnection;
 
 #[async_trait]
 pub trait Limiter<'a> {

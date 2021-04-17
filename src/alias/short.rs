@@ -1,8 +1,6 @@
 use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::collections::HashSet;
-use std::convert::TryInto;
 use regex::Regex;
 use std::str;
 

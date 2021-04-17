@@ -1,9 +1,7 @@
-use crate::upload::expiration::Threshold;
-use sqlx::{SqlitePool, query_as_with, Sqlite, Error};
+use sqlx::SqlitePool;
 use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use crate::include_query;
 use std::path::PathBuf;
-use sqlx::pool::PoolConnection;
 
 pub struct Cleaner {
     dir: PathBuf,
@@ -42,7 +40,7 @@ impl Cleaner {
             }
         };
 
-        let mut files = match sqlx::query_as::<_, (String,)>(include_query!("get_files_expired"))
+        let files = match sqlx::query_as::<_, (String,)>(include_query!("get_files_expired"))
             .bind(now_timestamp)
             .fetch_all(&mut conn).await {
             Ok(files) => files,

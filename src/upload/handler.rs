@@ -1,26 +1,20 @@
 use hyper::{Request, Response, Body, StatusCode, HeaderMap, header};
 use std::convert::{Infallible, TryFrom};
 use futures::{TryStreamExt, StreamExt};
-use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tokio::fs::File;
-use hyper::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use uuid::Uuid;
 use crate::alias;
-use sqlx::{SqlitePool, Connection, SqliteConnection};
+use sqlx::SqlitePool;
 use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
-use serde_json::json;
-use bytesize::ByteSize;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use rand::Rng;
+use std::time::Duration;
 use lazy_static::lazy_static;
 use crate::upload::expiration::{Determiner, Threshold};
 use crate::upload::limit::{IpLimiter, Limiter};
 use crate::upload::error::{Error as UploadError};
 use crate::upload::origin::{real_ip, upload_base};
-use crate::upload::file::{Size, UploadInfo, Expiration};
-use sqlx::pool::PoolConnection;
+use crate::upload::file::{UploadInfo, Expiration};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
 use crate::storage::dir::Dir;
@@ -39,6 +33,7 @@ lazy_static! {
     ).unwrap();
 }
 
+#[allow(unused)]
 pub struct UploadRequest {
     name: String,
     size: u64,
@@ -148,14 +143,14 @@ pub async fn upload(req: Request<Body>) -> Result<Response<Body>, Infallible> {
             Ok(info) => {
                 Response::builder()
                     .status(StatusCode::CREATED)
-                    .header(CONTENT_TYPE, "application/json")
+                    .header(header::CONTENT_TYPE, "application/json")
                     .body(serde_json::to_string(&UploadResponse::from(info)).unwrap().into())
             },
             Err(err) => {
                 dbg!(&err);
                 Response::builder()
                     .status(err.status_code())
-                    .header(CONTENT_TYPE, "application/json")
+                    .header(header::CONTENT_TYPE, "application/json")
                     .body(serde_json::to_string(&UploadResponse::from(err)).unwrap().into())
             }
         }.unwrap() // How to remove this unwrap?

@@ -5,25 +5,15 @@ mod storage;
 mod query;
 
 use hyper::{Body, Request, Response, Server, StatusCode};
-use routerify::prelude::*;
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
 use std::{convert::Infallible, net::SocketAddr};
-use futures::StreamExt;
-use futures::TryStreamExt;
 use tokio::fs::File;
-use tokio::io::{AsyncWriteExt, ErrorKind};
-use sqlx::{SqlitePool, Sqlite, Pool};
-use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
-use tokio_util::codec::{BytesCodec, FramedRead};
-use async_tar::{Builder, Header, HeaderMode};
-use tokio::io;
-use tokio_util::io::ReaderStream;
-use bytesize::ByteSize;
+use tokio::io::ErrorKind;
+use sqlx::SqlitePool;
 use std::time::Duration;
 use crate::storage::clean::Cleaner;
 use crate::upload::limit::IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use sqlx::pool::PoolOptions;
 use crate::storage::dir::Dir;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
@@ -36,7 +26,7 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
     Ok(res)
 }
 
-async fn index_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+async fn index_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(
         Response::builder()
             .status(StatusCode::OK)
