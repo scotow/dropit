@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::upload::expiration::Determiner;
 use crate::upload::limit::{IpLimiter, Limiter};
 use crate::upload::error::{Error as UploadError};
-use crate::upload::origin::{real_ip, upload_base};
+use crate::upload::origin::{upload_base, RealIp};
 use crate::upload::file::{UploadInfo, Expiration};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
@@ -61,14 +61,16 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
 
     // Aliases and links.
     let (short, long) = alias::random_aliases().ok_or(UploadError::AliasGeneration)?;
-    let origin = real_ip(&req).ok_or(UploadError::Origin)?.to_string();
     let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;
 
     let pool = req.data::<SqlitePool>().ok_or(UploadError::Database)?.clone();
     let mut conn = pool.acquire().await.map_err(|_| UploadError::Database)?;
 
+    // Quota.
+    let origin = req.data::<RealIp>().ok_or(UploadError::Origin)?
+        .find(&req).ok_or(UploadError::Origin)?;
     let limiter = req.data::<IpLimiter>().ok_or(UploadError::QuotaAccess)?;
-    if !limiter.accept(&req, size, &mut conn).await {
+    if !limiter.accept(size, origin, &mut conn).await {
         return Err(UploadError::QuotaExceeded);
     }
 
@@ -81,7 +83,7 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         .bind(expiration.timestamp() as i64)
         .bind(&short)
         .bind(&long)
-        .bind(&origin)
+        .bind(origin.to_string())
         .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
     drop(conn);
 
@@ -136,7 +138,6 @@ pub async fn upload(req: Request<Body>) -> Result<Response<Body>, Infallible> {
                     .body(serde_json::to_string(&UploadResponse::from(info)).unwrap().into())
             },
             Err(err) => {
-                dbg!(&err);
                 Response::builder()
                     .status(err.status_code())
                     .header(header::CONTENT_TYPE, "application/json")

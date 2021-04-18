@@ -2,7 +2,7 @@
 
 Dropit is a temporary file hosting and sharing solution.
 
-### Features
+## Features
 
 - Upload files from the terminal (by using `curl` for example)
 - Short and long alias generation, short to copy/past it and long to easily share it verbally
@@ -14,17 +14,18 @@ Dropit is a temporary file hosting and sharing solution.
     - Upload progress bar
     - Readable size, duration and expiration
   
-### Configuration
+## Configuration
 
-#### Options
+### Options
 
 ```
 USAGE:
-    dropit [OPTIONS] --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
+    dropit [FLAGS] [OPTIONS] --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -R, --behind-reverse-proxy    
+    -h, --help                    Prints help information
+    -V, --version                 Prints version information
 
 OPTIONS:
     -a, --address <address>                 [default: 127.0.0.1]
@@ -36,13 +37,6 @@ OPTIONS:
 ```
 
 Here is an example of a Dropit instance:
-- Allowing at most 64 simultaneous files from the same IP
-- Allowing a total of 512M of file content from the same IP
-- Setting the duration of files smaller than 64M to 24h
-- Setting the duration of files smaller than 256M to 6h
-- Forbidding files larger than 256M
-- Listening on default address and port (127.0.0.1:8080)
-- Create (if needed) a directory named "uploads" (default) and store uploaded files in it
 
 ```
 dropit \
@@ -50,13 +44,23 @@ dropit \
   --ip-file-count 64 \
   --threshold 64000000:86400 \
   --threshold 256000000:21600
+  --behind-reverse-proxy
 ```
 
-#### Reverse-proxy
+- Allowing at most 64 simultaneous files from the same IP
+- Allowing a total of 512M of file content from the same IP
+- Setting the duration of files smaller than 64M to 24h
+- Setting the duration of files smaller than 256M to 6h
+- Forbidding files larger than 256M
+- Use the X-Forwarded-For header to determine user IP address
+- Listening on default address and port (127.0.0.1:8080)
+- Create (if needed) a directory named "uploads" (default) and store uploaded files in it
 
-If you host Dropit behind a reverse-proxy, make sure to forward the original host, client IP and protocol using the  
+### Reverse-proxy
+
+If you host Dropit behind a reverse-proxy, make sure to use the `--behind-reverse-proxy` option and to forward the client IP, protocol and original host by setting the `X-Forwarded-For`, `X-Forwarded-Proto` and `X-Forwarded-Host` headers.    
     
-### Foreseeable features
+## Foreseeable features
 
 - Different upload output formats:
     - `plain/text` to help in the terminal and for scripting
@@ -65,10 +69,10 @@ If you host Dropit behind a reverse-proxy, make sure to forward the original hos
 - Revoke API/button
 - Alias regeneration
 - File refresh
-- Trusted reverse proxies
 
-### Libraries
+## Libraries
 
-- `hyper` as a HTTP backend and `routerify` to help with the routing. Evaluating alternatives like `warp` in the future;
-- `Sqlite` and `sqlx` as a metadata storage;
-- `tokio` as an async runtime.
+- `hyper` as a HTTP backend and `routerify` to help with the routing. Evaluating alternatives like `warp` in the future
+- `Sqlite` and `sqlx` as a metadata storage
+- `tokio` as an async runtime
+- `structopt` for options parsing and usage generation

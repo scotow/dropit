@@ -20,6 +20,7 @@ use std::path::PathBuf;
 use option::Options;
 use structopt::StructOpt;
 use crate::upload::expiration::Determiner;
+use crate::upload::origin::RealIp;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -47,14 +48,16 @@ async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
     )
 }
 
-async fn router(
+fn router(
     uploads_dir: PathBuf,
+    real_ip: RealIp,
     limiter: IpLimiter,
     determiner: Determiner,
     pool: SqlitePool
 ) -> Router<Body, Infallible> {
     Router::builder()
         .data(Dir::new(uploads_dir))
+        .data(real_ip)
         .data(limiter)
         .data(determiner)
         .data(pool)
@@ -77,6 +80,7 @@ async fn main() {
         uploads_dir,
         address,
         port,
+        behind_proxy,
         thresholds,
         ip_size_sum, ip_file_count,
     } = Options::from_args();
@@ -104,8 +108,15 @@ async fn main() {
         cleaner.start().await;
     });
 
+    let router = router(
+        uploads_dir,
+        RealIp::new(behind_proxy),
+        limiter,
+        determiner,
+        pool
+    );
+
     let address = SocketAddr::new(address, port);
-    let router = router(uploads_dir, limiter, determiner, pool).await;
     let service = RouterService::new(router).unwrap();
     let server = Server::bind(&address).serve(service);
 

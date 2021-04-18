@@ -11,6 +11,8 @@ pub struct Options {
     pub address: IpAddr,
     #[structopt(short, long, default_value = "8080")]
     pub port: u16,
+    #[structopt(short = "R", long = "behind-reverse-proxy")]
+    pub behind_proxy: bool,
     #[structopt(short, long = "threshold", required = true)]
     pub thresholds: Vec<Threshold>,
     #[structopt(short, long, required = true)]
