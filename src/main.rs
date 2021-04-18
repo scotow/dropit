@@ -5,7 +5,7 @@ mod storage;
 mod query;
 mod option;
 
-use hyper::{Body, Request, Response, Server, StatusCode};
+use hyper::{Body, Request, Response, Server, StatusCode, header};
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
 use std::{convert::Infallible, net::SocketAddr};
 use tokio::fs::File;
@@ -32,15 +32,16 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
 }
 
 async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let content = match req.uri().path() {
-        "/" | "/index.html" => include_str!("public/index.html"),
-        "/style.css" => include_str!("public/style.css"),
-        "/app.js" => include_str!("public/app.js"),
+    let (content, mime) = match req.uri().path() {
+        "/" | "/index.html" => (include_str!("public/index.html"), "text/html"),
+        "/style.css" => (include_str!("public/style.css"), "text/css"),
+        "/app.js" => (include_str!("public/app.js"), "application/javascript"),
         _ => unreachable!(),
     };
     Ok(
         Response::builder()
             .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, mime)
             .body(Body::from(content))
             .unwrap()
     )
