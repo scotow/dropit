@@ -29,4 +29,5 @@ jobs:
           repository: scotow/dropit/dropit
           tag_with_ref: true
           tag_with_sha: true
+          tags: latest
           push: true
