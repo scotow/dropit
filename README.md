@@ -52,9 +52,9 @@ dropit \
 - Setting the duration of files smaller than 64M to 24h
 - Setting the duration of files smaller than 256M to 6h
 - Forbidding files larger than 256M
-- Use the X-Forwarded-For header to determine user IP address
+- Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)
-- Create (if needed) a directory named "uploads" (default) and store uploaded files in it
+- Creating (if needed) a directory named "uploads" (default) and storing uploaded files in it
 
 ### Reverse-proxy
 
