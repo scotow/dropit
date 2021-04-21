@@ -59,12 +59,13 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         determiner.determine(size).ok_or(UploadError::TooLarge)?
     )?;
 
-    // Aliases and links.
-    let (short, long) = alias::random_aliases().ok_or(UploadError::AliasGeneration)?;
-    let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;
-
     let pool = req.data::<SqlitePool>().ok_or(UploadError::Database)?.clone();
     let mut conn = pool.acquire().await.map_err(|_| UploadError::Database)?;
+
+    // Aliases and links.
+    let (short, long) = alias::random_unused_aliases(&mut conn).await
+        .ok_or(UploadError::AliasGeneration)?;
+    let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;
 
     // Quota.
     let origin = req.data::<RealIp>().ok_or(UploadError::Origin)?

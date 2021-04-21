@@ -1,8 +1,12 @@
 use std::str::FromStr;
 use crate::alias::Alias::{Short, Long};
+use sqlx::SqliteConnection;
+use crate::include_query;
 
 pub mod short;
 pub mod long;
+
+const GENERATION_MAX_TENTATIVES: u8 = 20;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Alias {
@@ -33,6 +37,42 @@ impl FromStr for Alias {
     }
 }
 
+#[allow(unused)]
 pub fn random_aliases() -> Option<(String, String)> {
     short::random().and_then(|s| long::random().map(|l| (s, l)))
+}
+
+pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(String, String)> {
+    let mut aliases = (None, None);
+    for _ in 0..GENERATION_MAX_TENTATIVES {
+        // Short alias.
+
+        if aliases.0.is_none() {
+            let alias = short::random()?;
+            if alias_is_unused(&alias, include_query!("exist_alias_short"), conn).await? {
+                aliases.0 = Some(alias);
+            }
+        }
+
+        // Long alias.
+        if aliases.1.is_none() {
+            let alias = long::random()?;
+            if alias_is_unused(&alias, include_query!("exist_alias_long"), conn).await? {
+                aliases.1 = Some(alias);
+            }
+        }
+
+        match aliases {
+            (Some(short), Some(long)) => return Some((short, long)),
+            _ => (),
+        }
+    }
+    None
+}
+
+pub async fn alias_is_unused(alias: &str, query: &str, conn: &mut SqliteConnection) -> Option<bool> {
+    sqlx::query(query)
+        .bind(alias)
+        .fetch_optional(conn).await.ok()?
+        .is_none().into()
 }
