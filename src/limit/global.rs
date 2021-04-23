@@ -16,9 +16,9 @@ impl Global {
 
 #[async_trait]
 impl Limiter for Global {
-    async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> bool {
+    async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> Option<bool> {
         let (size,) = sqlx::query_as::<_, (i64,)>(include_query!("get_limit_global"))
-            .fetch_one(conn).await.unwrap();
-        size as u64 + req.size <= self.size_sum
+            .fetch_one(conn).await.ok()?;
+        Some(size as u64 + req.size <= self.size_sum)
     }
 }

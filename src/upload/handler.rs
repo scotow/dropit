@@ -65,7 +65,8 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
 
     // Quota.
     if req.data::<ChainLimiter>().ok_or(UploadError::QuotaAccess)?
-        .accept(&upload_req, &mut conn).await == false {
+        .accept(&upload_req, &mut conn).await
+        .ok_or(UploadError::QuotaAccess)? == false {
         return Err(UploadError::QuotaExceeded);
     }
 
