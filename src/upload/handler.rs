@@ -9,18 +9,21 @@ use routerify::ext::RequestExt;
 use crate::include_query;
 use serde::Serialize;
 use crate::upload::expiration::Determiner;
-use crate::upload::limit::{IpLimiter, Limiter};
 use crate::upload::error::{Error as UploadError};
 use crate::upload::origin::{upload_base, RealIp};
 use crate::upload::file::{UploadInfo, Expiration};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
 use crate::storage::dir::Dir;
+use std::net::IpAddr;
+use crate::limit::Chain as ChainLimiter;
+use crate::limit::Limiter;
 
 #[allow(unused)]
 pub struct UploadRequest {
-    name: String,
-    size: u64,
+    pub name: String,
+    pub size: u64,
+    pub origin: IpAddr,
 }
 
 #[derive(Serialize)]
@@ -50,41 +53,43 @@ impl From<UploadError> for UploadResponse<UploadError> {
 
 async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let name = parse_filename_header(req.headers())?;
-    let size = parse_file_size(req.headers())?;
-
-    // Expiration.
-    let determiner = req.data::<Determiner>().ok_or(UploadError::TimeCalculation)?;
-    let expiration = Expiration::try_from(
-        determiner.determine(size).ok_or(UploadError::TooLarge)?
-    )?;
+    let upload_req = UploadRequest {
+        name: parse_filename_header(req.headers())?,
+        size: parse_file_size(req.headers())?,
+        origin: req.data::<RealIp>().ok_or(UploadError::Origin)?
+            .find(&req).ok_or(UploadError::Origin)?,
+    };
 
     let pool = req.data::<SqlitePool>().ok_or(UploadError::Database)?.clone();
     let mut conn = pool.acquire().await.map_err(|_| UploadError::Database)?;
+
+    // Quota.
+    if req.data::<ChainLimiter>().ok_or(UploadError::QuotaAccess)?
+        .accept(&upload_req, &mut conn).await == false {
+        return Err(UploadError::QuotaExceeded);
+    }
 
     // Aliases and links.
     let (short, long) = alias::random_unused_aliases(&mut conn).await
         .ok_or(UploadError::AliasGeneration)?;
     let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;
 
-    // Quota.
-    let origin = req.data::<RealIp>().ok_or(UploadError::Origin)?
-        .find(&req).ok_or(UploadError::Origin)?;
-    let limiter = req.data::<IpLimiter>().ok_or(UploadError::QuotaAccess)?;
-    if !limiter.accept(size, origin, &mut conn).await {
-        return Err(UploadError::QuotaExceeded);
-    }
+    // Expiration.
+    let determiner = req.data::<Determiner>().ok_or(UploadError::TimeCalculation)?;
+    let expiration = Expiration::try_from(
+        determiner.determine(upload_req.size).ok_or(UploadError::TooLarge)?
+    )?;
 
     let file_path = req.data::<Dir>().ok_or(UploadError::CreateFile)?.file_path(&id);
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
-        .bind(&name)
-        .bind(size as i64)
+        .bind(&upload_req.name)
+        .bind(*&upload_req.size as i64)
         .bind(expiration.timestamp() as i64)
         .bind(&short)
         .bind(&long)
-        .bind(origin.to_string())
+        .bind(upload_req.origin.to_string())
         .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
     drop(conn);
 
@@ -101,7 +106,7 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
             }
         };
 
-        if written + data.len() as u64 > size {
+        if written + data.len() as u64 > upload_req.size {
             clean_failed_upload(file_path.as_path(), &id, &pool).await;
             return Err(UploadError::SizeMismatch);
         }
@@ -113,11 +118,12 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
         }
     }
     // Check difference just in case, but inferior check should be enough.
-    if written != size {
+    if written != upload_req.size {
         clean_failed_upload(file_path.as_path(), &id, &pool).await;
         return Err(UploadError::SizeMismatch);
     }
 
+    let UploadRequest { name, size, ..} = upload_req;
     Ok(
         UploadInfo::new(
             name,

@@ -4,6 +4,7 @@ mod upload;
 mod storage;
 mod query;
 mod option;
+mod limit;
 
 use hyper::{Body, Request, Response, Server, StatusCode, header};
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
@@ -13,7 +14,7 @@ use tokio::io::ErrorKind;
 use sqlx::SqlitePool;
 use std::time::Duration;
 use crate::storage::clean::Cleaner;
-use crate::upload::limit::IpLimiter;
+use crate::limit::ip::Ip as IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use crate::storage::dir::Dir;
 use std::path::PathBuf;
@@ -21,6 +22,8 @@ use option::Options;
 use structopt::StructOpt;
 use crate::upload::expiration::Determiner;
 use crate::upload::origin::RealIp;
+use crate::limit::Chain as LimiterChain;
+use crate::limit::global::Global;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -51,14 +54,14 @@ async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
 fn router(
     uploads_dir: PathBuf,
     real_ip: RealIp,
-    limiter: IpLimiter,
+    limiters: LimiterChain,
     determiner: Determiner,
     pool: SqlitePool
 ) -> Router<Body, Infallible> {
     Router::builder()
         .data(Dir::new(uploads_dir))
         .data(real_ip)
-        .data(limiter)
+        .data(limiters)
         .data(determiner)
         .data(pool)
         .middleware(Middleware::pre(logger))
@@ -83,9 +86,13 @@ async fn main() {
         behind_proxy,
         thresholds,
         ip_size_sum, ip_file_count,
+        global_size_sum,
     } = Options::from_args();
 
-    let limiter = IpLimiter::new(ip_size_sum, ip_file_count);
+    let limiters = LimiterChain::new(vec![
+        Box::new(IpLimiter::new(ip_size_sum, ip_file_count)),
+        Box::new(Global::new(global_size_sum)),
+    ]);
     let determiner = Determiner::new(thresholds).expect("invalid thresholds");
 
     let pool = SqlitePoolOptions::new()
@@ -111,7 +118,7 @@ async fn main() {
     let router = router(
         uploads_dir,
         RealIp::new(behind_proxy),
-        limiter,
+        limiters,
         determiner,
         pool
     );

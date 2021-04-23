@@ -20,7 +20,7 @@ Dropit is a temporary file hosting and sharing solution.
 
 ```
 USAGE:
-    dropit [FLAGS] [OPTIONS] --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
+    dropit [FLAGS] [OPTIONS] --global-size-sum <global-size-sum> --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
 
 FLAGS:
     -R, --behind-reverse-proxy    
@@ -28,12 +28,13 @@ FLAGS:
     -V, --version                 Prints version information
 
 OPTIONS:
-    -a, --address <address>                 [default: 127.0.0.1]
-    -I, --ip-file-count <ip-file-count>    
-    -i, --ip-size-sum <ip-size-sum>        
-    -p, --port <port>                       [default: 8080]
-    -t, --threshold <thresholds>...        
-    -u, --uploads-dir <uploads-dir>         [default: uploads]
+    -a, --address <address>                     [default: 127.0.0.1]
+    -S, --global-size-sum <global-size-sum>    
+    -c, --ip-file-count <ip-file-count>        
+    -s, --ip-size-sum <ip-size-sum>            
+    -p, --port <port>                           [default: 8080]
+    -t, --threshold <thresholds>...            
+    -u, --uploads-dir <uploads-dir>             [default: uploads]
 ```
 
 Here is an example of a Dropit instance:
@@ -42,6 +43,7 @@ Here is an example of a Dropit instance:
 dropit \
   --ip-size-sum 512000000 \
   --ip-file-count 64 \
+  --global-size-sum 10000000000
   --threshold 64000000:86400 \
   --threshold 256000000:21600
   --behind-reverse-proxy
@@ -49,6 +51,7 @@ dropit \
 
 - Allowing at most 64 simultaneous files from the same IP
 - Allowing a total of 512M of file content from the same IP
+- Allowing a total of 10G of file content from anybody
 - Setting the duration of files smaller than 64M to 24h
 - Setting the duration of files smaller than 256M to 6h
 - Forbidding files larger than 256M

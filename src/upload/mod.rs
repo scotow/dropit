@@ -1,4 +1,3 @@
-pub mod limit;
 pub mod origin;
 pub mod expiration;
 pub mod error;
