@@ -43,7 +43,7 @@ Here is an example of a Dropit instance:
 dropit \
   --ip-size-sum 512000000 \
   --ip-file-count 64 \
-  --global-size-sum 10000000000
+  --global-size-sum 10000000000 \
   --threshold 64000000:86400 \
   --threshold 256000000:21600 \
   --behind-reverse-proxy
