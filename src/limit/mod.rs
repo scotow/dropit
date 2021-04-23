@@ -2,8 +2,8 @@ pub mod ip;
 pub mod global;
 
 use async_trait::async_trait;
-use crate::upload::handler::UploadRequest;
 use sqlx::SqliteConnection;
+use crate::upload::UploadRequest;
 
 #[async_trait]
 pub trait Limiter {

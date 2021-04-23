@@ -18,7 +18,7 @@ struct FileInfo {
     size: i64,
 }
 
-pub async fn download_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok (
         match process_download(req).await {
             Ok((info, fd)) => {
@@ -34,7 +34,7 @@ pub async fn download_handler(req: Request<Body>) -> Result<Response<Body>, Infa
                     .header(CONTENT_TYPE, "text/plain")
                     .body(err.to_string().into())
             }
-        }.unwrap() // How to remove this unwrap?
+        }.unwrap() // How to remove this unwrap? Fallback to a generic 500.
     )
 }
 

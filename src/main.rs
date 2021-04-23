@@ -70,9 +70,9 @@ fn router(
         .get("/index.html", asset_handler)
         .get("/style.css", asset_handler)
         .get("/app.js", asset_handler)
-        .get("/:alias", download::file::download_handler)
-        .post("/", upload::handler::upload)
-        .post("/upload", upload::handler::upload)
+        .get("/:alias", download::file::handler)
+        .post("/", upload::handler)
+        .post("/upload", upload::handler)
         .build()
         .unwrap()
 }

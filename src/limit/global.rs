@@ -1,8 +1,8 @@
 use crate::limit::Limiter;
 use sqlx::SqliteConnection;
-use crate::upload::handler::UploadRequest;
 use async_trait::async_trait;
 use crate::include_query;
+use crate::upload::UploadRequest;
 
 pub struct Global {
     size_sum: u64,
