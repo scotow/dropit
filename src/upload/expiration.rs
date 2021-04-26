@@ -19,10 +19,7 @@ impl FromStr for Threshold {
         
         Ok(Threshold {
             size: size.parse::<Byte>().map_err(|_| "invalid size")?.get_bytes(),
-            duration: Duration::from_secs(
-                duration.parse::<u64>()
-                    .map_err(|_| "invalid duration")?
-            ),
+            duration: duration.parse::<humantime::Duration>().map_err(|_| "invalid duration")?.into()
         })
     }
 }

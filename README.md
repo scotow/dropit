@@ -44,8 +44,8 @@ dropit \
   --ip-size-sum 512MB \
   --ip-file-count 64 \
   --global-size-sum 10GB \
-  --threshold 64MB:86400 \
-  --threshold 256MB:21600 \
+  --threshold 64MB:24h \
+  --threshold 256MB:6h \
   --behind-reverse-proxy
 ```
 
