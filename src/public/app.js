@@ -5,9 +5,6 @@ String.prototype.toTitleCase = function() {
 document.addEventListener('DOMContentLoaded', documentReady, false);
 
 function documentReady() {
-    const orange = [0xff, 0xc6, 0x1d];
-    const green = [0x15, 0xb1, 0x54];
-
     class File {
         constructor(fileRef) {
             this.fileRef = fileRef;
@@ -38,7 +35,7 @@ function documentReady() {
 
             req.upload.onprogress = (event) => {
                 const progress = event.loaded / event.total;
-                this.progressBar.style.backgroundColor = `rgb(${(green[0] - orange[0]) * progress + orange[0]}, ${(green[1] - orange[1]) * progress + orange[1]}, ${(green[2] - orange[2]) * progress + orange[2]})`;
+                this.progressBar.style.backgroundColor = `rgb(${(0x15 - 0xff) * progress + 0xff}, ${(0xb1 - 0xc6) * progress + 0xc6}, ${(0x54 - 0x1d) * progress + 0x1d})`;
                 this.progressBar.style.width = `${progress * 100}%`;
             };
             req.onload = (event) => {
