@@ -5,6 +5,7 @@ mod storage;
 mod query;
 mod option;
 mod limit;
+mod asset;
 
 use hyper::{Body, Request, Response, Server, StatusCode, header};
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
@@ -24,6 +25,7 @@ use crate::upload::expiration::Determiner;
 use crate::upload::origin::RealIp;
 use crate::limit::Chain as LimiterChain;
 use crate::limit::global::Global;
+use crate::asset::Assets;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -36,18 +38,23 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
 }
 
 async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let (content, mime) = match req.uri().path() {
-        "/" | "/index.html" => (include_str!("public/index.html"), "text/html"),
-        "/style.css" => (include_str!("public/style.css"), "text/css"),
-        "/app.js" => (include_str!("public/app.js"), "application/javascript"),
-        _ => unreachable!(),
-    };
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, mime)
-            .body(Body::from(content))
-            .unwrap()
+    let assets = req.data::<Assets>().unwrap();
+    Ok (
+        match assets.asset_for_path(req.uri().path()) {
+            Some((content, mime_type)) => {
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, mime_type)
+                    .body(Body::from(content))
+                    .unwrap()
+            }
+            None => {
+                Response::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(Body::empty())
+                    .unwrap()
+            }
+        }
     )
 }
 
@@ -56,7 +63,8 @@ fn router(
     real_ip: RealIp,
     limiters: LimiterChain,
     determiner: Determiner,
-    pool: SqlitePool
+    pool: SqlitePool,
+    assets: Assets,
 ) -> Router<Body, Infallible> {
     Router::builder()
         .data(Dir::new(uploads_dir))
@@ -64,6 +72,7 @@ fn router(
         .data(limiters)
         .data(determiner)
         .data(pool)
+        .data(assets)
         .middleware(Middleware::pre(logger))
         .middleware(Middleware::post(remove_powered_header))
         .get("/", asset_handler)
@@ -87,6 +96,7 @@ async fn main() {
         thresholds,
         ip_size_sum, ip_file_count,
         global_size_sum,
+        color,
     } = Options::from_args();
 
     let limiters = LimiterChain::new(vec![
@@ -120,7 +130,8 @@ async fn main() {
         RealIp::new(behind_proxy),
         limiters,
         determiner,
-        pool
+        pool,
+        Assets::new(&color),
     );
 
     let address = SocketAddr::new(address, port);

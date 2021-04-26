@@ -25,7 +25,7 @@ body::before {
     left: 0;
     right: 0;
     height: 4px;
-    background: #15b154;
+    background: TEMPLATE_COLOR;
     z-index: 10;
 }
 
@@ -37,7 +37,7 @@ body::after {
     width: calc(100% - 32px);
     height: calc(100% - 36px);
     margin: 14px 10px 10px 10px;
-    border: 6px dashed #15b154;
+    border: 6px dashed TEMPLATE_COLOR;
     opacity: 0;
     z-index: 10;
     pointer-events: none;
@@ -72,7 +72,7 @@ body.dragging > .files {
     width: 115px;
     height: 115px;
     margin: 0 auto 26px;
-    background: #15b154;
+    background: TEMPLATE_COLOR;
     border-radius: 50%;
     cursor: pointer;
     animation: float 1000ms infinite alternate;
@@ -107,8 +107,8 @@ body.dragging > .files {
     padding: 4px 12px 4px 28px;
     font-size: 14px;
     font-weight: bold;
-    background: #15b154;
-    border: 1px solid #15b154;
+    background: TEMPLATE_COLOR;
+    border: 1px solid TEMPLATE_COLOR;
     border-radius: 3px;
     opacity: 0;
     cursor: pointer;
@@ -172,7 +172,7 @@ body.dragging > .files {
     margin: 0 14px 34px;
     padding: 14px 10px 10px;
     box-sizing: border-box;
-    border: 1px solid #15b154;
+    border: 1px solid TEMPLATE_COLOR;
     border-radius: 6px;
     transition: border 1s linear;
 }
@@ -221,7 +221,7 @@ body.dragging > .files {
     margin: 8px 0 12px 0;
     width: 100%;
     height: 1px;
-    background: #15b154;
+    background: TEMPLATE_COLOR;
 }
 
 .files > .file > .info {
@@ -327,8 +327,8 @@ body.dragging > .files {
 }
 
 .button.success {
-    background: #15b154;
-    border: 1px solid #15b154;
+    background: TEMPLATE_COLOR;
+    border: 1px solid TEMPLATE_COLOR;
 }
 
 .button.warning {

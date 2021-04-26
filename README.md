@@ -13,6 +13,7 @@ Dropit is a temporary file hosting and sharing solution.
     - QRCode generation
     - Upload progress bar
     - Readable size, duration and expiration
+    - Customizable color
   
 ## Configuration
 
@@ -29,6 +30,7 @@ FLAGS:
 
 OPTIONS:
     -a, --address <address>                     [default: 127.0.0.1]
+    -C, --color <color>                         [default: #15b154]
     -S, --global-size-sum <global-size-sum>    
     -c, --ip-file-count <ip-file-count>        
     -s, --ip-size-sum <ip-size-sum>            

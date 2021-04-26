@@ -22,6 +22,8 @@ pub struct Options {
     pub ip_file_count: usize,
     #[structopt(short = "S", long, required = true, parse(try_from_str = parse_size))]
     pub global_size_sum: u64,
+    #[structopt(short = "C", long, default_value = "#15b154")]
+    pub color: String,
 }
 
 fn parse_size(s: &str) -> Result<u64, ByteError> {
