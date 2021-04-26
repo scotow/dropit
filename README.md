@@ -41,19 +41,19 @@ Here is an example of a Dropit instance:
 
 ```
 dropit \
-  --ip-size-sum 512000000 \
+  --ip-size-sum 512MB \
   --ip-file-count 64 \
-  --global-size-sum 10000000000 \
-  --threshold 64000000:86400 \
-  --threshold 256000000:21600 \
+  --global-size-sum 10GB \
+  --threshold 64MB:86400 \
+  --threshold 256MB:21600 \
   --behind-reverse-proxy
 ```
 
 - Allowing at most 64 simultaneous files from the same IP
-- Allowing a total of 512M of file content from the same IP
-- Allowing a total of 10G of file content from anybody
-- Setting the duration of files smaller than 64M to 24h
-- Setting the duration of files smaller than 256M to 6h
+- Allowing a total of 512 MB of file content from the same IP
+- Allowing a total of 10 GB of file content from anybody
+- Setting the duration of files smaller than 64 MB to 24h
+- Setting the duration of files smaller than 256 MB to 6h
 - Forbidding files larger than 256M
 - Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)

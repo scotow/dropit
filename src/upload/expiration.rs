@@ -1,6 +1,7 @@
 use std::time::Duration;
 use std::str::FromStr;
 use std::convert::TryInto;
+use byte_unit::Byte;
 
 #[derive(Clone, Debug)]
 pub struct Threshold {
@@ -12,14 +13,16 @@ impl FromStr for Threshold {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let [size, duration]: [u64; 2] = s.splitn(2, ':')
-            .map(|s| s.parse::<u64>())
-            .collect::<Result<Vec<_>, _>>().map_err(|_| "invalid size or duration")?
-            .try_into().map_err(|_| "invalid format (should be SIZE_BYTE:DURATION_SEC)")?;
+        let [size, duration]: [&str; 2] = s.splitn(2, ':')
+            .collect::<Vec<_>>()
+            .try_into().map_err(|_| "invalid format (should be SIZE:DURATION_SEC)")?;
         
         Ok(Threshold {
-            size,
-            duration: Duration::from_secs(duration),
+            size: size.parse::<Byte>().map_err(|_| "invalid size")?.get_bytes(),
+            duration: Duration::from_secs(
+                duration.parse::<u64>()
+                    .map_err(|_| "invalid duration")?
+            ),
         })
     }
 }

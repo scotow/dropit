@@ -1,5 +1,5 @@
 use serde::Serialize;
-use bytesize::ByteSize;
+use byte_unit::Byte;
 use std::convert::TryFrom;
 use std::time::{Duration, UNIX_EPOCH, SystemTime};
 use crate::upload::error::Error as UploadError;
@@ -42,7 +42,7 @@ impl From<u64> for Size {
     fn from(bytes: u64) -> Self {
         Self {
             bytes,
-            readable: ByteSize::b(bytes).to_string().replace(' ', ""),
+            readable: Byte::from_bytes(bytes).get_appropriate_unit(false).to_string(),
         }
     }
 }
