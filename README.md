@@ -1,6 +1,6 @@
 # Dropit
 
-Dropit is a temporary file hosting and sharing solution.
+🗃 Dropit is a temporary file hosting and sharing solution. 🗃
 
 ## Features
 
@@ -68,10 +68,10 @@ If you host Dropit behind a reverse-proxy, make sure to use the `--behind-revers
 ## Foreseeable features
 
 - Different upload output formats:
-    - `plain/text` to help in the terminal and for scripting
+    - `plain/text` to facilitate scripting
     - QRCode in the terminal
 - Archive download (zip/tar)
-- Revoke API/button
+- Revoke API / button
 - Alias regeneration
 - File refresh
 
