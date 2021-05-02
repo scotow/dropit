@@ -2,8 +2,9 @@ pub mod origin;
 pub mod expiration;
 pub mod error;
 pub mod file;
+pub mod response;
 
-use hyper::{Request, Response, Body, StatusCode, HeaderMap, header};
+use hyper::{Request, Response, Body, HeaderMap, header};
 use std::convert::{Infallible, TryFrom};
 use futures::StreamExt;
 use tokio::fs::File;
@@ -12,7 +13,6 @@ use crate::alias;
 use sqlx::SqlitePool;
 use routerify::ext::RequestExt;
 use crate::include_query;
-use serde::Serialize;
 use crate::upload::expiration::Determiner;
 use crate::upload::error::{Error as UploadError};
 use crate::upload::origin::{upload_base, RealIp};
@@ -23,6 +23,7 @@ use crate::storage::dir::Dir;
 use std::net::IpAddr;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
+use crate::upload::response::{UploadResponse, JsonResponse, PlainTextResponse};
 
 #[allow(unused)]
 pub struct UploadRequest {
@@ -31,48 +32,17 @@ pub struct UploadRequest {
     pub origin: IpAddr,
 }
 
-#[derive(Serialize)]
-pub struct UploadResponse<T: Serialize> {
-    pub success: bool,
-    #[serde(flatten)]
-    pub data: T,
-}
-
-impl From<UploadInfo> for UploadResponse<UploadInfo> {
-    fn from(info: UploadInfo) -> Self {
-        Self {
-            success: true,
-            data: info,
-        }
-    }
-}
-
-impl From<UploadError> for UploadResponse<UploadError> {
-    fn from(err: UploadError) -> Self {
-        Self {
-            success: false,
-            data: err
-        }
-    }
-}
-
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok (
-        match process_upload(req).await {
-            Ok(info) => {
-                Response::builder()
-                    .status(StatusCode::CREATED)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(serde_json::to_string(&UploadResponse::from(info)).unwrap().into())
-            },
-            Err(err) => {
-                Response::builder()
-                    .status(err.status_code())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(serde_json::to_string(&UploadResponse::from(err)).unwrap().into())
-            }
-        }.unwrap() // How to remove this unwrap? Fallback to a generic 500.
-    )
+    let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
+    let resp: Box<dyn UploadResponse> = match (response_type.as_deref(), process_upload(req).await) {
+        (Some(b"text/plain"), Ok(info)) => Box::new(PlainTextResponse::from(info)),
+        (Some(b"text/plain"), Err(err)) => Box::new(PlainTextResponse::from(err)),
+        (Some(b"application/json"), Ok(info)) => Box::new(JsonResponse::from(info)),
+        (Some(b"application/json"), Err(err)) => Box::new(JsonResponse::from(err)),
+        (_, Ok(info)) => Box::new(JsonResponse::from(info)),
+        (_, Err(err)) => Box::new(JsonResponse::from(err)),
+    };
+    Ok(resp.response())
 }
 
 async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
