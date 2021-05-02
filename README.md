@@ -8,6 +8,7 @@ Dropit is a temporary file hosting and sharing solution.
 - Short and long alias generation, short to copy/past it and long to easily share it verbally
 - Configurable expiration based on file size
 - Quota determiner based on user IP
+- Json or plain text response (helpful for scripting)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
     - QRCode generation
@@ -67,9 +68,6 @@ If you host Dropit behind a reverse-proxy, make sure to use the `--behind-revers
     
 ## Foreseeable features
 
-- Different upload output formats:
-    - `plain/text` to help in the terminal and for scripting
-    - QRCode in the terminal
 - Archive download (zip/tar)
 - Revoke API/button
 - Alias regeneration

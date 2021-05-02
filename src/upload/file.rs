@@ -7,11 +7,11 @@ use humantime::{format_duration, format_rfc3339_seconds};
 
 #[derive(Serialize)]
 pub struct UploadInfo {
-    name: String,
-    size: Size,
-    alias: Aliases,
-    link: Links,
-    expiration: Expiration,
+    pub(super) name: String,
+    pub(super) size: Size,
+    pub(super) alias: Aliases,
+    pub(super) link: Links,
+    pub(super) expiration: Expiration,
 }
 
 impl UploadInfo {
@@ -34,8 +34,8 @@ impl UploadInfo {
 
 #[derive(Serialize)]
 pub struct Size {
-    bytes: u64,
-    readable: String,
+    pub(super) bytes: u64,
+    pub(super) readable: String,
 }
 
 impl From<u64> for Size {
@@ -49,20 +49,20 @@ impl From<u64> for Size {
 
 #[derive(Serialize)]
 pub struct Aliases {
-    short: String,
-    long: String,
+    pub(super) short: String,
+    pub(super) long: String,
 }
 
 #[derive(Serialize)]
 pub struct Links {
-    short: String,
-    long: String,
+    pub(super) short: String,
+    pub(super) long: String,
 }
 
 #[derive(Serialize)]
 pub struct Expiration {
-    duration: ExpirationDuration,
-    date: ExpirationDate,
+    pub(super) duration: ExpirationDuration,
+    pub(super) date: ExpirationDate,
 }
 
 impl Expiration {
@@ -85,9 +85,9 @@ impl TryFrom<Duration> for Expiration {
 }
 
 #[derive(Serialize)]
-struct ExpirationDuration {
-    seconds: u64,
-    readable: String,
+pub struct ExpirationDuration {
+    pub(super) seconds: u64,
+    pub(super) readable: String,
 }
 
 impl From<Duration> for ExpirationDuration {
@@ -100,9 +100,9 @@ impl From<Duration> for ExpirationDuration {
 }
 
 #[derive(Serialize)]
-struct ExpirationDate {
-    timestamp: u64,
-    readable: String,
+pub struct ExpirationDate {
+    pub(super) timestamp: u64,
+    pub(super) readable: String,
 }
 
 impl TryFrom<Duration> for ExpirationDate {
