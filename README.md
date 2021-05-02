@@ -65,7 +65,21 @@ dropit \
 ### Reverse-proxy
 
 If you host Dropit behind a reverse-proxy, make sure to use the `--behind-reverse-proxy` option and to forward the client IP, protocol and original host by setting the `X-Forwarded-For`, `X-Forwarded-Proto` and `X-Forwarded-Host` headers.    
-    
+
+### Docker
+
+If you prefer to run Dropit as a Docker container, you can either build the image yourself using the Dockerfile available in this repo, or you can use the [image](https://github.com/scotow/dropit/packages/737180) built by the GitHub action.
+
+```
+docker run -p 8080:8080 docker.pkg.github.com/scotow/dropit/dropit:latest [FLAGS] [OPTIONS]
+```
+
+Please read [Binding to all interfaces](#binding-to-all-interfaces) if you can't reach the process from outside the image.
+
+### Binding to all interfaces
+
+By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. If you **don't** want to host Dropit behind a reverse proxy or if you are using the Docker image, you should specify the `0.0.0.0` address by using the `-a | --address` option.
+
 ## Foreseeable features
 
 - Archive download (zip/tar)
