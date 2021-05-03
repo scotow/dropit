@@ -25,7 +25,7 @@ body::before {
     left: 0;
     right: 0;
     height: 4px;
-    background: TEMPLATE_COLOR;
+    background: #15b154;
     z-index: 10;
 }
 
@@ -37,7 +37,7 @@ body::after {
     width: calc(100% - 32px);
     height: calc(100% - 36px);
     margin: 14px 10px 10px 10px;
-    border: 6px dashed TEMPLATE_COLOR;
+    border: 6px dashed #15b154;
     opacity: 0;
     z-index: 10;
     pointer-events: none;
@@ -72,7 +72,7 @@ body.dragging > .files {
     width: 115px;
     height: 115px;
     margin: 0 auto 26px;
-    background: TEMPLATE_COLOR;
+    background: #15b154;
     border-radius: 50%;
     cursor: pointer;
     animation: float 1000ms infinite alternate;
@@ -107,8 +107,8 @@ body.dragging > .files {
     padding: 4px 12px 4px 28px;
     font-size: 14px;
     font-weight: bold;
-    background: TEMPLATE_COLOR;
-    border: 1px solid TEMPLATE_COLOR;
+    background: #15b154;
+    border: 1px solid #15b154;
     border-radius: 3px;
     opacity: 0;
     cursor: pointer;
@@ -172,7 +172,7 @@ body.dragging > .files {
     margin: 0 14px 34px;
     padding: 14px 10px 10px;
     box-sizing: border-box;
-    border: 1px solid TEMPLATE_COLOR;
+    border: 1px solid #15b154;
     border-radius: 6px;
     transition: border 1s linear;
 }
@@ -221,7 +221,7 @@ body.dragging > .files {
     margin: 8px 0 12px 0;
     width: 100%;
     height: 1px;
-    background: TEMPLATE_COLOR;
+    background: #15b154;
 }
 
 .files > .file > .info {
@@ -261,7 +261,7 @@ body.dragging > .files {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow: hidden;
+    /* overflow: hidden; */
 }
 
 .files > .file > .info > .right > .details {
@@ -287,17 +287,79 @@ body.dragging > .files {
     white-space: nowrap;
 }
 
-.files > .file > .info > .right > .details > .item > .clickable {
-    cursor: pointer;
-}
-
 .files > .file > .info > .right > .actions {
     text-align: right;
 }
 
-.files > .file > .info > .right > .actions > .button:nth-last-child(n+2) {
-    margin-right: 8px;
+.files > .file > .info > .right > .actions > .button {
+    position: relative;
+    display: inline-flex;
+    overflow: visible;
 }
+
+.files > .file > .info > .right > .actions > .button > .main {
+    padding: 4px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    background: #15b154;
+    border: 1px solid #15b154;
+    border-radius: 3px 0 0 3px;
+    transition: opacity 125ms;
+}
+
+.files > .file > .info > .right > .actions > .button > .more {
+    padding: 4px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHZpZXdCb3g9IjAgMCAxNzIgMTcyIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0iYnV0dCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBzdHJva2UtZGFzaGFycmF5PSIiIHN0cm9rZS1kYXNob2Zmc2V0PSIwIiBmb250LWZhbWlseT0ibm9uZSIgZm9udC13ZWlnaHQ9Im5vbmUiIGZvbnQtc2l6ZT0ibm9uZSIgdGV4dC1hbmNob3I9Im5vbmUiIHN0eWxlPSJtaXgtYmxlbmQtbW9kZTogbm9ybWFsIj48cGF0aCBkPSJNMCwxNzJ2LTE3MmgxNzJ2MTcyeiIgZmlsbD0ibm9uZSI+PC9wYXRoPjxnIGZpbGw9IiNGRkZGRkYiPjxwYXRoIGQ9Ik0xMzkuOTY4NTgsMzMuODIzMDhjLTIuMDk5ODMsLTIuMDk5ODMgLTUuNTAwNDIsLTIuMDk5ODMgLTcuNjAwMjUsMGwtNDYuMzY4MzMsNDYuMzY4MzNsLTQ2LjM2NDc1LC00Ni4zNjgzM2MtMi4wOTk4MywtMi4wOTk4MyAtNS41MDA0MiwtMi4wOTk4MyAtNy42MDAyNSwwbC0yMy4yOTE2NywyMy4yOTE2N2MtMi4wOTk4MywyLjA5OTgzIC0yLjA5OTgzLDUuNTAwNDIgMCw3LjYwMDI1bDczLjQ1ODMzLDczLjQ1ODMzYzEuMDQ2MzMsMS4wNTM1IDIuNDIyMzMsMS41NzY2NyAzLjc5ODMzLDEuNTc2NjdjMS4zNzYsMCAyLjc1MiwtMC41MjMxNyAzLjgwMTkyLC0xLjU3MzA4bDczLjQ1ODMzLC03My40NTgzM2MyLjA5OTgzLC0yLjA5OTgzIDIuMDk5ODMsLTUuNTAwNDIgMCwtNy42MDAyNXoiPjwvcGF0aD48L2c+PC9nPjwvc3ZnPg==);
+    background-repeat: no-repeat;
+    background-size: 9px;
+    background-position: center;
+    background-color: #15b154;
+    border: 1px solid #15b154;
+    border-radius: 0 3px 3px 0;
+    transition: opacity 125ms;
+}
+
+.files > .file > .info > .right > .actions > .button > .menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 2px);
+    /* left: 88px; */
+    right: 0;
+    text-align: left;
+    /* padding: 4px 0; */
+    background: #303030;
+    border: 1px solid #505050;
+    border-radius: 3px;
+}
+
+.files > .file > .info > .right > .actions > .button > .menu.opened {
+    display: flex;
+    flex-direction: column;
+}
+
+.files > .file > .info > .right > .actions > .button > .menu > .item {
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.files > .file > .info > .right > .actions > .button > .menu > .item:hover {
+    background: #404040;
+}
+
+.files > .file > .info > .right > .actions > .button > .menu > .separator {
+    height: 2px;
+    /* margin: 2px 0; */
+    background: #505050;
+}
+
+/* .files > .file > .info > .right > .actions > .button:nth-last-child(n+2) {
+    margin-right: 8px;
+} */
 
 .files > .file > .error-message {
     font-size: 22px;
@@ -308,27 +370,21 @@ body.dragging > .files {
     margin-top: 8px;
 }
 
-.button {
-    display: inline-block;
-    padding: 4px 12px;
-    font-size: 14px;
-    font-weight: bold;
-    border-radius: 3px;
+.clickable {
     cursor: pointer;
-    transition: opacity 125ms;
 }
 
-.button:hover {
+.clickable:hover {
     opacity: 0.9;
 }
 
-.button:active {
+.clickable:active {
     opacity: 0.8;
 }
 
 .button.success {
-    background: TEMPLATE_COLOR;
-    border: 1px solid TEMPLATE_COLOR;
+    background: #15b154;
+    border: 1px solid #15b154;
 }
 
 .button.warning {

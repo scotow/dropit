@@ -28,7 +28,7 @@ function documentReady() {
 
         startUpload() {
             const req = new XMLHttpRequest();
-            req.open('POST', '/', true);
+            req.open('POST', 'http://localhost:3001/', true);
             req.setRequestHeader('X-Filename', this.fileRef.name);
             req.setRequestHeader('Content-Type', this.fileRef.type);
             req.responseType = 'json';
@@ -71,7 +71,7 @@ function documentReady() {
                 width: 128,
                 height: 128,
                 colorDark : '#131313',
-                colorLight : 'TEMPLATE_COLOR',
+                colorLight : '#15b154',
                 correctLevel : QRCode.CorrectLevel.L
             });
             qrcode.onclick = () => {
@@ -163,7 +163,7 @@ function documentReady() {
             size.append(sizeLabel, sizeContent);
             longAlias.append(longAliasLabel, longAliasContent);
             expiration.append(expirationLabel, expirationContent);
-            actions.append(/*revokeButton,*/ copyLinkButton);
+            actions.append(copyLinkButton);
 
             this.file.append(info);
         }
@@ -238,4 +238,17 @@ function documentReady() {
     });
 
     new ClipboardJS('.copy');
+
+    document.querySelector('.more').addEventListener('click', (event) => {
+        document.querySelector('.menu').classList.toggle('opened');
+        event.stopPropagation();
+    });
+
+    document.addEventListener('click', (event) => {
+        // if (event.target.classList.contains('item') || event.target.classList.contains('more')) return;
+        const opened = document.querySelector('.menu.opened');
+        if (opened) {
+            opened.classList.remove('opened');
+        }
+    });
 }
