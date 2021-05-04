@@ -9,60 +9,16 @@
     <script src="app.js"></script>
 </head>
 <body>
-    <!-- <div class="first-upload no-select">
+    <div class="first-upload no-select">
         <label class="indicator">
             <input type="file" multiple>
         </label>
         <div class="indication">Drop some files<br/>to begin</div>
-    </div> -->
+    </div>
     <label class="form-files no-select">
         Add files
         <input type="file" multiple>
     </label>
-    <div class="files">
-        <div class="file">
-            <div class="name">10M</div>
-            <div class="link">http://localhost:3001/wecrhQ</div>
-            <div class="info">
-                <div class="qrcode hidden" title="http://localhost:3001/wecrhQ"><canvas width="128" height="128"
-                        style="display: none;"></canvas><img style="display: block;"
-                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAgKADAAQAAAABAAAAgAAAAABIjgR3AAAFqklEQVR4Ae2d4W3dSAyE48AdGFdQekgFV9j1cBVcZ5dgDQhYbD7qUaC0XmnGP/IkiuSQw8E+5sV23j4+Pn59W+Tr+z8//qjk/7//+8NWNWRxyI+woxopPvKlvDNs32eAGGNdBiyAdWczpTILYArN64JYAOvOZkplb7QE0vJydjW0DF2BSzjUC2FTLPlRvsh2Rc4Iq7cTbnvuE6BnSfDaAhAcet+yBdCzIXhtAQgOvW/5vb/Zu46WiL2Y7Vl1cdry9K9UTxaH/Chfj7d3HcUSzl6e/lmUs/eJro/g+gSIWBSxWwAig47atAAiZkTsFoDIoKM200tglOCr7LToZBenrB/1RrFUC8WuaPMJsOJUJtZkAUwke0UoC2DFqUysyQKYSPaKULddAs8m886LXIULnwAV9h4QawE8YIiVFiyACnsPiLUAHjDESgvpJXC1JSn7iVzWr0IiYbR8Fc4qsUd68QlwhK0H+loADxzqkZYsgCNsPdDXAnjgUI+0hEtgtNQcSXyWb1QLLUnkO8Ov2ivVXc2ZjfcJkGXqoX4WwEMHm23LAsgy9VA/C+Chg8229U5LUjb4K/1ocar0Qvmu6K9S4yX1XJHUOe/DgN8C7jOrSyq1AC6h9T5JLYD7zOqSSvFXxBASLS/ZxSkbS35US7MR9pH4KO8rexW3Gv+qvug54TZfnwARYyJ2C0Bk0FGbFkDEjIjdAhAZdNSmBRAxI2J/++vfn6nfFh5tkSNPMzbxEXO7pxrPrucKDMq59XTWa8SDT4CzGL5pHgvgpoM7q2wL4Cwmb5rHArjp4M4qe8o3hWaXnGhRoWYpJ8WTH+WrxGYxCDeyZeshP8oZ1egTgNgSslkAQsOmVi0AYkXIZgEIDZtafY+Wg9GZlo1s7Jir3VM+8oswsvGUM2sjjKgeyknx5Ec5yZaNJb/I5hMgYkbEbgGIDDpq0wKImBGxWwAig47axE8CyZmWElpyKn6ESxjNj3Cy8dnYrF9UI9VzRU7CGW0Rrk+AkSmxewtAbOBjuxbAyIjYvQUgNvCxXfzJoCNLzZiwch8tKpSTaszGZ2OzflRfs1F85DvaqZdsviOxPgFG5sXuLQCxgY/tWgAjI2L3FoDYwMd28ZNAWiLGwHZPSwnFZv0I44iNcCieaiS/rC2L2/JlsSlnNpbqjmJ9AhBbQjYLQGjY1KoFQKwI2SwAoWFTq7gEVhaQbGzFrzUSLTXUZMZG9WTi9nxm1EgY1Av5tdp9AuxNUOCZBSAw5L0WLYA9dgSeWQACQ95rMf3PwdESsZf86LMjywvlzsZn/SoYFFu1nV13q8cnQHUqN4+3AG4+wGr5FkCVwZvHWwA3H2C1fAugyuDN49P/ZxBtoKv1Tn9TqdRdiW3cVOKpF+KbMLKxnzVSUtt0GPBbgM6ssVMLAGnRMVoAOrPGTvGjYPScYKSFJoI9suiMOY7gjLF0H9VCOOSb9SNsiiU/wm1+PgGILSGbBSA0bGrVAiBWhGwWgNCwqdX0N4VScMUWLSWVnNnYLDYtWNnYqBbKGfmO9krsmGu79wmwMSH6agGIDn5r2wLYmBB9tQBEB7+1jUvg9rB/rSw/leWlgtvqJ2zKmfXrOXl1TTivYvaeU75s3eTXsHwC7DEu8MwCEBjyXosWwB47As8sAIEh77WYXgL3knzFM1pqaEkiG8VSD1k/wqB8kW0GTlSjT4BoKiJ2C0Bk0FGbFkDEjIjdAhAZdNTm8ktgtCBFS03U6Cs75SNs8nuVu39eyVmJ7Wvor30C9GwIXlsAgkPvW7YAejYEry0AwaH3LaeXQFpA+kRXXVeXrmxd1B9hk18WY0U/nwArTmViTRbARLJXhLIAVpzKxJosgIlkrwi1/E8H0yLWiKRlLPLNEE/5MnHNp4Lb4rPYhFOJ/cRuf/hLlwG/BejO/rNzC8ACEGdAvH2fAOIC+A0n/nVmBtvc4AAAAABJRU5ErkJggg==">
-                </div>
-                <div class="right">
-                    <div class="details">
-                        <div class="item">
-                            <div class="label">Size</div>
-                            <div title="Click to toggle between formats" class="content clickable">10.49 MB</div>
-                        </div>
-                        <div class="item" title="Click to copy to clipboard">
-                            <div class="label">Long alias</div>
-                            <div class="content clickable copy" data-clipboard-text="http://localhost:3001/family-man-should">
-                                family-man-should</div>
-                        </div>
-                        <div class="item">
-                            <div class="label clickable" title="Click to toggle between formats">Duration</div>
-                            <div class="content clickable" title="Click to toggle between formats">1day</div>
-                        </div>
-                    </div>
-                    <div class="actions no-select">
-                        <div class="button">
-                            <div class="main clickable copy" data-clipboard-text="http://localhost:3001/wecrhQ">
-                                Copy Link
-                            </div>
-                            <div class="more clickable"></div>
-                            <div class="menu">
-                                <div class="item">Copy long link</div>
-                                <div class="item">Generate new aliases</div>
-                                <div class="item">Request expiration extension</div>
-                                <div class="separator"></div>
-                                <div class="item">Download</div>
-                                <div class="item">Revoke</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="files"></div>
 </body>
 </html>

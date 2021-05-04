@@ -97,7 +97,7 @@ function documentReady() {
             sizeContent.addEventListener('click', () => {
                 switch (sizeFormat) {
                     case 'readable':
-                        sizeContent.innerText = `${data.size.bytes.toLocaleString()}B`;
+                        sizeContent.innerText = `${data.size.bytes.toLocaleString()} B`;
                         sizeFormat = 'bytes';
                         break;
                     case 'bytes':
@@ -113,9 +113,7 @@ function documentReady() {
             longAliasLabel.classList.add('label');
             longAliasLabel.innerText = 'Long alias';
             const longAliasContent = document.createElement('div');
-            longAlias.title = 'Click to copy to clipboard';
-            longAliasContent.classList.add('content', 'clickable', 'copy');
-            longAliasContent.setAttribute('data-clipboard-text', data.link.long);
+            longAliasContent.classList.add('content');
             longAliasContent.innerText = data.alias.long;
             
             const expiration = document.createElement('div');
@@ -145,25 +143,49 @@ function documentReady() {
                 });
             });
 
+            const bottom = document.createElement('div');
+            bottom.classList.add('bottom');
+
             const actions = document.createElement('div');
             actions.classList.add('actions');
-            
-            const revokeButton = document.createElement('div');
-            revokeButton.classList.add('button', 'warning', 'no-select');
-            revokeButton.innerText = 'Revoke';
 
-            const copyLinkButton = document.createElement('div');
-            copyLinkButton.classList.add('button', 'success', 'no-select', 'copy');
-            copyLinkButton.setAttribute('data-clipboard-text', data.link.short);
-            copyLinkButton.innerText = 'Copy Link';
+            const copyShort = document.createElement('div');
+            copyShort.classList.add('copy-short', 'clickable', 'copy');
+            copyShort.setAttribute('data-clipboard-text', data.link.short);
+            copyShort.innerText = 'Copy Link';
+
+            const dropdown = document.createElement('div');
+            dropdown.classList.add('dropdown', 'clickable');
+
+            const menu = document.createElement('div');
+            menu.classList.add('menu');
+
+            dropdown.addEventListener('click', (event) => {
+                menu.classList.toggle('opened');
+                event.stopPropagation();
+            });
+
+            const copyLong = document.createElement('div');
+            copyLong.classList.add('item', 'copy');
+            copyLong.setAttribute('data-clipboard-text', data.link.long);
+            copyLong.innerText = 'Copy long link';
+
+            const download = document.createElement('div');
+            download.classList.add('item');
+            download.innerText = 'Download';
+            download.addEventListener('click', (event) => {
+                document.location = data.link.short;
+            });
 
             info.append(qrcode, right);
-            right.append(details, actions);
+            right.append(details, bottom);
             details.append(size, longAlias, expiration);
             size.append(sizeLabel, sizeContent);
             longAlias.append(longAliasLabel, longAliasContent);
             expiration.append(expirationLabel, expirationContent);
-            actions.append(copyLinkButton);
+            bottom.append(actions);
+            actions.append(copyShort, dropdown, menu);
+            menu.append(copyLong, download);
 
             this.file.append(info);
         }
@@ -238,11 +260,6 @@ function documentReady() {
     });
 
     new ClipboardJS('.copy');
-
-    document.querySelector('.more').addEventListener('click', (event) => {
-        document.querySelector('.menu').classList.toggle('opened');
-        event.stopPropagation();
-    });
 
     document.addEventListener('click', (event) => {
         // if (event.target.classList.contains('item') || event.target.classList.contains('more')) return;

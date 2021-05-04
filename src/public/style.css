@@ -287,17 +287,17 @@ body.dragging > .files {
     white-space: nowrap;
 }
 
-.files > .file > .info > .right > .actions {
+.files > .file > .info > .right > .bottom {
     text-align: right;
 }
 
-.files > .file > .info > .right > .actions > .button {
+.files > .file > .info > .right > .bottom > .actions {
     position: relative;
     display: inline-flex;
     overflow: visible;
 }
 
-.files > .file > .info > .right > .actions > .button > .main {
+.files > .file > .info > .right > .bottom > .actions > .copy-short {
     padding: 4px 10px;
     font-size: 14px;
     font-weight: bold;
@@ -307,7 +307,7 @@ body.dragging > .files {
     transition: opacity 125ms;
 }
 
-.files > .file > .info > .right > .actions > .button > .more {
+.files > .file > .info > .right > .bottom > .actions > .dropdown {
     padding: 4px 12px;
     font-size: 14px;
     font-weight: bold;
@@ -321,7 +321,7 @@ body.dragging > .files {
     transition: opacity 125ms;
 }
 
-.files > .file > .info > .right > .actions > .button > .menu {
+.files > .file > .info > .right > .bottom > .actions > .menu {
     display: none;
     position: absolute;
     top: calc(100% + 2px);
@@ -334,12 +334,12 @@ body.dragging > .files {
     border-radius: 3px;
 }
 
-.files > .file > .info > .right > .actions > .button > .menu.opened {
+.files > .file > .info > .right > .bottom > .actions > .menu.opened {
     display: flex;
     flex-direction: column;
 }
 
-.files > .file > .info > .right > .actions > .button > .menu > .item {
+.files > .file > .info > .right > .bottom > .actions > .menu > .item {
     padding: 5px 12px;
     font-size: 13px;
     font-weight: bold;
@@ -347,11 +347,15 @@ body.dragging > .files {
     cursor: pointer;
 }
 
-.files > .file > .info > .right > .actions > .button > .menu > .item:hover {
+.files > .file > .info > .right > .bottom > .actions > .menu > .item:hover {
     background: #404040;
 }
 
-.files > .file > .info > .right > .actions > .button > .menu > .separator {
+.files > .file > .info > .right > .bottom > .actions > .menu > .item.destructive {
+color: #ffc61d;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .separator {
     height: 2px;
     /* margin: 2px 0; */
     background: #505050;
