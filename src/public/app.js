@@ -71,7 +71,7 @@ function documentReady() {
                 width: 128,
                 height: 128,
                 colorDark : '#131313',
-                colorLight : '#15b154',
+                colorLight : 'TEMPLATE_COLOR',
                 correctLevel : QRCode.CorrectLevel.L
             });
             qrcode.onclick = () => {
