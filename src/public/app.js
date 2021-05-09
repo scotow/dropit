@@ -28,7 +28,7 @@ function documentReady() {
 
         startUpload() {
             const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost:3001/', true);
+            req.open('POST', '/', true);
             req.setRequestHeader('X-Filename', this.fileRef.name);
             req.setRequestHeader('Content-Type', this.fileRef.type);
             req.responseType = 'json';
