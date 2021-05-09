@@ -1,16 +1,13 @@
 @import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro);
 
-.no-select {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    user-select: none;
-}
-
 html {
     font-size: 0;
     font-family: 'Source Sans Pro', sans-serif;
     color: white;
     background: #131313;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
 }
 
 body {
@@ -102,7 +99,7 @@ body.dragging > .files {
 
 .form-files {
     position: fixed;
-    display: inline-block;
+    display: none;
     margin: 12px 0 0 8px;
     padding: 4px 12px 4px 28px;
     font-size: 14px;
@@ -110,13 +107,12 @@ body.dragging > .files {
     background: #15b154;
     border: 1px solid #15b154;
     border-radius: 3px;
-    opacity: 0;
     cursor: pointer;
     transition: opacity 125ms;
 }
 
 .form-files.visible {
-    opacity: 1;
+    display: inline-block;
 }
 
 .form-files:hover {
@@ -261,7 +257,6 @@ body.dragging > .files {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    /* overflow: hidden; */
 }
 
 .files > .file > .info > .right > .details {
@@ -324,11 +319,10 @@ body.dragging > .files {
 .files > .file > .info > .right > .bottom > .actions > .menu {
     display: none;
     position: absolute;
-    top: calc(100% + 2px);
-    /* left: 88px; */
+    top: 100%;
     right: 0;
+    margin-top: 2px;
     text-align: left;
-    /* padding: 4px 0; */
     background: #303030;
     border: 1px solid #505050;
     border-radius: 3px;
@@ -352,26 +346,26 @@ body.dragging > .files {
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .item.destructive {
-color: #ffc61d;
+    color: #ffc61d;
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .separator {
     height: 2px;
-    /* margin: 2px 0; */
     background: #505050;
 }
-
-/* .files > .file > .info > .right > .actions > .button:nth-last-child(n+2) {
-    margin-right: 8px;
-} */
 
 .files > .file > .error-message {
     font-size: 22px;
 }
 
-.files > .file > .button.error {
+.files > .file > .remove {
     float: right;
-    margin-top: 8px;
+    width: 28px;
+    height: 28px;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHZpZXdCb3g9IjAgMCAxNzIgMTcyIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0iYnV0dCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBzdHJva2UtZGFzaGFycmF5PSIiIHN0cm9rZS1kYXNob2Zmc2V0PSIwIiBmb250LWZhbWlseT0ibm9uZSIgZm9udC13ZWlnaHQ9Im5vbmUiIGZvbnQtc2l6ZT0ibm9uZSIgdGV4dC1hbmNob3I9Im5vbmUiIHN0eWxlPSJtaXgtYmxlbmQtbW9kZTogbm9ybWFsIj48cGF0aCBkPSJNMCwxNzJ2LTE3MmgxNzJ2MTcyeiIgZmlsbD0ibm9uZSI+PC9wYXRoPjxnIGZpbGw9IiNmZmZmZmYiPjxwYXRoIGQ9Ik0xNDMuNzgxMjUsMTI5LjkzMDI5bC0xMy44NzY4LDEzLjg1MDk2Yy0yLjUzMjQ2LDIuNTU4MjkgLTYuNjY3MDcsMi41NTgyOSAtOS4yMjUzNiwwbC0zNC42NzkwOSwtMzQuNjUzMjRsLTM0LjY1MzI0LDM0LjY1MzI0Yy0yLjU1ODI5LDIuNTU4MjkgLTYuNzE4NzUsMi41NTgyOSAtOS4yNTEyMSwwbC0xMy44NzY4LC0xMy44NTA5NmMtMi41NTgyOSwtMi41NTgyOSAtMi41NTgyOSwtNi42OTI5MSAwLC05LjI1MTJsMzQuNjUzMjQsLTM0LjY3OTA5bC0zNC42NTMyNCwtMzQuNjUzMjRjLTIuNTMyNDUsLTIuNTg0MTMgLTIuNTMyNDUsLTYuNzQ0NTkgMCwtOS4yNTEyMWwxMy44NzY4LC0xMy44NzY4YzIuNTMyNDYsLTIuNTU4MjkgNi42OTI5MSwtMi41NTgyOSA5LjI1MTIxLDBsMzQuNjUzMjQsMzQuNjc5MDlsMzQuNjc5MDksLTM0LjY3OTA5YzIuNTU4MjksLTIuNTU4MjkgNi43MTg3NSwtMi41NTgyOSA5LjIyNTM2LDBsMTMuODc2OCwxMy44NTA5NmMyLjU1ODI5LDIuNTU4MjkgMi41NTgyOSw2LjcxODc1IDAuMDI1ODQsOS4yNzcwNGwtMzQuNjc5MDgsMzQuNjUzMjRsMzQuNjUzMjQsMzQuNjc5MDljMi41NTgyOSwyLjU1ODI5IDIuNTU4MjksNi42OTI5IDAsOS4yNTEyeiI+PC9wYXRoPjwvZz48L2c+PC9zdmc+);
+    background-size: 20px 20px;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .clickable {
@@ -386,19 +380,10 @@ color: #ffc61d;
     opacity: 0.8;
 }
 
-.button.success {
-    background: #15b154;
-    border: 1px solid #15b154;
-}
-
-.button.warning {
-    border: 1px solid #ffc61d;
-    color: #ffc61d;
-}
-
-.button.error {
-    border: 1px solid #ff5d24;
-    color: #ff5d24;
+.selectable {
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    user-select: auto;
 }
 
 @keyframes float {

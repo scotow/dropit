@@ -57,13 +57,13 @@ function documentReady() {
 
         uploadSucceeded(data) {
             this.link = document.createElement('div');
-            this.link.classList.add('link');
+            this.link.classList.add('link', 'selectable');
             this.link.innerText = data.link.short;
             this.progressBar.replaceWith(this.link);
 
             const info = document.createElement('div');
             info.classList.add('info');
-            
+
             const qrcode = document.createElement('div');
             qrcode.classList.add('qrcode', 'hidden');
             new QRCode(qrcode, {
@@ -113,7 +113,7 @@ function documentReady() {
             longAliasLabel.classList.add('label');
             longAliasLabel.innerText = 'Long alias';
             const longAliasContent = document.createElement('div');
-            longAliasContent.classList.add('content');
+            longAliasContent.classList.add('content', 'selectable');
             longAliasContent.innerText = data.alias.long;
             
             const expiration = document.createElement('div');
@@ -191,37 +191,41 @@ function documentReady() {
         }
 
         uploadFailed(data) {
+            const remove = document.createElement('div');
+            remove.classList.add('remove', 'clickable', 'no-select');
+            remove.addEventListener('click', () => {
+                this.file.remove();
+                fileListUpdated();
+            })
+
             const error = document.createElement('div');
             error.classList.add('error-message');
             error.innerText = data.error.toTitleCase();
-            this.progressBar.replaceWith(error);
 
-            const remove = document.createElement('div');
-            remove.classList.add('button', 'error', 'no-select');
-            remove.innerText = 'Remove';
-            remove.addEventListener('click', () => {
-                this.file.remove();
-                if (document.querySelector('.files').childElementCount === 0) {
-                    document.body.classList.remove('has-files');
-                    document.querySelector('.form-files').classList.remove('visible');
-                }
-            })
-            error.after(remove);
+            this.progressBar.remove();
+            this.file.append(remove, error);
         }
     }
 
     function uploadFiles(files) {
         for (const f of files) {
             if (!f.name) continue;
+            const file = new File(f);
+            file.appendToDocument();
+            file.startUpload();
+        }
+        fileListUpdated();
+    }
 
+    function fileListUpdated() {
+        if (document.querySelector('.files').childElementCount >= 1) {
             document.body.classList.add('has-files');
             setTimeout(() => {
                 document.querySelector('.form-files').classList.add('visible');
             }, 1000);
-
-            const file = new File(f);
-            file.appendToDocument();
-            file.startUpload();
+        } else {
+            document.body.classList.remove('has-files');
+            document.querySelector('.form-files').classList.remove('visible');
         }
     }
 
