@@ -88,22 +88,13 @@ fn router(
 
 #[tokio::main]
 async fn main() {
-    let Options {
-        uploads_dir,
-        address,
-        port,
-        behind_proxy,
-        thresholds,
-        ip_size_sum, ip_file_count,
-        global_size_sum,
-        color,
-    } = Options::from_args();
+    let options = Options::from_args();
 
     let limiters = LimiterChain::new(vec![
-        Box::new(IpLimiter::new(ip_size_sum, ip_file_count)),
-        Box::new(Global::new(global_size_sum)),
+        Box::new(IpLimiter::new(options.ip_size_sum, options.ip_file_count)),
+        Box::new(Global::new(options.global_size_sum)),
     ]);
-    let determiner = Determiner::new(thresholds).expect("invalid thresholds");
+    let determiner = Determiner::new(options.thresholds).expect("invalid thresholds");
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -115,26 +106,26 @@ async fn main() {
         ).await.unwrap();
     sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
 
-    if let Err(e) = File::open(&uploads_dir).await {
+    if let Err(e) = File::open(&options.uploads_dir).await {
         if e.kind() == ErrorKind::NotFound {
-            tokio::fs::create_dir_all(&uploads_dir).await.unwrap();
+            tokio::fs::create_dir_all(&options.uploads_dir).await.unwrap();
         }
     }
-    let cleaner = Cleaner::new(&uploads_dir, pool.clone());
+    let cleaner = Cleaner::new(&options.uploads_dir, pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;
     });
 
     let router = router(
-        uploads_dir,
-        RealIp::new(behind_proxy),
+        options.uploads_dir,
+        RealIp::new(options.behind_proxy),
         limiters,
         determiner,
         pool,
-        Assets::new(&color),
+        Assets::new(&options.color),
     );
 
-    let address = SocketAddr::new(address, port);
+    let address = SocketAddr::new(options.address, options.port);
     let service = RouterService::new(router).unwrap();
     let server = Server::bind(&address).serve(service);
 
