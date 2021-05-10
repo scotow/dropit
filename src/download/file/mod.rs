@@ -34,7 +34,7 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
                     .header(CONTENT_TYPE, "text/plain")
                     .body(err.to_string().into())
             }
-        }.unwrap() // How to remove this unwrap? Fallback to a generic 500.
+        }.unwrap()
     )
 }
 

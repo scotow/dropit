@@ -29,7 +29,7 @@ pub type UploadResult<T> = Result<T, UploadError>;
 
 #[allow(unused)]
 pub struct UploadRequest {
-    pub name: String,
+    pub name: Option<String>,
     pub size: u64,
     pub origin: IpAddr,
 }
@@ -97,11 +97,10 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
         }
     }
 
-    let UploadRequest { name, size, ..} = upload_req;
     Ok(
         UploadInfo::new(
-            name,
-            size,
+            upload_req.name.unwrap_or(long.clone()),
+            upload_req.size,
             (short, long),
             link_base,
             expiration
@@ -109,12 +108,14 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     )
 }
 
-fn parse_filename_header(headers: &HeaderMap) -> UploadResult<String> {
-    headers.get("X-Filename")
-        .ok_or(UploadError::FilenameHeader)?
-        .to_str()
-        .map(ToOwned::to_owned)
-        .map_err(|_| UploadError::FilenameHeader)
+fn parse_filename_header(headers: &HeaderMap) -> UploadResult<Option<String>> {
+    if let Some(header) = headers.get("X-Filename") {
+        header.to_str()
+            .map_err(|_| UploadError::FilenameHeader)
+            .map(|s| Some(s.to_owned()))
+    } else {
+        Ok(None)
+    }
 }
 
 fn parse_file_size(headers: &HeaderMap) -> UploadResult<u64> {

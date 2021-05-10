@@ -5,7 +5,7 @@ use serde::ser::SerializeStruct;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("missing or invalid filename header (X-Filename)")]
+    #[error("invalid filename header")]
     FilenameHeader,
     #[error("invalid content length")]
     ContentLength,
