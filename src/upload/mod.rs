@@ -23,7 +23,9 @@ use crate::storage::dir::Dir;
 use std::net::IpAddr;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
-use crate::upload::response::{UploadResponse, JsonResponse, PlainTextResponse};
+use crate::upload::response::{text_response, json_response};
+
+pub type UploadResult<T> = Result<T, UploadError>;
 
 #[allow(unused)]
 pub struct UploadRequest {
@@ -34,18 +36,16 @@ pub struct UploadRequest {
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
-    let resp: Box<dyn UploadResponse> = match (response_type.as_deref(), process_upload(req).await) {
-        (Some(b"text/plain"), Ok(info)) => Box::new(PlainTextResponse::from(info)),
-        (Some(b"text/plain"), Err(err)) => Box::new(PlainTextResponse::from(err)),
-        (Some(b"application/json"), Ok(info)) => Box::new(JsonResponse::from(info)),
-        (Some(b"application/json"), Err(err)) => Box::new(JsonResponse::from(err)),
-        (_, Ok(info)) => Box::new(JsonResponse::from(info)),
-        (_, Err(err)) => Box::new(JsonResponse::from(err)),
-    };
-    Ok(resp.response())
+    let upload_res = process_upload(req).await;
+    Ok(
+        match response_type.as_deref() {
+            Some(b"text/plain") => text_response(upload_res),
+            Some(b"application/json") | _ => json_response(upload_res),
+        }
+    )
 }
 
-async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
+async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
     let upload_req = UploadRequest {
         name: parse_filename_header(req.headers())?,
@@ -109,7 +109,7 @@ async fn process_upload(req: Request<Body>) -> Result<UploadInfo, UploadError> {
     )
 }
 
-fn parse_filename_header(headers: &HeaderMap) -> Result<String, UploadError> {
+fn parse_filename_header(headers: &HeaderMap) -> UploadResult<String> {
     headers.get("X-Filename")
         .ok_or(UploadError::FilenameHeader)?
         .to_str()
@@ -117,7 +117,7 @@ fn parse_filename_header(headers: &HeaderMap) -> Result<String, UploadError> {
         .map_err(|_| UploadError::FilenameHeader)
 }
 
-fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
+fn parse_file_size(headers: &HeaderMap) -> UploadResult<u64> {
     headers.get(header::CONTENT_LENGTH)
         .ok_or(UploadError::ContentLength)?
         .to_str()
@@ -126,7 +126,7 @@ fn parse_file_size(headers: &HeaderMap) -> Result<u64, UploadError> {
         .map_err(|_| UploadError::ContentLength)
 }
 
-async fn write_file(req: &UploadRequest, mut body: Body, mut file: File) -> Result<(), UploadError> {
+async fn write_file(req: &UploadRequest, mut body: Body, mut file: File) -> UploadResult<()> {
     let mut written = 0;
     while let Some(chunk) = body.next().await {
         let data = chunk.map_err(|_| UploadError::CopyFile)?;

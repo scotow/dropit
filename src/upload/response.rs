@@ -1,81 +1,31 @@
-use serde::Serialize;
-
 use crate::upload::file::UploadInfo;
-use crate::upload::error::{Error as UploadError};
 use hyper::{Body, Response, header, StatusCode};
+use crate::upload::UploadResult;
+use serde_json::Value;
 
-pub trait UploadResponse {
-    fn response(&self) -> Response<Body>;
+// application/json
+pub fn json_response(res: UploadResult<UploadInfo>) -> Response<Body> {
+    let (code, success, mut json) = match res {
+        Ok(info) => (StatusCode::CREATED, true, serde_json::to_value(info).unwrap()),
+        Err(err) => (err.status_code(), false, serde_json::to_value(err).unwrap()),
+    };
+    json.as_object_mut().unwrap().insert("success".to_owned(), Value::from(success));
+    build_response(code, "application/json", serde_json::to_vec(&json).unwrap())
 }
 
-#[derive(Serialize)]
-pub struct JsonResponse<T: Serialize> {
-    #[serde(skip)]
-    pub code: StatusCode,
-    pub success: bool,
-    #[serde(flatten)]
-    pub data: T,
+// text/plain
+pub fn text_response(res: UploadResult<UploadInfo>) -> Response<Body> {
+    let (code, text) = match res {
+        Ok(info) => (StatusCode::CREATED, info.link.short),
+        Err(err) => (err.status_code(), err.to_string()),
+    };
+    build_response(code, "text/plain", text)
 }
 
-impl<T: Serialize> UploadResponse for JsonResponse<T> {
-    fn response(&self) -> Response<Body> {
-        Response::builder()
-            .status(self.code)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(serde_json::to_string(self).unwrap()))
-            .unwrap()
-    }
-}
-
-impl From<UploadInfo> for JsonResponse<UploadInfo> {
-    fn from(info: UploadInfo) -> Self {
-        Self {
-            code: StatusCode::CREATED,
-            success: true,
-            data: info,
-        }
-    }
-}
-
-impl From<UploadError> for JsonResponse<UploadError> {
-    fn from(err: UploadError) -> Self {
-        Self {
-            code: err.status_code(),
-            success: false,
-            data: err,
-        }
-    }
-}
-
-pub struct PlainTextResponse {
-    pub code: StatusCode,
-    pub inner: String,
-}
-
-impl UploadResponse for PlainTextResponse {
-    fn response(&self) -> Response<Body> {
-        Response::builder()
-            .status(self.code)
-            .header(header::CONTENT_TYPE, "text/plain")
-            .body(Body::from(self.inner.clone()))
-            .unwrap()
-    }
-}
-
-impl From<UploadInfo> for PlainTextResponse {
-    fn from(info: UploadInfo) -> Self {
-        Self {
-            code: StatusCode::CREATED,
-            inner: info.link.short,
-        }
-    }
-}
-
-impl From<UploadError> for PlainTextResponse {
-    fn from(err: UploadError) -> Self {
-        Self {
-            code: err.status_code(),
-            inner: err.to_string(),
-        }
-    }
+fn build_response<T: Into<Body>>(code: StatusCode, content_type: &str, body: T) -> Response<Body> {
+    Response::builder()
+        .status(code)
+        .header(header::CONTENT_TYPE, content_type)
+        .body(body.into())
+        .unwrap()
 }
