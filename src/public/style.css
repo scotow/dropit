@@ -209,6 +209,8 @@ body.dragging > .files {
 .files > .file > .link {
     position: relative;
     font-size: 22px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .files > .file > .link::after {
