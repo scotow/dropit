@@ -100,14 +100,16 @@ body.dragging > .files {
 
 .form-files {
     position: fixed;
+    top: 12px;
+    left: 8px;
     display: none;
-    margin: 12px 0 0 8px;
     padding: 4px 12px 4px 28px;
     font-size: 14px;
     font-weight: bold;
     background: TEMPLATE_COLOR;
     border-radius: 3px;
     cursor: pointer;
+    z-index: 1;
     transition: opacity 125ms;
 }
 
@@ -145,6 +147,21 @@ body.dragging > .files {
     transform: translate(-50%, -50%);
 }
 
+@media only screen and (max-width: 768px) {
+    .form-files {
+        top: 18px;
+        left: 14px;
+        right: 14px;
+        padding: 8px 0;
+        text-align: center;
+        font-size: 22px;
+    }
+
+    .form-files::before, .form-files::after {
+        display: none;
+    }
+}
+
 .form-files > input {
     display: none;
 }
@@ -157,9 +174,15 @@ body.dragging > .files {
     width: 100%;
     max-width: 860px;
     margin: 0 auto;
-    padding: 200px 12px 0;
+    padding-top: 200px;
     box-sizing: border-box;
     transition: opacity 125ms;
+}
+
+@media only screen and (max-width: 768px) {
+    .files {
+        padding-top: 100px;
+    }
 }
 
 .files > .file {
@@ -179,7 +202,7 @@ body.dragging > .files {
 
 @media only screen and (max-width: 768px) {
     .files > .file {
-        flex: 1 0 auto;
+        flex: 1 0 55%;
     }
 }
 
@@ -259,6 +282,7 @@ body.dragging > .files {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    overflow: hidden;
 }
 
 .files > .file > .info > .right > .details {
@@ -326,7 +350,7 @@ body.dragging > .files {
     background: #303030;
     border: 1px solid #505050;
     border-radius: 3px;
-    z-index: 1;
+    z-index: 1000;
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu.opened {

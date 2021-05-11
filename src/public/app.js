@@ -10,23 +10,26 @@ function documentReady() {
             this.fileRef = fileRef;
         }
 
-        appendToDocument() {
+        buildBase(filename) {
             this.file = document.createElement('div');
             this.file.classList.add('file');
             
             const name = document.createElement('div');
             name.classList.add('name');
-            name.innerText = this.fileRef.name;
-            this.file.appendChild(name);
+            name.innerText = filename;
+            this.file.append(name);
 
-            this.progressBar = document.createElement('div');
-            this.progressBar.classList.add('progress-bar');
-            this.file.appendChild(this.progressBar);
-
-            document.querySelector('.files').appendChild(this.file);
+            document.querySelector('.files').append(this.file);
         }
 
         startUpload() {
+            const data = { uploaded: false };
+            files.add(data);
+
+            this.progressBar = document.createElement('div');
+            this.progressBar.classList.add('progress-bar');
+            this.file.append(this.progressBar);
+
             const req = new XMLHttpRequest();
             req.open('POST', '/', true);
             req.setRequestHeader('X-Filename', this.fileRef.name);
@@ -40,26 +43,35 @@ function documentReady() {
             };
             req.onload = (event) => {
                 if (req.status === 201) {
+                    data.uploaded = true;
+                    const resp = req.response; 
+                    for (const key in resp) {
+                        if (key === 'success') continue;
+                        data[key] = resp[key];
+                    }
+                    files.save();
+
                     setTimeout(() => {
-                        this.uploadSucceeded(req.response);
+                        this.buildDetails(data);
                     }, 1200);
                 } else {
                     this.file.classList.add('error');
                     this.progressBar.style.backgroundColor = '#ff5d24';
                     this.progressBar.style.width = '100%';
+
+                    this.files.remove(data);
                     setTimeout(() => {
-                        this.uploadFailed(req.response);
+                        this.buildError(req.response);
                     }, 1200);
                 }
             };
             req.send(this.fileRef);
         }
 
-        uploadSucceeded(data) {
-            this.link = document.createElement('div');
-            this.link.classList.add('link', 'selectable');
-            this.link.innerText = data.link.short;
-            this.progressBar.replaceWith(this.link);
+        buildDetails(data) {
+            const link = document.createElement('div');
+            link.classList.add('link', 'selectable');
+            link.innerText = data.link.short;
 
             const info = document.createElement('div');
             info.classList.add('info');
@@ -173,8 +185,22 @@ function documentReady() {
             const download = document.createElement('div');
             download.classList.add('item');
             download.innerText = 'Download';
-            download.addEventListener('click', (event) => {
+            download.addEventListener('click', () => {
                 document.location = data.link.short;
+            });
+
+            const separator = document.createElement('div');
+            separator.classList.add('separator');
+
+            const forget = document.createElement('div');
+            forget.classList.add('item');
+            forget.innerText = 'Forget';
+            forget.addEventListener('click', () => {
+                if (confirm('Forgetting the file will still count toward your quota. Confirm?')) {
+                    this.file.remove();
+                fileListUpdated();
+                files.remove(data);
+                }
             });
 
             info.append(qrcode, right);
@@ -185,12 +211,13 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
-            menu.append(copyLong, download);
+            menu.append(copyLong, download, separator, forget);
 
-            this.file.append(info);
+            if (this.progressBar) this.progressBar.remove();
+            this.file.append(link, info);
         }
 
-        uploadFailed(data) {
+        buildError(data) {
             const remove = document.createElement('div');
             remove.classList.add('remove', 'clickable', 'no-select');
             remove.addEventListener('click', () => {
@@ -202,8 +229,40 @@ function documentReady() {
             error.classList.add('error-message');
             error.innerText = data.error.toTitleCase();
 
-            this.progressBar.remove();
+            if (this.progressBar) this.progressBar.remove();
             this.file.append(remove, error);
+        }
+    }
+
+    class Files {
+        constructor() {
+            this.files = JSON.parse(localStorage.getItem('files') || '[]');
+            for (const data of this.files) {
+                const file = new File(null);
+                file.buildBase(data.name);
+                file.buildDetails(data);
+            }
+            fileListUpdated(true);
+        }
+
+        add(file) {
+            this.files.push(file);
+        }
+
+        remove(file) {
+            const index = this.files.indexOf(file);
+            if (index === -1) return;
+            this.files.splice(index, 1);
+            this.save();
+        }
+
+        save() {
+            localStorage.setItem('files', JSON.stringify(this.onlyValids()));
+        }
+
+        onlyValids() {
+            const now = (new Date()).getTime() / 1000;
+            return this.files.filter((f) => f.uploaded && f.expiration.date.timestamp > now);
         }
     }
 
@@ -211,18 +270,18 @@ function documentReady() {
         for (const f of files) {
             if (!f.name) continue;
             const file = new File(f);
-            file.appendToDocument();
+            file.buildBase(f.name);
             file.startUpload();
         }
-        fileListUpdated();
+        fileListUpdated(false);
     }
 
-    function fileListUpdated() {
+    function fileListUpdated(fast) {
         if (document.querySelector('.files').childElementCount >= 1) {
             document.body.classList.add('has-files');
             setTimeout(() => {
                 document.querySelector('.form-files').classList.add('visible');
-            }, 1000);
+            }, fast ? 0 : 1000);
         } else {
             document.body.classList.remove('has-files');
             document.querySelector('.form-files').classList.remove('visible');
@@ -263,13 +322,13 @@ function documentReady() {
         uploadFiles(files);
     });
 
-    new ClipboardJS('.copy');
-
     document.addEventListener('click', (event) => {
-        // if (event.target.classList.contains('item') || event.target.classList.contains('more')) return;
         const opened = document.querySelector('.menu.opened');
         if (opened) {
             opened.classList.remove('opened');
         }
     });
+
+    new ClipboardJS('.copy');
+    const files = new Files();
 }
