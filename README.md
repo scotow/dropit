@@ -25,13 +25,17 @@ USAGE:
     dropit [FLAGS] [OPTIONS] --global-size-sum <global-size-sum> --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
 
 FLAGS:
-    -R, --behind-reverse-proxy    
-    -h, --help                    Prints help information
-    -V, --version                 Prints version information
+    -R, --behind-reverse-proxy       
+    -h, --help                       Prints help information
+    -v, --verbose                    
+    -D, --no-database-creation       
+    -U, --no-uploads-dir-creation    
+    -V, --version                    Prints version information
 
 OPTIONS:
     -a, --address <address>                     [default: 127.0.0.1]
     -C, --color <color>                         [default: #15b154]
+    -d, --database <database>                   [default: database.db]
     -S, --global-size-sum <global-size-sum>    
     -c, --ip-file-count <ip-file-count>        
     -s, --ip-size-sum <ip-size-sum>            
@@ -61,6 +65,7 @@ dropit \
 - Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)
 - Creating (if needed) a directory named "uploads" (default) and storing uploaded files in it
+- Creating (if needed) the SQLite database "dropit.db" (default)
 
 ### Reverse-proxy
 

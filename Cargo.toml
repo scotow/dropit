@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.6.3"
+version = "0.7.0"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2018"
 
@@ -22,3 +22,5 @@ humantime = "2.1"
 async-trait = "0.1"
 thiserror = "1.0"
 structopt = "0.3"
+log = "0.4"
+env_logger = "0.8"

@@ -3,11 +3,20 @@ use structopt::StructOpt;
 use crate::upload::expiration::Threshold;
 use std::net::IpAddr;
 use byte_unit::{ByteError, Byte};
+use log::LevelFilter;
 
 #[derive(StructOpt, Debug)]
 pub struct Options {
+    #[structopt(short = "v", long = "verbose", parse(from_occurrences = parse_log_level))]
+    pub log_level: LevelFilter,
     #[structopt(short = "u", long, default_value = "uploads")]
     pub uploads_dir: PathBuf,
+    #[structopt(short = "U", long)]
+    pub no_uploads_dir_creation: bool,
+    #[structopt(short = "d", long, default_value = "dropit.db")]
+    pub database: PathBuf,
+    #[structopt(short = "D", long)]
+    pub no_database_creation: bool,
     #[structopt(short = "a", long, default_value = "127.0.0.1")]
     pub address: IpAddr,
     #[structopt(short = "p", long, default_value = "8080")]
@@ -28,4 +37,15 @@ pub struct Options {
 
 fn parse_size(s: &str) -> Result<u64, ByteError> {
     Ok(s.parse::<Byte>()?.get_bytes())
+}
+
+fn parse_log_level(n: u64) -> LevelFilter {
+    use LevelFilter::*;
+    match n {
+        0 => Error,
+        1 => Warn,
+        2 => Info,
+        3 => Debug,
+        _ => Trace,
+    }
 }

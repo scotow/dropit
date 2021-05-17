@@ -6,6 +6,7 @@ mod query;
 mod option;
 mod limit;
 mod asset;
+mod misc;
 
 use hyper::{Body, Request, Response, Server, StatusCode, header};
 use routerify::{Middleware, Router, RouterService, ext::RequestExt};
@@ -18,7 +19,7 @@ use crate::storage::clean::Cleaner;
 use crate::limit::ip::Ip as IpLimiter;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use crate::storage::dir::Dir;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use option::Options;
 use structopt::StructOpt;
 use crate::upload::expiration::Determiner;
@@ -26,9 +27,10 @@ use crate::upload::origin::RealIp;
 use crate::limit::Chain as LimiterChain;
 use crate::limit::global::Global;
 use crate::asset::Assets;
+use crate::misc::generic_500;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
-    println!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
+    log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
     Ok(req)
 }
 
@@ -38,24 +40,23 @@ async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>
 }
 
 async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let assets = req.data::<Assets>().unwrap();
-    Ok (
-        match assets.asset_for_path(req.uri().path()) {
-            Some((content, mime_type)) => {
-                Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, mime_type)
-                    .body(Body::from(content))
-                    .unwrap()
-            }
-            None => {
-                Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::empty())
-                    .unwrap()
-            }
+    let assets = match req.data::<Assets>() {
+        Some(assets) => assets,
+        None => return Ok(generic_500()),
+    };
+    match assets.asset_for_path(req.uri().path()) {
+        Some((content, mime_type)) => {
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, mime_type)
+                .body(Body::from(content))
         }
-    )
+        None => {
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::empty())
+        }
+    }.or_else(|_| Ok(generic_500()))
 }
 
 fn router(
@@ -83,34 +84,63 @@ fn router(
         .post("/", upload::handler)
         .post("/upload", upload::handler)
         .build()
-        .unwrap()
+        .unwrap_or_else(|_| exit_error!("Cannot create HTTP router"))
+}
+
+async fn create_uploads_dir(path: &Path, should_create: bool) {
+    match File::open(&path).await {
+        Ok(fd) => {
+            match fd.metadata().await {
+                Ok(md) => if !md.is_dir() {
+                    exit_error!("Uploads path is not a directory");
+                },
+                Err(_) => {
+                    exit_error!("Cannot fetch uploads dir metadata");
+                }
+            }
+        }
+        Err(err) => {
+            if err.kind() == ErrorKind::NotFound {
+                if should_create {
+                    if let Err(err) = tokio::fs::create_dir_all(&path).await {
+                        exit_error!("Cannot create uploads directory: {}", err);
+                    }
+                } else {
+                    exit_error!("Uploads directory not found");
+                }
+            } else {
+                exit_error!("Cannot open uploads directory");
+            }
+        }
+    }
 }
 
 #[tokio::main]
 async fn main() {
     let options = Options::from_args();
+    env_logger::Builder::new().filter_level(options.log_level).init();
 
     let limiters = LimiterChain::new(vec![
         Box::new(IpLimiter::new(options.ip_size_sum, options.ip_file_count)),
         Box::new(Global::new(options.global_size_sum)),
     ]);
-    let determiner = Determiner::new(options.thresholds).expect("invalid thresholds");
+    let determiner = Determiner::new(options.thresholds)
+        .unwrap_or_else(|| exit_error!("Invalid thresholds"));
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
             SqliteConnectOptions::new()
-                .filename("database.db")
-                .create_if_missing(true)
+                .filename(&options.database)
+                .create_if_missing(!options.no_database_creation)
                 .busy_timeout(Duration::from_secs(30))
-        ).await.unwrap();
-    sqlx::query(include_query!("migration")).execute(&pool).await.unwrap();
+        ).await
+        .unwrap_or_else(|e| exit_error!("Cannot create database pool: {}", e));
+    sqlx::query(include_query!("migration"))
+        .execute(&pool).await
+        .unwrap_or_else(|e| exit_error!("Cannot run migration query: {}", e));
 
-    if let Err(e) = File::open(&options.uploads_dir).await {
-        if e.kind() == ErrorKind::NotFound {
-            tokio::fs::create_dir_all(&options.uploads_dir).await.unwrap();
-        }
-    }
+    create_uploads_dir(&options.uploads_dir, !options.no_uploads_dir_creation).await;
     let cleaner = Cleaner::new(&options.uploads_dir, pool.clone());
     tokio::task::spawn(async move {
         cleaner.start().await;
@@ -126,11 +156,11 @@ async fn main() {
     );
 
     let address = SocketAddr::new(options.address, options.port);
-    let service = RouterService::new(router).unwrap();
-    let server = Server::bind(&address).serve(service);
+    let service = RouterService::new(router)
+        .unwrap_or_else(|e| exit_error!("Cannot create HTTP service: {}", e));
 
-    println!("App is running on: {}", address);
-    if let Err(err) = server.await {
-        eprintln!("Server error: {}", err);
-    }
+    log::info!("App is running on: {}", address);
+    Server::bind(&address)
+        .serve(service).await
+        .unwrap_or_else(|e| exit_error!("Server stopped: {}", e))
 }
