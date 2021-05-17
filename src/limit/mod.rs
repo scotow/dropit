@@ -22,7 +22,7 @@ impl Chain {
 impl Limiter for Chain {
     async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> Option<bool> {
         for l in self.0.iter() {
-            if l.accept(&req, conn).await? == false {
+            if !l.accept(&req, conn).await? {
                 return Some(false)
             }
         }

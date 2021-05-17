@@ -62,9 +62,8 @@ pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(Strin
             }
         }
 
-        match aliases {
-            (Some(short), Some(long)) => return Some((short, long)),
-            _ => (),
+        if let (Some(short), Some(long)) = aliases {
+            return Some((short, long))
         }
     }
     None

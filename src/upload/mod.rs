@@ -34,6 +34,7 @@ pub struct UploadRequest {
     pub origin: IpAddr,
 }
 
+#[allow(clippy::wildcard_in_or_patterns)]
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
     let upload_res = process_upload(req).await;
@@ -45,6 +46,7 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     )
 }
 
+#[allow(clippy::bool_comparison)]
 async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
     let upload_req = UploadRequest {
@@ -78,7 +80,7 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
         .bind(&upload_req.name)
-        .bind(*&upload_req.size as i64)
+        .bind(upload_req.size as i64)
         .bind(expiration.timestamp() as i64)
         .bind(&short)
         .bind(&long)
@@ -99,7 +101,7 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
 
     Ok(
         UploadInfo::new(
-            upload_req.name.unwrap_or(long.clone()),
+            upload_req.name.unwrap_or_else(|| long.clone()),
             upload_req.size,
             (short, long),
             link_base,

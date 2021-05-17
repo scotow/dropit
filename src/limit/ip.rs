@@ -20,6 +20,7 @@ impl Ip {
 
 #[async_trait]
 impl Limiter for Ip {
+    #[allow(clippy::int_plus_one)]
     async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> Option<bool> {
         let (size, count) = sqlx::query_as::<_, (i64, i64)>(include_query!("get_limit_origin"))
             .bind(req.origin.to_string())
