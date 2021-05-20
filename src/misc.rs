@@ -1,4 +1,4 @@
-use hyper::{Response, Body, StatusCode};
+use hyper::{Body, Response, StatusCode};
 
 #[macro_export]
 macro_rules! exit_error {

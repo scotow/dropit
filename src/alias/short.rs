@@ -1,8 +1,9 @@
+use std::str;
+
 use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
-use std::str;
 
 lazy_static! {
     static ref CHARS: &'static[u8; 55] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";

@@ -1,3 +1,27 @@
+use std::{convert::Infallible, net::SocketAddr};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use hyper::{Body, header, Request, Response, Server, StatusCode};
+use routerify::{ext::RequestExt, Middleware, Router, RouterService};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::SqlitePool;
+use structopt::StructOpt;
+use tokio::fs::File;
+use tokio::io::ErrorKind;
+
+use option::Options;
+
+use crate::asset::Assets;
+use crate::limit::Chain as LimiterChain;
+use crate::limit::global::Global;
+use crate::limit::ip::Ip as IpLimiter;
+use crate::misc::generic_500;
+use crate::storage::clean::Cleaner;
+use crate::storage::dir::Dir;
+use crate::upload::expiration::Determiner;
+use crate::upload::origin::RealIp;
+
 mod alias;
 mod download;
 mod upload;
@@ -7,27 +31,6 @@ mod option;
 mod limit;
 mod asset;
 mod misc;
-
-use hyper::{Body, Request, Response, Server, StatusCode, header};
-use routerify::{Middleware, Router, RouterService, ext::RequestExt};
-use std::{convert::Infallible, net::SocketAddr};
-use tokio::fs::File;
-use tokio::io::ErrorKind;
-use sqlx::SqlitePool;
-use std::time::Duration;
-use crate::storage::clean::Cleaner;
-use crate::limit::ip::Ip as IpLimiter;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use crate::storage::dir::Dir;
-use std::path::{PathBuf, Path};
-use option::Options;
-use structopt::StructOpt;
-use crate::upload::expiration::Determiner;
-use crate::upload::origin::RealIp;
-use crate::limit::Chain as LimiterChain;
-use crate::limit::global::Global;
-use crate::asset::Assets;
-use crate::misc::generic_500;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());

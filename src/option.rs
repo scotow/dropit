@@ -1,9 +1,11 @@
-use std::path::PathBuf;
-use structopt::StructOpt;
-use crate::upload::expiration::Threshold;
 use std::net::IpAddr;
-use byte_unit::{ByteError, Byte};
+use std::path::PathBuf;
+
+use byte_unit::{Byte, ByteError};
 use log::LevelFilter;
+use structopt::StructOpt;
+
+use crate::upload::expiration::Threshold;
 
 #[derive(StructOpt, Debug)]
 pub struct Options {

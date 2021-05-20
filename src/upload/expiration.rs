@@ -1,6 +1,7 @@
-use std::time::Duration;
-use std::str::FromStr;
 use std::convert::TryInto;
+use std::str::FromStr;
+use std::time::Duration;
+
 use byte_unit::Byte;
 
 #[derive(Clone, Debug)]
@@ -48,8 +49,9 @@ impl Determiner {
 
 #[cfg(test)]
 mod tests {
-    use crate::upload::expiration::{Threshold, Determiner};
     use std::time::Duration;
+
+    use crate::upload::expiration::{Determiner, Threshold};
 
     #[test]
     fn determiner() {

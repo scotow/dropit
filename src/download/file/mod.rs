@@ -1,14 +1,23 @@
-use hyper::{Request, Body, Response, StatusCode};
 use std::convert::Infallible;
+
+use hyper::{
+    Body,
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    Request,
+    Response,
+    StatusCode
+};
 use routerify::ext::RequestExt;
-use crate::alias::Alias;
-use sqlx::SqlitePool;
-use crate::include_query;
+use sqlx::{
+    FromRow,
+    SqlitePool
+};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
-use hyper::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
-use sqlx::FromRow;
+
+use crate::alias::Alias;
 use crate::download::error::Error as DownloadError;
+use crate::include_query;
 use crate::storage::dir::Dir;
 
 #[derive(FromRow)]

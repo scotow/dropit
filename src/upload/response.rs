@@ -1,7 +1,8 @@
-use crate::upload::file::UploadInfo;
-use hyper::{Body, Response, header, StatusCode};
-use crate::upload::UploadResult;
+use hyper::{Body, header, Response, StatusCode};
 use serde_json::Value;
+
+use crate::upload::file::UploadInfo;
+use crate::upload::UploadResult;
 
 // application/json
 pub fn json_response(res: UploadResult<UploadInfo>) -> Response<Body> {

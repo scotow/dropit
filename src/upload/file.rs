@@ -1,9 +1,11 @@
-use serde::Serialize;
-use byte_unit::Byte;
 use std::convert::TryFrom;
-use std::time::{Duration, UNIX_EPOCH, SystemTime};
-use crate::upload::error::Error as UploadError;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use byte_unit::Byte;
 use humantime::{format_duration, format_rfc3339_seconds};
+use serde::Serialize;
+
+use crate::upload::error::Error as UploadError;
 
 #[derive(Serialize)]
 pub struct UploadInfo {

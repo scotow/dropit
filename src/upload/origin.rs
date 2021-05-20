@@ -1,6 +1,7 @@
-use hyper::{Request, Body, HeaderMap};
-use hyper::http::HeaderValue;
 use std::net::IpAddr;
+
+use hyper::{Body, HeaderMap, Request};
+use hyper::http::HeaderValue;
 use routerify::ext::RequestExt;
 
 pub struct RealIp(bool);

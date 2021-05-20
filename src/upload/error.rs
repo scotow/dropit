@@ -1,7 +1,7 @@
-use thiserror::Error;
 use hyper::StatusCode;
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {

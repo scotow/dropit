@@ -1,7 +1,9 @@
-use sqlx::SqlitePool;
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
-use crate::include_query;
 use std::path::PathBuf;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use sqlx::SqlitePool;
+
+use crate::include_query;
 
 pub struct Cleaner {
     dir: PathBuf,
