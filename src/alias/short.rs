@@ -41,8 +41,8 @@ mod tests {
         [
             "AAAAA",
             "AAAAAAA",
-            "iAAAAAA",
-            "0AAAAAA"
+            "iAAAAA",
+            "0AAAAA"
         ]
             .iter()
             .for_each(|a| assert!(!super::REGEX.is_match(a)));
