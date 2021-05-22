@@ -5,7 +5,8 @@ use byte_unit::Byte;
 use humantime::{format_duration, format_rfc3339_seconds};
 use serde::Serialize;
 
-use crate::upload::error::Error as UploadError;
+use crate::error::Error;
+use crate::error::upload as UploadError;
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -74,7 +75,7 @@ impl Expiration {
 }
 
 impl TryFrom<Duration> for Expiration {
-    type Error = UploadError;
+    type Error = Error;
 
     fn try_from(duration: Duration) -> Result<Self, Self::Error> {
         Ok(
@@ -108,7 +109,7 @@ pub struct ExpirationDate {
 }
 
 impl TryFrom<Duration> for ExpirationDate {
-    type Error = UploadError;
+    type Error = Error;
 
     fn try_from(duration: Duration) -> Result<Self, Self::Error> {
         let expiration = SystemTime::now() + duration;

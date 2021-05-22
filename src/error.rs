@@ -31,6 +31,14 @@ pub enum Error {
     CopyFile,
     #[error("not matching file size")]
     SizeMismatch,
+    #[error("cannot extract alias")]
+    AliasExtract,
+    #[error("invalid alias format")]
+    InvalidAlias,
+    #[error("cannot find file")]
+    FileNotFound,
+    #[error("cannot open file")]
+    OpenFile,
 }
 
 impl Error {
@@ -50,6 +58,10 @@ impl Error {
             CreateFile => StatusCode::INTERNAL_SERVER_ERROR,
             CopyFile => StatusCode::INTERNAL_SERVER_ERROR,
             SizeMismatch => StatusCode::BAD_REQUEST,
+            AliasExtract => StatusCode::INTERNAL_SERVER_ERROR,
+            InvalidAlias => StatusCode::BAD_REQUEST,
+            FileNotFound => StatusCode::NOT_FOUND,
+            OpenFile => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -61,4 +73,32 @@ impl Serialize for Error {
         state.serialize_field("error", &self.to_string())?;
         state.end()
     }
+}
+
+pub mod upload {
+    pub use super::Error::{
+        AliasGeneration,
+        ContentLength,
+        CopyFile,
+        CreateFile,
+        Database,
+        FilenameHeader,
+        Origin,
+        QuotaAccess,
+        QuotaExceeded,
+        SizeMismatch,
+        Target,
+        TimeCalculation,
+        TooLarge,
+    };
+}
+
+pub mod download {
+    pub use super::Error::{
+        AliasExtract,
+        Database,
+        FileNotFound,
+        InvalidAlias,
+        OpenFile,
+    };
 }

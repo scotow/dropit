@@ -25,6 +25,8 @@ use crate::upload::origin::RealIp;
 mod alias;
 mod download;
 mod upload;
+mod update;
+mod error;
 mod storage;
 mod query;
 mod option;

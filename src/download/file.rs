@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use hyper::{
     Body,
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
@@ -12,11 +10,13 @@ use sqlx::{
     FromRow,
     SqlitePool
 };
+use std::convert::Infallible;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
 use crate::alias::Alias;
-use crate::download::error::Error as DownloadError;
+use crate::error::download as DownloadError;
+use crate::error::Error;
 use crate::include_query;
 use crate::storage::dir::Dir;
 
@@ -47,7 +47,7 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     )
 }
 
-async fn process_download(req: Request<Body>) -> Result<(FileInfo, File), DownloadError> {
+async fn process_download(req: Request<Body>) -> Result<(FileInfo, File), Error> {
     let alias = req.param("alias")
         .ok_or(DownloadError::AliasExtract)?
         .parse::<Alias>()

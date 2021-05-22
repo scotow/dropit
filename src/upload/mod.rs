@@ -11,11 +11,12 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::alias;
+use crate::error::Error;
+use crate::error::upload as UploadError;
 use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
 use crate::storage::dir::Dir;
-use crate::upload::error::Error as UploadError;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
 use crate::upload::origin::{RealIp, upload_base};
@@ -23,11 +24,10 @@ use crate::upload::response::{json_response, text_response};
 
 pub mod origin;
 pub mod expiration;
-pub mod error;
 pub mod file;
 pub mod response;
 
-pub type UploadResult<T> = Result<T, UploadError>;
+pub type UploadResult<T> = Result<T, Error>;
 
 #[allow(unused)]
 pub struct UploadRequest {
