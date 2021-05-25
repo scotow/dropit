@@ -1,6 +1,6 @@
 # Dropit
 
-🗃 Dropit is a temporary file hosting and sharing solution. 🗃
+🗃 Dropit is a temporary file hosting and sharing solution 🗃
 
 ## Features
 
@@ -8,6 +8,7 @@
 - Short and long alias generation, short to copy/past it and long to easily share it verbally
 - Configurable expiration based on file size
 - Quota determiner based on user IP
+- Revocable files
 - Json or plain text response (helpful for scripting)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
@@ -35,7 +36,7 @@ FLAGS:
 OPTIONS:
     -a, --address <address>                     [default: 127.0.0.1]
     -C, --color <color>                         [default: #15b154]
-    -d, --database <database>                   [default: database.db]
+    -d, --database <database>                   [default: dropit.db]
     -S, --global-size-sum <global-size-sum>    
     -c, --ip-file-count <ip-file-count>        
     -s, --ip-size-sum <ip-size-sum>            
@@ -88,13 +89,12 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 ## Foreseeable features
 
 - Archive download (zip/tar)
-- Revoke API / button
 - Alias regeneration
 - File refresh
 
 ## Libraries
 
-- `hyper` as a HTTP backend and `routerify` to help with the routing. Evaluating alternatives like `warp` in the future
+- `hyper` as an HTTP backend and `routerify` to help with the routing. Evaluating alternatives like `warp` in the future
 - `Sqlite` and `sqlx` as a metadata storage
 - `tokio` as an async runtime
 - `structopt` for options parsing and usage generation

@@ -28,16 +28,16 @@ impl Cleaner {
     async fn clean_expires(&self) {
         let mut conn = match self.pool.acquire().await {
             Ok(conn) => conn,
-            Err(_) => {
-                eprintln!("[CLEAN] cannot acquire connection");
+            Err(err) => {
+                log::error!("Cannot acquire database connection: {:?}", err);
                 return;
             }
         };
 
         let now_timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(timestamp) => timestamp.as_secs() as i64,
-            Err(_) => {
-                eprintln!("[CLEAN] cannot generate timestamp");
+            Err(err) => {
+                log::error!("Cannot generate timestamp: {}", err);
                 return;
             }
         };
@@ -46,22 +46,22 @@ impl Cleaner {
             .bind(now_timestamp)
             .fetch_all(&mut conn).await {
             Ok(files) => files,
-            Err(_) => {
-                eprintln!("[CLEAN] cannot fetch expired files");
+            Err(err) => {
+                log::error!("Cannot fetch expired files: {:?}", err);
                 return;
             }
         };
 
         if !files.is_empty() {
             for (id,) in files {
-                if tokio::fs::remove_file(self.dir.join(&id)).await.is_err() {
-                    eprintln!("[CLEAN] cannot remove file with id {}", id);
+                if let Err(err) = tokio::fs::remove_file(self.dir.join(&id)).await {
+                    log::error!("Cannot remove file with id from file system {}: {}", id, err);
                     continue;
                 }
-                if sqlx::query(include_query!("delete_file"))
+                if let Err(err) = sqlx::query(include_query!("delete_file"))
                     .bind(&id)
-                    .execute(&mut conn).await.is_err() {
-                    eprintln!("[CLEAN] cannot remove file with id {} from database", id);
+                    .execute(&mut conn).await {
+                    log::error!("Cannot remove file with id {} from database: {:?}", id, err);
                 }
             }
         }

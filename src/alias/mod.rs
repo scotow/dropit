@@ -48,7 +48,6 @@ pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(Strin
     let mut aliases = (None, None);
     for _ in 0..GENERATION_MAX_TENTATIVES {
         // Short alias.
-
         if aliases.0.is_none() {
             let alias = short::random()?;
             if alias_is_unused(&alias, include_query!("exist_alias_short"), conn).await? {

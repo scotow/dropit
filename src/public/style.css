@@ -174,14 +174,14 @@ body.dragging > .files {
     width: 100%;
     max-width: 860px;
     margin: 0 auto;
-    padding-top: 200px;
+    padding: 200px 0 80px;
     box-sizing: border-box;
     transition: opacity 125ms;
 }
 
 @media only screen and (max-width: 768px) {
     .files {
-        padding-top: 100px;
+        padding: 100px 0 0;
     }
 }
 

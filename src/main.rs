@@ -88,6 +88,7 @@ fn router(
         .get("/:alias", download::file::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)
+        .delete("/:alias", update::revoke::handler)
         .build()
         .unwrap_or_else(|_| exit_error!("Cannot create HTTP router"))
 }

@@ -16,6 +16,7 @@ use crate::error::upload as UploadError;
 use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
+use crate::misc::generic_500;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
@@ -40,17 +41,16 @@ pub struct UploadRequest {
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
     let upload_res = process_upload(req).await;
-    Ok(
-        match response_type.as_deref() {
-            Some(b"text/plain") => text_response(upload_res),
-            Some(b"application/json") | _ => json_response(upload_res),
-        }
-    )
+    match response_type.as_deref() {
+        Some(b"text/plain") => text_response(upload_res),
+        Some(b"application/json") | _ => json_response(upload_res),
+    }.or_else(|_| Ok(generic_500()))
 }
 
 #[allow(clippy::bool_comparison)]
 async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     let id = Uuid::new_v4().to_hyphenated_ref().to_string();
+    let admin = Uuid::new_v4().to_hyphenated_ref().to_string();
     let upload_req = UploadRequest {
         name: parse_filename_header(req.headers())?,
         size: parse_file_size(req.headers())?,
@@ -81,17 +81,18 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
+        .bind(&admin)
+        .bind(upload_req.origin.to_string())
+        .bind(expiration.timestamp() as i64)
         .bind(&upload_req.name)
         .bind(upload_req.size as i64)
-        .bind(expiration.timestamp() as i64)
         .bind(&short)
         .bind(&long)
-        .bind(upload_req.origin.to_string())
         .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
     drop(conn);
 
     // Copy body to file system.
-    let path = req.data::<Dir>().ok_or(UploadError::CreateFile)?.file_path(&id);
+    let path = req.data::<Dir>().ok_or(UploadError::PathResolve)?.file_path(&id);
     let file = File::create(&path).await.map_err(|_| UploadError::CreateFile)?;
     match write_file(&upload_req, req.into_body(), file).await {
         Ok(_) => (),
@@ -103,11 +104,12 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
 
     Ok(
         UploadInfo::new(
+            admin,
             upload_req.name.unwrap_or_else(|| long.clone()),
             upload_req.size,
             (short, long),
             link_base,
-            expiration
+            expiration,
         )
     )
 }
@@ -154,13 +156,13 @@ async fn write_file(req: &UploadRequest, mut body: Body, mut file: File) -> Uplo
 }
 
 async fn clean_failed_upload(file_path: &Path, id: &str, pool: &SqlitePool) {
-    if tokio::fs::remove_file(file_path).await.is_err() {
-        eprintln!("[UPLOAD] cannot remove file with id {}, file will retain quota", id);
+    if let Err(err) = tokio::fs::remove_file(file_path).await {
+        log::error!("Cannot remove file with id {} from file system, file will retain quota: {}", id, err);
         return;
     }
-    if sqlx::query(include_query!("delete_file"))
+    if let Err(err) = sqlx::query(include_query!("delete_file"))
         .bind(&id)
-        .execute(pool).await.is_err() {
-        eprintln!("[UPLOAD] cannot remove file with id {} from database", id);
+        .execute(pool).await {
+        log::error!("Cannot remove file with id {} from database: {:?}", id, err);
     }
 }

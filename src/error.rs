@@ -1,6 +1,7 @@
 use hyper::StatusCode;
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
+use serde_json::json;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -35,10 +36,20 @@ pub enum Error {
     AliasExtract,
     #[error("invalid alias format")]
     InvalidAlias,
+    #[error("cannot resolve file path")]
+    PathResolve,
     #[error("cannot find file")]
     FileNotFound,
     #[error("cannot open file")]
     OpenFile,
+    #[error("cannot remove file")]
+    RemoveFile,
+    #[error("file was partially removed")]
+    PartialRemove,
+    #[error("missing or invalid authorization header")]
+    InvalidAuthorizationHeader,
+    #[error("mismatching admin token")]
+    InvalidAdminToken,
 }
 
 impl Error {
@@ -61,8 +72,20 @@ impl Error {
             AliasExtract => StatusCode::INTERNAL_SERVER_ERROR,
             InvalidAlias => StatusCode::BAD_REQUEST,
             FileNotFound => StatusCode::NOT_FOUND,
+            PathResolve => StatusCode::INTERNAL_SERVER_ERROR,
             OpenFile => StatusCode::INTERNAL_SERVER_ERROR,
+            RemoveFile => StatusCode::INTERNAL_SERVER_ERROR,
+            PartialRemove => StatusCode::INTERNAL_SERVER_ERROR,
+            InvalidAuthorizationHeader => StatusCode::UNAUTHORIZED,
+            InvalidAdminToken => StatusCode::FORBIDDEN,
         }
+    }
+
+    pub fn json_string(&self) -> String {
+        json!({
+            "success": false,
+            "error": self.to_string(),
+        }).to_string()
     }
 }
 
@@ -84,6 +107,7 @@ pub mod upload {
         Database,
         FilenameHeader,
         Origin,
+        PathResolve,
         QuotaAccess,
         QuotaExceeded,
         SizeMismatch,
@@ -100,5 +124,20 @@ pub mod download {
         FileNotFound,
         InvalidAlias,
         OpenFile,
+        PathResolve,
+    };
+}
+
+pub mod revoke {
+    pub use super::Error::{
+        AliasExtract,
+        Database,
+        FileNotFound,
+        InvalidAdminToken,
+        InvalidAlias,
+        InvalidAuthorizationHeader,
+        PartialRemove,
+        PathResolve,
+        RemoveFile,
     };
 }

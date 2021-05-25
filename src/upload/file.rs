@@ -10,6 +10,7 @@ use crate::error::upload as UploadError;
 
 #[derive(Serialize)]
 pub struct UploadInfo {
+    pub(super) admin: String,
     pub(super) name: String,
     pub(super) size: Size,
     pub(super) alias: Aliases,
@@ -18,8 +19,9 @@ pub struct UploadInfo {
 }
 
 impl UploadInfo {
-    pub fn new(name: String, size: u64, alias: (String, String), link_base: String, expiration: Expiration) -> Self {
+    pub fn new(admin: String, name: String, size: u64, alias: (String, String), link_base: String, expiration: Expiration) -> Self {
         Self {
+            admin,
             name,
             size: Size::from(size),
             alias: Aliases {

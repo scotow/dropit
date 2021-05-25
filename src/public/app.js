@@ -59,7 +59,7 @@ function documentReady() {
                     this.progressBar.style.backgroundColor = '#ff5d24';
                     this.progressBar.style.width = '100%';
 
-                    this.files.remove(data);
+                    files.remove(data);
                     setTimeout(() => {
                         this.buildError(req.response);
                     }, 1200);
@@ -196,10 +196,32 @@ function documentReady() {
             forget.classList.add('item');
             forget.innerText = 'Forget';
             forget.addEventListener('click', () => {
-                if (confirm('Forgetting the file will still count toward your quota. Confirm?')) {
+                if (confirm('Forgetting this file will still count toward your quota. Confirm?')) {
                     this.file.remove();
-                fileListUpdated();
-                files.remove(data);
+                    fileListUpdated();
+                    files.remove(data);
+                }
+            });
+
+            const revoke = document.createElement('div');
+            revoke.classList.add('item');
+            revoke.innerText = 'Revoke';
+            revoke.addEventListener('click', () => {
+                if (confirm('Revoking this file will make all people with a link unable to access it. Confirm?')) {
+                    const req = new XMLHttpRequest();
+                    req.open('DELETE', `/${data.alias.short}`, true);
+                    req.setRequestHeader('Authorization', data.admin);
+                    req.responseType = 'json';
+                    req.onload = (event) => {
+                        if (req.status === 200) {
+                            this.file.remove();
+                            fileListUpdated();
+                            files.remove(data);
+                        } else {
+                            alert(`An error occured while trying to revoke this file: ${req.response.error}.`);
+                        }
+                    };
+                    req.send();
                 }
             });
 
@@ -211,7 +233,7 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
-            menu.append(copyLong, download, separator, forget);
+            menu.append(copyLong, download, separator, forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
             this.file.append(link, info);
