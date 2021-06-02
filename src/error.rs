@@ -50,6 +50,8 @@ pub enum Error {
     InvalidAuthorizationHeader,
     #[error("mismatching admin token")]
     InvalidAdminToken,
+    #[error("an unexpected error happen while update file metadata")]
+    UnexpectedFileModification,
 }
 
 impl Error {
@@ -78,6 +80,7 @@ impl Error {
             PartialRemove => StatusCode::INTERNAL_SERVER_ERROR,
             InvalidAuthorizationHeader => StatusCode::UNAUTHORIZED,
             InvalidAdminToken => StatusCode::FORBIDDEN,
+            UnexpectedFileModification => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -128,7 +131,7 @@ pub mod download {
     };
 }
 
-pub mod revoke {
+pub mod admin {
     pub use super::Error::{
         AliasExtract,
         Database,
@@ -136,8 +139,21 @@ pub mod revoke {
         InvalidAdminToken,
         InvalidAlias,
         InvalidAuthorizationHeader,
+    };
+}
+
+pub mod revoke {
+    pub use super::Error::{
         PartialRemove,
         PathResolve,
         RemoveFile,
+    };
+}
+
+pub mod alias {
+    pub use super::Error::{
+        AliasGeneration,
+        Database,
+        UnexpectedFileModification,
     };
 }
