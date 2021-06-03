@@ -17,7 +17,7 @@ use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
 use crate::misc::generic_500;
-use crate::misc::upload_base;
+use crate::misc::request_target;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
@@ -72,7 +72,7 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     // Aliases and links.
     let (short, long) = alias::random_unused_aliases(&mut conn).await
         .ok_or(UploadError::AliasGeneration)?;
-    let link_base = upload_base(req.headers()).ok_or(UploadError::Target)?;
+    let link_base = request_target(req.headers()).ok_or(UploadError::Target)?;
 
     // Expiration.
     let determiner = req.data::<Determiner>().ok_or(UploadError::TimeCalculation)?;

@@ -35,6 +35,7 @@ fn host(headers: &HeaderMap<HeaderValue>) -> Option<String> {
     }
 }
 
-pub fn upload_base(headers: &HeaderMap<HeaderValue>) -> Option<String> {
+// Return the origin target of the request, e.g. https://example.com
+pub fn request_target(headers: &HeaderMap<HeaderValue>) -> Option<String> {
     Some(format!("{}://{}", protocol(headers)?, host(headers)?))
 }

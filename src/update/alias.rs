@@ -6,7 +6,7 @@ use serde_json::json;
 use crate::{alias, include_query};
 use crate::error::alias as AliasError;
 use crate::error::Error;
-use crate::misc::{generic_500, upload_base};
+use crate::misc::{generic_500, request_target};
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     match process_new_aliases(req).await {
@@ -52,6 +52,6 @@ pub async fn process_new_aliases(req: Request<Body>) -> Result<(String, String, 
         return Err(AliasError::UnexpectedFileModification);
     }
 
-    let base = upload_base(req.headers()).ok_or(AliasError::Target)?;
+    let base = request_target(req.headers()).ok_or(AliasError::Target)?;
     Ok((base, short, long))
 }
