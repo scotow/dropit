@@ -1,7 +1,6 @@
 use std::net::IpAddr;
 
-use hyper::{Body, HeaderMap, Request};
-use hyper::http::HeaderValue;
+use hyper::{Body, Request};
 use routerify::ext::RequestExt;
 
 pub struct RealIp(bool);
@@ -18,26 +17,4 @@ impl RealIp {
             Some(req.remote_addr().ip())
         }
     }
-}
-
-fn protocol(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    if let Some(header) = headers.get("X-Forwarded-Proto") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else {
-        Some("http".to_owned())
-    }
-}
-
-fn host(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    if let Some(header) = headers.get("X-Forwarded-Host") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else if let Some(header) = headers.get("Host") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else {
-        None
-    }
-}
-
-pub fn upload_base(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    Some(format!("{}://{}", protocol(headers)?, host(headers)?))
 }

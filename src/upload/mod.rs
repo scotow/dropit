@@ -17,10 +17,11 @@ use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
 use crate::misc::generic_500;
+use crate::misc::upload_base;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
-use crate::upload::origin::{RealIp, upload_base};
+use crate::upload::origin::RealIp;
 use crate::upload::response::{json_response, text_response};
 
 pub mod origin;

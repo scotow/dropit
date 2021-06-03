@@ -154,6 +154,7 @@ pub mod alias {
     pub use super::Error::{
         AliasGeneration,
         Database,
+        Target,
         UnexpectedFileModification,
     };
 }

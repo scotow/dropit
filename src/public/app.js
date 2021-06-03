@@ -76,9 +76,9 @@ function documentReady() {
             const info = document.createElement('div');
             info.classList.add('info');
 
-            const qrcode = document.createElement('div');
-            qrcode.classList.add('qrcode', 'hidden');
-            new QRCode(qrcode, {
+            const qrcodeWrapper = document.createElement('div');
+            qrcodeWrapper.classList.add('qrcode', 'hidden');
+            const qrcode = new QRCode(qrcodeWrapper, {
                 text: data.link.short,
                 width: 128,
                 height: 128,
@@ -86,8 +86,8 @@ function documentReady() {
                 colorLight : 'TEMPLATE_COLOR',
                 correctLevel : QRCode.CorrectLevel.L
             });
-            qrcode.onclick = () => {
-                qrcode.classList.toggle('hidden');
+            qrcodeWrapper.onclick = () => {
+                qrcodeWrapper.classList.toggle('hidden');
             };
 
             const right = document.createElement('div');
@@ -177,11 +177,6 @@ function documentReady() {
                 event.stopPropagation();
             });
 
-            const copyLong = document.createElement('div');
-            copyLong.classList.add('item', 'copy');
-            copyLong.setAttribute('data-clipboard-text', data.link.long);
-            copyLong.innerText = 'Copy long link';
-
             const download = document.createElement('div');
             download.classList.add('item');
             download.innerText = 'Download';
@@ -191,6 +186,39 @@ function documentReady() {
 
             const separator = document.createElement('div');
             separator.classList.add('separator');
+
+            const copyLong = document.createElement('div');
+            copyLong.classList.add('item', 'copy');
+            copyLong.setAttribute('data-clipboard-text', data.link.long);
+            copyLong.innerText = 'Copy long link';
+
+            const newAliases = document.createElement('div');
+            newAliases.classList.add('item');
+            newAliases.innerText = 'Generate new aliases';        
+            newAliases.addEventListener('click', () => {
+                if (confirm('Generating new aliases will make all people with a current link unable to access it. Confirm?')) {
+                    const req = new XMLHttpRequest();
+                    req.open('PATCH', `/${data.alias.short}/aliases`, true);
+                    req.setRequestHeader('Authorization', data.admin);
+                    req.responseType = 'json';
+                    req.onload = (event) => {
+                        if (req.status === 200) {
+                            data.alias = req.response.alias;
+                            data.link = req.response.link;
+                            files.save();
+
+                            link.innerText = data.link.short;
+                            longAliasContent.innerText = data.alias.long;
+                            copyShort.setAttribute('data-clipboard-text', data.link.short);
+                            copyLong.setAttribute('data-clipboard-text', data.link.long);
+                            qrcode.makeCode(data.link.short);
+                        } else {
+                            alert(`An error occured while trying to generate new aliases: ${req.response.error}.`);
+                        }
+                    };
+                    req.send();
+                }
+            }); 
 
             const forget = document.createElement('div');
             forget.classList.add('item');
@@ -225,7 +253,7 @@ function documentReady() {
                 }
             });
 
-            info.append(qrcode, right);
+            info.append(qrcodeWrapper, right);
             right.append(details, bottom);
             details.append(size, longAlias, expiration);
             size.append(sizeLabel, sizeContent);
@@ -233,7 +261,7 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
-            menu.append(copyLong, download, separator, forget, revoke);
+            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
             this.file.append(link, info);
@@ -259,7 +287,7 @@ function documentReady() {
     class Files {
         constructor() {
             this.files = JSON.parse(localStorage.getItem('files') || '[]');
-            for (const data of this.files) {
+            for (const data of this.onlyValids(this.files)) {
                 const file = new File(null);
                 file.buildBase(data.name);
                 file.buildDetails(data);

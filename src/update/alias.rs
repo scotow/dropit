@@ -6,18 +6,24 @@ use serde_json::json;
 use crate::{alias, include_query};
 use crate::error::alias as AliasError;
 use crate::error::Error;
-use crate::misc::generic_500;
+use crate::misc::{generic_500, upload_base};
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     match process_new_aliases(req).await {
-        Ok((short, long)) => {
+        Ok((base, short, long)) => {
             Response::builder()
                 .status(StatusCode::OK)
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(json!({
                     "success": true,
-                    "short": short,
-                    "long": long,
+                    "alias": {
+                        "short": &short,
+                        "long": &long,
+                    },
+                    "link": {
+                        "short": format!("{}/{}", base, &short),
+                        "long": format!("{}/{}", base, &long),
+                    },
                 }).to_string()))
         },
         Err(err) => {
@@ -29,7 +35,7 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     }.or_else(|_| Ok(generic_500()))
 }
 
-pub async fn process_new_aliases(req: Request<Body>) -> Result<(String, String), Error> {
+pub async fn process_new_aliases(req: Request<Body>) -> Result<(String, String, String), Error> {
     let (id, mut conn) = super::authorize(&req).await?;
     let (short, long) = alias::random_unused_aliases(&mut conn).await
         .ok_or(AliasError::AliasGeneration)?;
@@ -46,5 +52,6 @@ pub async fn process_new_aliases(req: Request<Body>) -> Result<(String, String),
         return Err(AliasError::UnexpectedFileModification);
     }
 
-    Ok((short, long))
+    let base = upload_base(req.headers()).ok_or(AliasError::Target)?;
+    Ok((base, short, long))
 }
