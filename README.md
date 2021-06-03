@@ -4,17 +4,19 @@
 
 ## Features
 
-- Upload files from the terminal (by using `curl` for example)
+- Upload files from the terminal (by using `curl` or the [shell script](https://github.com/scotow/dropit/blob/master/upload.sh))
 - Short and long alias generation, short to copy/past it and long to easily share it verbally
 - Configurable expiration based on file size
 - Quota determiner based on user IP
 - Revocable files
-- Json or plain text response (helpful for scripting)
+- Alias regeneration
+- JSON or plain text response (helpful for scripting)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
     - QRCode generation
     - Upload progress bar
     - Readable size, duration and expiration
+    - Cache uploads links
     - Customizable color
   
 ## Configuration
@@ -88,9 +90,9 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 
 ## Foreseeable features
 
+- Downloads limit
+- Expiration refresh
 - Archive download (zip/tar)
-- Alias regeneration
-- File refresh
 
 ## Libraries
 
