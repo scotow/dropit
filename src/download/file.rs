@@ -8,28 +8,19 @@ use hyper::{
     StatusCode
 };
 use routerify::ext::RequestExt;
-use sqlx::{
-    FromRow,
-    SqlitePool
-};
+use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
 use crate::alias::Alias;
+use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
 use crate::include_query;
 use crate::misc::generic_500;
 use crate::storage::dir::Dir;
 
-#[derive(FromRow)]
-struct FileInfo {
-    id: String,
-    name: String,
-    size: i64,
-}
-
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     match process_download(req).await {
         Ok((info, fd)) => {
             Response::builder()
@@ -56,8 +47,7 @@ async fn process_download(req: Request<Body>) -> Result<(FileInfo, File), Error>
     let mut conn = req.data::<SqlitePool>().ok_or(DownloadError::Database)?
         .acquire().await.map_err(|_| DownloadError::Database)?;
     let info = sqlx::query_as::<_, FileInfo>(include_query!("get_file"))
-        .bind(alias.inner())
-        .bind(alias.inner())
+        .bind(alias.inner()).bind(alias.inner())
         .fetch_optional(&mut conn).await.map_err(|_| DownloadError::Database)?
         .ok_or(DownloadError::FileNotFound)?;
 

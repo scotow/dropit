@@ -85,7 +85,7 @@ fn router(
         .get("/index.html", asset_handler)
         .get("/style.css", asset_handler)
         .get("/app.js", asset_handler)
-        .get("/:alias", download::file::handler)
+        .get("/:alias", download::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)
         .delete("/:alias", update::revoke::handler)
