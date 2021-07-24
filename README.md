@@ -10,6 +10,7 @@
 - Quota determiner based on user IP
 - Revocable files
 - Alias regeneration
+- Archive download
 - JSON or plain text response (helpful for scripting)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
@@ -92,7 +93,6 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 
 - Downloads limit
 - Expiration refresh
-- Archive download (zip/tar)
 
 ## Libraries
 

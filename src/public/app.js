@@ -287,16 +287,18 @@ function documentReady() {
     class Files {
         constructor() {
             this.files = JSON.parse(localStorage.getItem('files') || '[]');
-            for (const data of this.onlyValids(this.files)) {
+            for (const data of this.valids()) {
                 const file = new File(null);
                 file.buildBase(data.name);
                 file.buildDetails(data);
             }
+            this.updateArchiveButton(this.files);
             fileListUpdated(true);
         }
 
         add(file) {
             this.files.push(file);
+            this.save();
         }
 
         remove(file) {
@@ -307,12 +309,18 @@ function documentReady() {
         }
 
         save() {
-            localStorage.setItem('files', JSON.stringify(this.onlyValids()));
+            const valids = this.valids();
+            localStorage.setItem('files', JSON.stringify(valids));
+            this.updateArchiveButton(valids);
         }
 
-        onlyValids() {
+        valids() {
             const now = (new Date()).getTime() / 1000;
             return this.files.filter((f) => f.uploaded && f.expiration.date.timestamp > now);
+        }
+
+        updateArchiveButton(files) {
+            document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${files.map(f => f.alias.short).join('+')}`);
         }
     }
 
@@ -327,7 +335,8 @@ function documentReady() {
     }
 
     function fileListUpdated(fast) {
-        if (document.querySelector('.files').childElementCount >= 1) {
+        const fileCount = document.querySelector('.files').childElementCount;
+        if (fileCount >= 1) {
             document.body.classList.add('has-files');
             setTimeout(() => {
                 document.querySelector('.form-files').classList.add('visible');
@@ -335,6 +344,14 @@ function documentReady() {
         } else {
             document.body.classList.remove('has-files');
             document.querySelector('.form-files').classList.remove('visible');
+            document.querySelector('.archive-link').classList.remove('visible');
+        }
+        if (fileCount >= 2) {
+            setTimeout(() => {
+                document.querySelector('.archive-link').classList.add('visible');
+            }, fast ? 0 : 1000);
+        } else {
+            document.querySelector('.archive-link').classList.remove('visible');
         }
     }
 
