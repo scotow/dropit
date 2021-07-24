@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::Infallible;
 
 use async_tar::{Builder, Header, HeaderMode};
@@ -66,12 +67,21 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
 
     let (w, r) = duplex(64000);
     tokio::spawn(async move {
+        let mut name_occurrences = HashMap::new();
         let mut ar = Builder::new(w.compat());
         ar.mode(HeaderMode::Deterministic);
 
-        for info in info {
+        for info in info.iter() {
+            let occurrence = name_occurrences.entry(&info.name).or_insert(0u16);
+            *occurrence += 1;
+            let name = if *occurrence == 1 {
+                info.name.clone()
+            } else {
+                format!("{}-{}", info.name, occurrence)
+            };
+
             let mut header = Header::new_gnu();
-            header.set_path(info.name).unwrap();
+            header.set_path(name).unwrap();
             header.set_mode(0o644);
             header.set_size(info.size as u64);
             header.set_cksum();
