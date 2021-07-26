@@ -17,7 +17,7 @@ pub fn json_response(res: UploadResult<UploadInfo>) -> HttpResult<Response<Body>
 // text/plain
 pub fn text_response(res: UploadResult<UploadInfo>) -> HttpResult<Response<Body>> {
     let (code, text) = match res {
-        Ok(info) => (StatusCode::CREATED, info.link.short),
+        Ok(info) => (StatusCode::CREATED, info.short_link()),
         Err(err) => (err.status_code(), err.to_string()),
     };
     build_response(code, "text/plain", text)

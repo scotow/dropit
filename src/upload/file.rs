@@ -10,12 +10,12 @@ use crate::error::upload as UploadError;
 
 #[derive(Serialize)]
 pub struct UploadInfo {
-    pub(super) admin: String,
-    pub(super) name: String,
-    pub(super) size: Size,
-    pub(super) alias: Aliases,
-    pub(super) link: Links,
-    pub(super) expiration: Expiration,
+    admin: String,
+    name: String,
+    size: Size,
+    alias: Aliases,
+    link: Links,
+    expiration: Expiration,
 }
 
 impl UploadInfo {
@@ -35,12 +35,16 @@ impl UploadInfo {
             expiration
         }
     }
+
+    pub fn short_link(self) -> String {
+        self.link.short
+    }
 }
 
 #[derive(Serialize)]
 pub struct Size {
-    pub(super) bytes: u64,
-    pub(super) readable: String,
+    bytes: u64,
+    readable: String,
 }
 
 impl From<u64> for Size {
@@ -54,20 +58,20 @@ impl From<u64> for Size {
 
 #[derive(Serialize)]
 pub struct Aliases {
-    pub(super) short: String,
-    pub(super) long: String,
+    short: String,
+    long: String,
 }
 
 #[derive(Serialize)]
 pub struct Links {
-    pub(super) short: String,
-    pub(super) long: String,
+    short: String,
+    long: String,
 }
 
 #[derive(Serialize)]
 pub struct Expiration {
-    pub(super) duration: ExpirationDuration,
-    pub(super) date: ExpirationDate,
+    duration: ExpirationDuration,
+    date: ExpirationDate,
 }
 
 impl Expiration {

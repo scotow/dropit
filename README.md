@@ -9,6 +9,7 @@
 - Configurable expiration based on file size
 - Quota determiner based on user IP
 - Revocable files
+- Expiration refresh
 - Alias regeneration
 - Archive download
 - JSON or plain text response (helpful for scripting)
@@ -92,7 +93,6 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 ## Foreseeable features
 
 - Downloads limit
-- Expiration refresh
 
 ## Libraries
 

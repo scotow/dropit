@@ -35,8 +35,8 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     }.or_else(|_| Ok(generic_500()))
 }
 
-pub async fn process_new_aliases(req: Request<Body>) -> Result<(String, String, String), Error> {
-    let (id, mut conn) = super::authorize(&req).await?;
+async fn process_new_aliases(req: Request<Body>) -> Result<(String, String, String), Error> {
+    let (id, _size, mut conn) = super::authorize(&req).await?;
     let (short, long) = alias::random_unused_aliases(&mut conn).await
         .ok_or(AliasError::AliasGeneration)?;
 

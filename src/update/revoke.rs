@@ -27,8 +27,8 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     }.or_else(|_| Ok(generic_500()))
 }
 
-pub async fn process_revoke(req: Request<Body>) -> Result<(), Error> {
-    let (id, mut conn) = super::authorize(&req).await?;
+async fn process_revoke(req: Request<Body>) -> Result<(), Error> {
+    let (id, _size, mut conn) = super::authorize(&req).await?;
 
     tokio::fs::remove_file(
         req.data::<Dir>().ok_or(RevokeError::PathResolve)?.file_path(&id)

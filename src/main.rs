@@ -90,6 +90,7 @@ fn router(
         .post("/upload", upload::handler)
         .delete("/:alias", update::revoke::handler)
         .patch("/:alias/aliases", update::alias::handler)
+        .patch("/:alias/expiration", update::expiration::handler)
         .build()
         .unwrap_or_else(|_| exit_error!("Cannot create HTTP router"))
 }

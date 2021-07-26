@@ -10,8 +10,9 @@ use crate::include_query;
 
 pub mod revoke;
 pub mod alias;
+pub mod expiration;
 
-async fn authorize(req: &Request<Body>) -> Result<(String, PoolConnection<Sqlite>), Error> {
+async fn authorize(req: &Request<Body>) -> Result<(String, u64, PoolConnection<Sqlite>), Error> {
     let alias = req.param("alias")
         .ok_or(AdminError::AliasExtract)?
         .parse::<Alias>()
@@ -23,7 +24,7 @@ async fn authorize(req: &Request<Body>) -> Result<(String, PoolConnection<Sqlite
 
     let mut conn = req.data::<SqlitePool>().ok_or(AdminError::Database)?
         .acquire().await.map_err(|_| AdminError::Database)?;
-    let (id, admin) = sqlx::query_as::<_, (String, String)>(include_query!("get_file_admin"))
+    let (id, size, admin) = sqlx::query_as::<_, (String, i64, String)>(include_query!("get_file_admin"))
         .bind(alias.inner())
         .bind(alias.inner())
         .fetch_optional(&mut conn).await.map_err(|_| AdminError::Database)?
@@ -32,5 +33,5 @@ async fn authorize(req: &Request<Body>) -> Result<(String, PoolConnection<Sqlite
     if admin != auth.to_ascii_lowercase() {
         return Err(AdminError::InvalidAdminToken);
     }
-    Ok((id, conn))
+    Ok((id, size as u64, conn))
 }

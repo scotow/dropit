@@ -158,3 +158,11 @@ pub mod alias {
         UnexpectedFileModification,
     };
 }
+
+pub mod expiration {
+    pub use super::Error::{
+        Database,
+        TimeCalculation,
+        TooLarge,
+    };
+}

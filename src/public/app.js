@@ -137,22 +137,24 @@ function documentReady() {
             expirationContent.classList.add('content', 'clickable');
             expirationContent.innerText = data.expiration.duration.readable;
             let expirationFormat = 'duration';
+            function updateExpirationLabel() {
+                switch (expirationFormat) {
+                    case 'date':
+                        expirationLabel.innerText = 'Expiration'
+                        expirationContent.innerText = data.expiration.date.readable;
+                        break;
+                    case 'duration':
+                        expirationLabel.innerText = 'Duration'
+                        expirationContent.innerText = data.expiration.duration.readable;
+                        break;
+                }
+            }
             [expirationLabel, expirationContent].forEach((elem) => {
                 elem.title = 'Click to toggle between formats';
-                elem.addEventListener('click', () => {
-                    switch (expirationFormat) {
-                        case 'duration':
-                            expirationLabel.innerText = 'Expiration'
-                            expirationContent.innerText = data.expiration.date.readable;
-                            expirationFormat = 'date';
-                            break;
-                        case 'date':
-                            expirationLabel.innerText = 'Duration'
-                            expirationContent.innerText = data.expiration.duration.readable;
-                            expirationFormat = 'duration';
-                            break;
-                    }
-                });
+                elem.addEventListener('click', (event) => {
+                    expirationFormat = expirationFormat === 'date' ? 'duration' : 'date';
+                    updateExpirationLabel();
+                })
             });
 
             const bottom = document.createElement('div');
@@ -218,12 +220,35 @@ function documentReady() {
                     };
                     req.send();
                 }
-            }); 
+            });
+
+            const extend = document.createElement('div');
+            extend.classList.add('item');
+            extend.innerText = 'Extend';
+            extend.addEventListener('click', () => {
+                if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
+                    const req = new XMLHttpRequest();
+                    req.open('PATCH', `/${data.alias.short}/expiration`, true);
+                    req.setRequestHeader('Authorization', data.admin);
+                    req.responseType = 'json';
+                    req.onload = (event) => {
+                        if (req.status === 200) {
+                            delete req.response.success;
+                            data.expiration = req.response;
+                            files.save();
+                            updateExpirationLabel();
+                        } else {
+                            alert(`An error occured while trying to extend expiration: ${req.response.error}.`);
+                        }
+                    };
+                    req.send();
+                }
+            });
 
             const forget = document.createElement('div');
             forget.classList.add('item');
             forget.innerText = 'Forget';
-            forget.addEventListener('click', () => {
+            forget.addEventListener('click', (event) => {
                 if (confirm('Forgetting this file will still count toward your quota. Confirm?')) {
                     this.file.remove();
                     fileListUpdated();
@@ -261,7 +286,7 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
-            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, forget, revoke);
+            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, extend, forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
             this.file.append(link, info);
