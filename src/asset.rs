@@ -1,43 +1,83 @@
+use std::borrow::Cow;
+
+#[cfg(debug_assertions)]
 pub struct Assets {
-    html: &'static str,
-    css: &'static str,
-    js: &'static str,
+    color: String,
 }
 
+#[cfg(debug_assertions)]
 impl Assets {
-    pub fn new(color: &str) -> Self {
+    pub fn new(color: String) -> Self {
         Self {
-            html: include_str!("public/index.html"),
-            css: Box::leak(
+            color
+        }
+    }
+
+    async fn load_file(file: &str) -> String {
+        tokio::fs::read_to_string(format!("src/public/{}", file)).await.unwrap()
+    }
+
+    async fn html(&self) -> (Cow<'static, str>, &str) {
+        (Cow::from(Self::load_file("index.html").await), "text/html")
+    }
+
+    async fn css(&self) -> (Cow<'static, str>, &str) {
+        (
+            Cow::from(Self::load_file("style.css").await.replace("TEMPLATE_COLOR", &self.color)),
+            "text/css"
+        )
+    }
+
+    async fn js(&self) -> (Cow<'static, str>, &str) {
+        (
+            Cow::from(Self::load_file("app.js").await.replace("TEMPLATE_COLOR", &self.color)),
+            "application/javascript"
+        )
+    }
+}
+
+#[cfg(not(debug_assertions))]
+pub struct Assets {
+    html: Cow<'static, str>,
+    css: Cow<'static, str>,
+    js: Cow<'static, str>,
+}
+
+#[cfg(not(debug_assertions))]
+impl Assets {
+    pub fn new(color: String) -> Self {
+        Self {
+            html: Cow::from(include_str!("public/index.html")),
+            css: Cow::from(
                 include_str!("public/style.css")
-                    .replace("TEMPLATE_COLOR", color)
-                    .into_boxed_str()
+                    .replace("TEMPLATE_COLOR", &color)
             ),
-            js: Box::leak(
+            js: Cow::from(
                 include_str!("public/app.js")
-                    .replace("TEMPLATE_COLOR", color)
-                    .into_boxed_str()
+                    .replace("TEMPLATE_COLOR", &color)
             ),
         }
     }
 
-    fn html(&self) -> (&'static str, &str) {
-        (self.html, "text/html")
+    async fn html(&self) -> (Cow<'static, str>, &str) {
+        (self.html.clone(), "text/html")
     }
 
-    fn css(&self) -> (&'static str, &str) {
-        (self.css, "text/css")
+    async fn css(&self) -> (Cow<'static, str>, &str) {
+        (self.css.clone(), "text/css")
     }
 
-    fn js(&self) -> (&'static str, &str) {
-        (self.js, "application/javascript")
+    async fn js(&self) -> (Cow<'static, str>, &str) {
+        (self.js.clone(), "application/javascript")
     }
+}
 
-    pub fn asset_for_path(&self, path: &str) -> Option<(&'static str, &str)> {
+impl Assets {
+    pub async fn asset_for_path(&self, path: &str) -> Option<(Cow<'static, str>, &str)> {
         match path {
-            "/" | "/index.html" => Some(self.html()),
-            "/style.css" => Some(self.css()),
-            "/app.js" => Some(self.js()),
+            "/" | "/index.html" => Some(self.html().await),
+            "/style.css" => Some(self.css().await),
+            "/app.js" => Some(self.js().await),
             _ => None,
         }
     }

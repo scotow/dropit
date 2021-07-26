@@ -49,7 +49,7 @@ async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible>
         Some(assets) => assets,
         None => return Ok(generic_500()),
     };
-    match assets.asset_for_path(req.uri().path()) {
+    match assets.asset_for_path(req.uri().path()).await {
         Some((content, mime_type)) => {
             Response::builder()
                 .status(StatusCode::OK)
@@ -159,7 +159,7 @@ async fn main() {
         limiters,
         determiner,
         pool,
-        Assets::new(&options.color),
+        Assets::new(options.color),
     );
 
     let address = SocketAddr::new(options.address, options.port);
