@@ -65,7 +65,7 @@ pub fn format_duration(duration: Duration) -> String {
     }
 
     let mut parts = Vec::with_capacity(2);
-    for (unit, word) in IntoIterator::into_iter(UNITS) {
+    for &(unit, word) in UNITS.iter() {
         if secs >= unit {
             let n = secs / unit;
             parts.push(plural(n, word));
