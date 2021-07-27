@@ -4,7 +4,9 @@ use std::path::Path;
 
 use futures::StreamExt;
 use hyper::{Body, header, HeaderMap, Request, Response};
+use percent_encoding::percent_decode_str;
 use routerify::ext::RequestExt;
+use sanitize_filename::sanitize;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -117,9 +119,13 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
 
 fn parse_filename_header(headers: &HeaderMap) -> UploadResult<Option<String>> {
     if let Some(header) = headers.get("X-Filename") {
-        header.to_str()
-            .map_err(|_| UploadError::FilenameHeader)
-            .map(|s| Some(s.to_owned()))
+        Ok(Some(
+            sanitize(
+                percent_decode_str(
+                    std::str::from_utf8(header.as_bytes()).map_err(|_| UploadError::Database)?
+                ).decode_utf8().map_err(|_| UploadError::FilenameHeader)?
+            )
+        ))
     } else {
         Ok(None)
     }

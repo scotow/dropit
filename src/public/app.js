@@ -32,7 +32,7 @@ function documentReady() {
 
             const req = new XMLHttpRequest();
             req.open('POST', '/', true);
-            req.setRequestHeader('X-Filename', this.fileRef.name);
+            req.setRequestHeader('X-Filename', encodeURIComponent(this.fileRef.name));
             req.setRequestHeader('Content-Type', this.fileRef.type);
             req.responseType = 'json';
 

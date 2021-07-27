@@ -388,7 +388,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dropit"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "async-tar",
  "async-trait",
@@ -399,9 +399,11 @@ dependencies = [
  "hyper",
  "lazy_static",
  "log",
+ "percent-encoding",
  "rand",
  "regex",
  "routerify",
+ "sanitize-filename",
  "serde",
  "serde_json",
  "sqlx",
@@ -1253,6 +1255,16 @@ name = "ryu"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
+
+[[package]]
+name = "sanitize-filename"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf18934a12018228c5b55a6dae9df5d0641e3566b3630cb46cc55564068e7c2f"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
 
 [[package]]
 name = "schannel"

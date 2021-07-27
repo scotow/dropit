@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2018"
 
@@ -25,3 +25,5 @@ structopt = "0.3"
 log = "0.4"
 env_logger = "0.9"
 async-tar = "0.3"
+percent-encoding = "2.1"
+sanitize-filename = "0.3"
