@@ -2,11 +2,12 @@ use std::convert::TryFrom;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use byte_unit::Byte;
-use humantime::{format_duration, format_rfc3339_seconds};
+use humantime::format_rfc3339_seconds;
 use serde::Serialize;
 
 use crate::error::Error;
 use crate::error::upload as UploadError;
+use crate::misc::format_duration;
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -95,23 +96,23 @@ impl TryFrom<Duration> for Expiration {
 
 #[derive(Serialize)]
 pub struct ExpirationDuration {
-    pub(super) seconds: u64,
-    pub(super) readable: String,
+    pub seconds: u64,
+    pub readable: String,
 }
 
 impl From<Duration> for ExpirationDuration {
     fn from(duration: Duration) -> Self {
         Self {
             seconds: duration.as_secs(),
-            readable: format_duration(duration).to_string().replace(' ', ""),
+            readable: format_duration(duration),
         }
     }
 }
 
 #[derive(Serialize)]
 pub struct ExpirationDate {
-    pub(super) timestamp: u64,
-    pub(super) readable: String,
+    pub timestamp: u64,
+    pub readable: String,
 }
 
 impl TryFrom<Duration> for ExpirationDate {

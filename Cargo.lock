@@ -388,7 +388,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dropit"
-version = "0.11.1"
+version = "0.11.2"
 dependencies = [
  "async-tar",
  "async-trait",
