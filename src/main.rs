@@ -39,11 +39,6 @@ async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     Ok(req)
 }
 
-async fn remove_powered_header(mut res: Response<Body>) -> Result<Response<Body>, Infallible> {
-    res.headers_mut().remove("x-powered-by");
-    Ok(res)
-}
-
 async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let assets = match req.data::<Assets>() {
         Some(assets) => assets,
@@ -80,7 +75,6 @@ fn router(
         .data(pool)
         .data(assets)
         .middleware(Middleware::pre(logger))
-        .middleware(Middleware::post(remove_powered_header))
         .get("/", asset_handler)
         .get("/index.html", asset_handler)
         .get("/style.css", asset_handler)
