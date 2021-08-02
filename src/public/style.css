@@ -96,8 +96,9 @@ body.dragging > .files {
 
 .global-actions {
     position: fixed;
-    top: 12px;
-    left: 8px;
+    top: 4px;
+    left: 0;
+    padding: 8px;
     z-index: 1;
 }
 
@@ -130,10 +131,10 @@ body.dragging > .files {
 
 @media only screen and (max-width: 768px) {
     .global-actions {
-        top: 18px;
-        left: 14px;
-        right: 14px;
+        right: 0;
         display: flex;
+        padding: 14px;
+        background-color: #131313;
     }
 
     .global-actions > .action {
