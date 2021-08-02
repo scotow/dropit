@@ -104,6 +104,8 @@ body.dragging > .files {
 .global-actions > .action {
     position: relative;
     display: none;
+    justify-content: center;
+    align-items: center;
     padding: 4px 12px;
     background: TEMPLATE_COLOR;
     border-radius: 3px;
@@ -112,22 +114,18 @@ body.dragging > .files {
 
 .global-actions > .action::before {
     content: '';
-    display: inline-block;
     width: 14px;
     height: 14px;
     margin-right: 8px;
-    vertical-align: middle;
 }
 
 .global-actions > .action::after {
-    display: inline-block;
     font-size: 14px;
     font-weight: bold;
-    vertical-align: middle;
 }
 
 .global-actions > .action.visible {
-    display: inline-block;
+    display: inline-flex;
 }
 
 @media only screen and (max-width: 768px) {
@@ -347,6 +345,7 @@ body.dragging > .files {
 
 .files > .file > .info > .right > .bottom > .actions > .menu {
     display: none;
+    flex-direction: column;
     position: absolute;
     top: 100%;
     right: 0;
@@ -360,7 +359,6 @@ body.dragging > .files {
 
 .files > .file > .info > .right > .bottom > .actions > .menu.opened {
     display: flex;
-    flex-direction: column;
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .item {
