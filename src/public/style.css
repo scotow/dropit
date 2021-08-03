@@ -362,7 +362,7 @@ body.dragging > .files {
     display: flex;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .item {
+.files > .file > .info > .right > .bottom > .actions > .menu .item {
     padding: 5px 12px;
     font-size: 13px;
     font-weight: bold;
@@ -370,12 +370,43 @@ body.dragging > .files {
     cursor: pointer;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .item:hover {
+.files > .file > .info > .right > .bottom > .actions > .menu .item:hover {
     background: #404040;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .item.destructive {
+.files > .file > .info > .right > .bottom > .actions > .menu .item.destructive {
     color: #ffc61d;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu {
+    position: relative;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 9px;
+    height: 9px;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0gMTguMTM2NzE5IDMgQyAxNy44NzUgMy4wMDM5MDYgMTcuNjI4OTA2IDMuMTA1NDY5IDE3LjQ0MTQwNiAzLjI4OTA2MyBMIDExLjQxNzk2OSA5LjI2NTYyNSBDIDExLjAyNzM0NCA5LjY1NjI1IDExLjAyMzQzOCAxMC4yODkwNjMgMTEuNDEwMTU2IDEwLjY3OTY4OCBMIDI1LjY0NDUzMSAyNS4wMzEyNSBMIDExLjI5Njg3NSAzOS4yNjU2MjUgQyAxMC45MDIzNDQgMzkuNjU2MjUgMTAuODk4NDM4IDQwLjI4OTA2MyAxMS4yODkwNjMgNDAuNjc5Njg4IEwgMTcuMjY1NjI1IDQ2LjcwMzEyNSBDIDE3LjY1NjI1IDQ3LjA5NzY1NiAxOC4yODkwNjMgNDcuMTAxNTYzIDE4LjY3OTY4OCA0Ni43MTA5MzggTCAzOS43NjU2MjUgMjUuNzk2ODc1IEMgNDAuMTU2MjUgMjUuNDA2MjUgNDAuMTYwMTU2IDI0Ljc3MzQzOCAzOS43Njk1MzEgMjQuMzc4OTA2IEwgMTguODU5Mzc1IDMuMjk2ODc1IEMgMTguNjY3OTY5IDMuMTAxNTYzIDE4LjQwNjI1IDIuOTk2MDk0IDE4LjEzNjcxOSAzIFoiPjwvcGF0aD48L3N2Zz4=);
+    transform: translateY(-50%);
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu > .menu {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    text-align: left;
+    background: #303030;
+    border: 1px solid #505050;
+    border-radius: 0 3px 3px 3px;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu:hover > .menu {
+    display: flex;    
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .separator {

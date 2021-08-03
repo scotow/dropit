@@ -2,6 +2,10 @@ String.prototype.toTitleCase = function() {
     return this.charAt(0).toUpperCase() + this.substr(1);
 };
 
+String.prototype.plural = function(n) {
+    return n >= 2 ? `${this}s` : this;
+};
+
 document.addEventListener('DOMContentLoaded', documentReady, false);
 
 function documentReady() {
@@ -278,6 +282,23 @@ function documentReady() {
                 }
             });
 
+            const downloads = document.createElement('div');
+            downloads.classList.add('item', 'sub-menu');
+            downloads.innerText = 'Limit downloads';
+
+            const downloadsMenu = document.createElement('div');
+            downloadsMenu.classList.add('menu');
+
+            for (const n of [1, 3, 5, 10, 25, 100, null]) {
+                const count = document.createElement('div');
+                count.classList.add('item');
+                count.innerText = n ? `${n} ${'download'.plural(n)}` : 'Unlimited';
+                count.addEventListener('click', (event) => {
+                    alert(n);
+                });
+                downloadsMenu.append(count);
+            }
+
             info.append(qrcodeWrapper, right);
             right.append(details, bottom);
             details.append(size, longAlias, expiration);
@@ -286,7 +307,8 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
-            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, extend, forget, revoke);
+            downloads.append(downloadsMenu);
+            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, extend, downloads, separator.cloneNode(), forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
             this.file.append(link, info);
