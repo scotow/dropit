@@ -441,9 +441,9 @@ body.dragging > .files {
 }
 
 .selectable {
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    user-select: auto;
+    -webkit-user-select: all;
+    -moz-user-select: all;
+    user-select: all;
 }
 
 input[type=file] {
