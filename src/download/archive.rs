@@ -52,8 +52,8 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
 
     let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
 
-    let mut conn = req.data::<SqlitePool>().ok_or(DownloadError::Database)?
-        .acquire().await.map_err(|_| DownloadError::Database)?;
+    let pool = req.data::<SqlitePool>().ok_or(DownloadError::Database)?.clone();
+    let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
 
     let mut info = Vec::with_capacity(aliases.len());
     for alias in aliases {
@@ -88,6 +88,7 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
 
             let fd = File::open(dir.file_path(&info.id)).await.unwrap();
             ar.append(&mut header, fd.compat()).await.unwrap();
+            super::file_downloaded(&pool, &dir, &info.id).await;
         }
 
         ar.finish().await.unwrap();

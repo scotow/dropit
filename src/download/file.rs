@@ -85,33 +85,13 @@ impl FileStreamer {
         }
     }
 
-    fn downloaded(&self) {
+    fn downloaded(&mut self) {
+        self.decremented = true;
         let id = self.id.clone();
         let dir = self.dir.clone();
         let pool = self.pool.clone();
         tokio::spawn(async move {
-            let mut conn = pool.acquire().await.unwrap();
-            let downloads = sqlx::query_as::<_, (Option<u16>,)>(include_query!("get_file_downloads"))
-                .bind(&id)
-                .fetch_optional(&mut conn).await.unwrap()
-                .unwrap();
-            dbg!(downloads);
-            match downloads.0 {
-                None => (),
-                Some(0) => unreachable!("should not be possible"),
-                Some(1) => {
-                    tokio::fs::remove_file(dir.file_path(&id)).await.unwrap();
-                    sqlx::query(include_query!("delete_file"))
-                        .bind(&id)
-                        .execute(&mut conn).await.unwrap();
-                },
-                Some(count @ _) => {
-                    sqlx::query(include_query!("update_file_downloads"))
-                        .bind(count - 1)
-                        .bind(&id)
-                        .execute(&mut conn).await.unwrap();
-                }
-            }
+            super::file_downloaded(&pool, &dir, &id).await;
         });
     }
 }
@@ -125,7 +105,6 @@ impl Stream for FileStreamer {
             Poll::Ready(Some(Ok(data))) => {
                 self.streamed += data.len();
                 if !self.decremented && self.streamed * 100 / self.total >= 95 {
-                    self.decremented = true;
                     self.downloaded();
                 }
             },
