@@ -11,6 +11,7 @@ use crate::include_query;
 pub mod revoke;
 pub mod alias;
 pub mod expiration;
+pub mod downloads;
 
 async fn authorize(req: &Request<Body>) -> Result<(String, u64, PoolConnection<Sqlite>), Error> {
     let alias = req.param("alias")

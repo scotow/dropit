@@ -374,8 +374,12 @@ body.dragging > .files {
     background: #404040;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu .item.destructive {
+.files > .file > .info > .right > .bottom > .actions > .menu .item.warning {
     color: #ffc61d;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu .item.destructive {
+    color: #ff5d24;
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu {

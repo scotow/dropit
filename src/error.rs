@@ -50,8 +50,10 @@ pub enum Error {
     InvalidAuthorizationHeader,
     #[error("mismatching admin token")]
     InvalidAdminToken,
-    #[error("an unexpected error happen while update file metadata")]
+    #[error("an unexpected error happen while updating file metadata")]
     UnexpectedFileModification,
+    #[error("invalid downloads count")]
+    InvalidDownloadsCount,
 }
 
 impl Error {
@@ -81,6 +83,7 @@ impl Error {
             InvalidAuthorizationHeader => StatusCode::UNAUTHORIZED,
             InvalidAdminToken => StatusCode::FORBIDDEN,
             UnexpectedFileModification => StatusCode::INTERNAL_SERVER_ERROR,
+            InvalidDownloadsCount => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -165,4 +168,8 @@ pub mod expiration {
         TimeCalculation,
         TooLarge,
     };
+}
+
+pub mod downloads {
+    pub use super::Error::*;
 }

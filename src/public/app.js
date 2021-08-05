@@ -249,8 +249,35 @@ function documentReady() {
                 }
             });
 
+            const downloads = document.createElement('div');
+            downloads.classList.add('item', 'sub-menu');
+            downloads.innerText = 'Limit downloads';
+
+            const downloadsMenu = document.createElement('div');
+            downloadsMenu.classList.add('menu');
+
+            for (const n of [1, 3, 5, 10, 25, 100, 0]) {
+                const count = document.createElement('div');
+                count.classList.add('item');
+                count.innerText = n ? `${n} ${'download'.plural(n)}` : 'Unlimited';
+                count.addEventListener('click', () => {
+                    const req = new XMLHttpRequest();
+                    req.open('PATCH', `/${data.alias.short}/downloads/${n}`, true);
+                    req.setRequestHeader('Authorization', data.admin);
+                    req.responseType = 'json';
+                    req.onload = (event) => {
+                        if (req.status === 200) {
+                        } else {
+                            alert(`An error occured while trying to set downloads limit: ${req.response.error}.`);
+                        }
+                    };
+                    req.send();
+                });
+                downloadsMenu.append(count);
+            }
+
             const forget = document.createElement('div');
-            forget.classList.add('item');
+            forget.classList.add('item', 'warning');
             forget.innerText = 'Forget';
             forget.addEventListener('click', (event) => {
                 if (confirm('Forgetting this file will still count toward your quota. Confirm?')) {
@@ -261,7 +288,7 @@ function documentReady() {
             });
 
             const revoke = document.createElement('div');
-            revoke.classList.add('item');
+            revoke.classList.add('item', 'destructive');
             revoke.innerText = 'Revoke';
             revoke.addEventListener('click', () => {
                 if (confirm('Revoking this file will make all people with a link unable to access it. Confirm?')) {
@@ -281,23 +308,6 @@ function documentReady() {
                     req.send();
                 }
             });
-
-            const downloads = document.createElement('div');
-            downloads.classList.add('item', 'sub-menu');
-            downloads.innerText = 'Limit downloads';
-
-            const downloadsMenu = document.createElement('div');
-            downloadsMenu.classList.add('menu');
-
-            for (const n of [1, 3, 5, 10, 25, 100, null]) {
-                const count = document.createElement('div');
-                count.classList.add('item');
-                count.innerText = n ? `${n} ${'download'.plural(n)}` : 'Unlimited';
-                count.addEventListener('click', (event) => {
-                    alert(n);
-                });
-                downloadsMenu.append(count);
-            }
 
             info.append(qrcodeWrapper, right);
             right.append(details, bottom);
