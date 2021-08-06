@@ -45,24 +45,24 @@ pub async fn alias_is_unused(alias: &str, query: &str, conn: &mut SqliteConnecti
         .fetch_optional(conn).await.ok()?
         .is_none().into()
 }
-pub async fn random_unused_short(conn: &mut SqliteConnection) -> Option<String> {
+
+async fn random_unused<F>(conn: &mut SqliteConnection, generator: F, exist_query: &str) -> Option<String>
+where F: Fn() -> Option<String> {
     for _ in 0..GENERATION_MAX_TENTATIVES {
-        let alias = short::random()?;
-        if alias_is_unused(&alias, include_query!("exist_alias_short"), conn).await? {
+        let alias = generator()?;
+        if alias_is_unused(&alias, exist_query, conn).await? {
             return Some(alias);
         }
     }
     None
 }
 
+pub async fn random_unused_short(conn: &mut SqliteConnection) -> Option<String> {
+    random_unused(conn, short::random, include_query!("exist_alias_short")).await
+}
+
 pub async fn random_unused_long(conn: &mut SqliteConnection) -> Option<String> {
-    for _ in 0..GENERATION_MAX_TENTATIVES {
-        let alias = long::random()?;
-        if alias_is_unused(&alias, include_query!("exist_alias_long"), conn).await? {
-            return Some(alias);
-        }
-    }
-    None
+    random_unused(conn, long::random, include_query!("exist_alias_long")).await
 }
 
 pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(String, String)> {
