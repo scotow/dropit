@@ -12,6 +12,7 @@
 - Expiration refresh
 - Alias regeneration
 - Archive download
+- Downloads limit
 - JSON or plain text response (helpful for scripting)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
@@ -92,7 +93,7 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 
 ## Foreseeable features
 
-- Downloads limit
+*Currently empty. Opened for ideas.*
 
 ## Libraries
 

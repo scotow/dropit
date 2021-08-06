@@ -179,6 +179,12 @@ function documentReady() {
             menu.classList.add('menu');
 
             dropdown.addEventListener('click', (event) => {
+                if (!menu.classList.contains('opened')) {
+                    const opened = document.querySelector('.menu.opened');
+                    if (opened) {
+                        opened.classList.remove('opened');
+                    }
+                }
                 menu.classList.toggle('opened');
                 event.stopPropagation();
             });
