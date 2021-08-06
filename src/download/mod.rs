@@ -38,26 +38,32 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     }
 }
 
-async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) {
-    let mut conn = pool.acquire().await.unwrap();
+async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) -> Result<(), String> {
+    let mut conn = pool.acquire().await
+        .map_err(|err| format!("Cannot acquire database connect: {:?}", err))?;
     let (downloads,) = sqlx::query_as::<_, (Option<u16>,)>(include_query!("get_file_downloads"))
         .bind(id)
-        .fetch_optional(&mut conn).await.unwrap()
-        .unwrap();
+        .fetch_optional(&mut conn).await
+        .map_err(|err| format!("Cannot fetch downloads count: {:?}", err))?
+        .ok_or_else(|| "Cannot find file for downloads count decrement")?;
     match downloads {
         None => (),
-        Some(0) => unreachable!("should not be possible"),
+        Some(0) => Err(format!("Found a zero downloads counter file: {}", id))?,
         Some(1) => {
-            tokio::fs::remove_file(dir.file_path(id)).await.unwrap();
+            tokio::fs::remove_file(dir.file_path(id)).await
+                .map_err(|err| format!("Failed to delete decremented to zero file from fs {}: {:?}", id, err))?;
             sqlx::query(include_query!("delete_file"))
                 .bind(id)
-                .execute(&mut conn).await.unwrap();
+                .execute(&mut conn).await
+                .map_err(|err| format!("Failed to delete decremented to zero file from database {}: {:?}", id, err))?;
         },
         Some(count @ _) => {
             sqlx::query(include_query!("update_file_downloads"))
                 .bind(count - 1)
                 .bind(id)
-                .execute(&mut conn).await.unwrap();
+                .execute(&mut conn).await
+                .map_err(|err| format!("Failed to decremented file from database {}: {:?}", id, err))?;
         }
-    }
+    };
+    Ok(())
 }

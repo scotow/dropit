@@ -81,17 +81,44 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
             };
 
             let mut header = Header::new_gnu();
-            header.set_path(name).unwrap();
+            match header.set_path(name) {
+                Ok(_) => (),
+                Err(err) => {
+                    log::error!("Failed to write file path to archive: {}", err);
+                    break;
+                }
+            }
             header.set_mode(0o644);
             header.set_size(info.size as u64);
             header.set_cksum();
 
-            let fd = File::open(dir.file_path(&info.id)).await.unwrap();
-            ar.append(&mut header, fd.compat()).await.unwrap();
-            super::file_downloaded(&pool, &dir, &info.id).await;
+            let fd = match File::open(dir.file_path(&info.id)).await {
+                Ok(fd) => fd,
+                Err(err) => {
+                    log::error!("Failed to open file for archive streaming: {}", err);
+                    break;
+                }
+            };
+            match ar.append(&mut header, fd.compat()).await {
+                Ok(_) => (),
+                Err(err) => {
+                    log::error!("Failed to append file to archive: {}", err);
+                    break;
+                }
+            }
+            match super::file_downloaded(&pool, &dir, &info.id).await {
+                Ok(_) => (),
+                Err(err) => {
+                    log::error!("Failed to process file downloads counter update: {}", err);
+                    break;
+                },
+            }
         }
 
-        ar.finish().await.unwrap();
+        match ar.finish().await {
+            Ok(_) => (),
+            Err(err) => log::error!("Failed to write archive's completion data: {}", err),
+        }
     });
 
     Ok(r)

@@ -35,7 +35,7 @@ impl Cleaner {
         };
 
         let now_timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(timestamp) => timestamp.as_secs() as i64,
+            Ok(timestamp) => timestamp.as_secs(),
             Err(err) => {
                 log::error!("Cannot generate timestamp: {}", err);
                 return;
@@ -43,7 +43,7 @@ impl Cleaner {
         };
 
         let files = match sqlx::query_as::<_, (String,)>(include_query!("get_files_expired"))
-            .bind(now_timestamp)
+            .bind(now_timestamp as i64)
             .fetch_all(&mut conn).await {
             Ok(files) => files,
             Err(err) => {

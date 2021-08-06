@@ -91,7 +91,10 @@ impl FileStreamer {
         let dir = self.dir.clone();
         let pool = self.pool.clone();
         tokio::spawn(async move {
-            super::file_downloaded(&pool, &dir, &id).await;
+            match super::file_downloaded(&pool, &dir, &id).await {
+                Ok(_) => (),
+                Err(err) => log::error!("Failed to process file downloads counter update: {}", err),
+            }
         });
     }
 }

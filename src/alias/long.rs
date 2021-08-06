@@ -66,8 +66,7 @@ mod tests {
         for _ in 0..1000 {
             let alias = super::random();
             assert!(alias.is_some());
-            let alias = alias.unwrap();
-            assert!(super::REGEX.is_match(&alias));
+            assert!(super::REGEX.is_match(&alias.unwrap()));
             assert!(
                 super::random()
                     .map(|a| has_no_repetition(&a))

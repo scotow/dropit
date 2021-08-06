@@ -171,5 +171,8 @@ pub mod expiration {
 }
 
 pub mod downloads {
-    pub use super::Error::*;
+    pub use super::Error::{
+        InvalidDownloadsCount,
+        UnexpectedFileModification,
+    };
 }
