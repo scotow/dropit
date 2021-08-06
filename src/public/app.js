@@ -40,12 +40,21 @@ function documentReady() {
             req.setRequestHeader('Content-Type', this.fileRef.type);
             req.responseType = 'json';
 
+            this.progress = 0;
+            let showingProgress = false;
+            const showProgressTimeout = setTimeout(() => {
+                showingProgress = true;
+                this.updateProgressBar();
+            }, 500);
+            
             req.upload.onprogress = (event) => {
-                const progress = event.loaded / event.total;
-                this.progressBar.style.backgroundColor = `rgb(${(0x15 - 0xff) * progress + 0xff}, ${(0xb1 - 0xc6) * progress + 0xc6}, ${(0x54 - 0x1d) * progress + 0x1d})`;
-                this.progressBar.style.width = `${progress * 100}%`;
+                this.progress = event.loaded / event.total;
+                if (showingProgress) {
+                    this.updateProgressBar();
+                }
             };
             req.onload = (event) => {
+                clearTimeout(showProgressTimeout);
                 if (req.status === 201) {
                     data.uploaded = true;
                     const resp = req.response; 
@@ -55,21 +64,34 @@ function documentReady() {
                     }
                     files.save();
 
-                    setTimeout(() => {
+                    if (showingProgress) {
+                        setTimeout(() => {
+                            this.buildDetails(data);
+                        }, 550);
+                    } else {
                         this.buildDetails(data);
-                    }, 1200);
+                    }
                 } else {
                     this.file.classList.add('error');
                     this.progressBar.style.backgroundColor = '#ff5d24';
                     this.progressBar.style.width = '100%';
 
                     files.remove(data);
-                    setTimeout(() => {
+                    if (showingProgress) {
+                        setTimeout(() => {
+                            this.buildError(req.response);
+                        }, 550);
+                    } else {
                         this.buildError(req.response);
-                    }, 1200);
+                    }
                 }
             };
             req.send(this.fileRef);
+        }
+
+        updateProgressBar() {
+            this.progressBar.style.backgroundColor = `rgb(${(0x15 - 0xff) * this.progress + 0xff}, ${(0xb1 - 0xc6) * this.progress + 0xc6}, ${(0x54 - 0x1d) * this.progress + 0x1d})`;
+            this.progressBar.style.width = `${this.progress * 100}%`;
         }
 
         buildDetails(data) {

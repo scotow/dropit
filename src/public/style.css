@@ -230,7 +230,7 @@ body.dragging > .files {
     background: #ffc61d;
     box-sizing: content-box;
     border-radius: 4px;
-    transition: background-color linear 1s, width ease-out 1s;
+    transition: background-color linear 500ms, width ease-out 500ms;
 }
 
 .files > .file > .link {
