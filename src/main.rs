@@ -33,6 +33,7 @@ mod option;
 mod limit;
 mod asset;
 mod misc;
+pub mod response;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -83,7 +84,9 @@ fn router(
         .post("/", upload::handler)
         .post("/upload", upload::handler)
         .delete("/:alias", update::revoke::handler)
-        .patch("/:alias/aliases", update::alias::handler)
+        .patch("/:alias/aliases", update::alias::handler_both)
+        .patch("/:alias/aliases/short", update::alias::handler_short)
+        .patch("/:alias/aliases/long", update::alias::handler_long)
         .patch("/:alias/expiration", update::expiration::handler)
         .patch("/:alias/downloads/:count", update::downloads::handler)
         .build()

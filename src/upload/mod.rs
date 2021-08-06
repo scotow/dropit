@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::path::Path;
 
 use futures::StreamExt;
-use hyper::{Body, header, HeaderMap, Request, Response};
+use hyper::{Body, header, HeaderMap, Request, Response, StatusCode};
 use percent_encoding::percent_decode_str;
 use routerify::ext::RequestExt;
 use sanitize_filename::sanitize;
@@ -20,16 +20,15 @@ use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
 use crate::misc::generic_500;
 use crate::misc::request_target;
+use crate::response::{json_response, text_response};
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
 use crate::upload::origin::RealIp;
-use crate::upload::response::{json_response, text_response};
 
 pub mod origin;
 pub mod expiration;
 pub mod file;
-pub mod response;
 
 pub type UploadResult<T> = Result<T, Error>;
 
@@ -45,8 +44,8 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
     let upload_res = process_upload(req).await;
     match response_type.as_deref() {
-        Some(b"text/plain") => text_response(upload_res),
-        Some(b"application/json") | _ => json_response(upload_res),
+        Some(b"text/plain") => text_response(StatusCode::CREATED, upload_res.map(|i| i.short_link())),
+        Some(b"application/json") | _ => json_response(StatusCode::CREATED, upload_res),
     }.or_else(|_| Ok(generic_500()))
 }
 

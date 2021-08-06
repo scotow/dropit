@@ -198,37 +198,56 @@ function documentReady() {
             copyLong.setAttribute('data-clipboard-text', data.link.long);
             copyLong.innerText = 'Copy long link';
 
-            const newAliases = document.createElement('div');
-            newAliases.classList.add('item');
-            newAliases.innerText = 'Generate new aliases';        
-            newAliases.addEventListener('click', () => {
-                if (confirm('Generating new aliases will make all people with a current link unable to access it. Confirm?')) {
-                    const req = new XMLHttpRequest();
-                    req.open('PATCH', `/${data.alias.short}/aliases`, true);
-                    req.setRequestHeader('Authorization', data.admin);
-                    req.responseType = 'json';
-                    req.onload = (event) => {
-                        if (req.status === 200) {
-                            data.alias = req.response.alias;
-                            data.link = req.response.link;
-                            files.save();
+            const newAlias = document.createElement('div');
+            newAlias.classList.add('item', 'sub-menu');
+            newAlias.innerText = 'Generate new alias';
 
-                            link.innerText = data.link.short;
-                            longAliasContent.innerText = data.alias.long;
-                            copyShort.setAttribute('data-clipboard-text', data.link.short);
-                            copyLong.setAttribute('data-clipboard-text', data.link.long);
-                            qrcode.makeCode(data.link.short);
-                        } else {
-                            alert(`An error occured while trying to generate new aliases: ${req.response.error}.`);
+            const aliasMenu = document.createElement('div');
+            aliasMenu.classList.add('menu');
+
+            for (const t of ['short', 'long', 'both']) {
+                const type = document.createElement('div');
+                type.classList.add('item');
+                type.innerText = t.toTitleCase();
+                type.addEventListener('click', () => {
+                    if (confirm(`Generating new ${t === 'both' ? 'aliases' : 'alias'} will make all people with a current link unable to access it. Confirm?`)) {
+                        const req = new XMLHttpRequest();
+                        let path = `/${data.alias.short}/aliases`;
+                        if (t !== 'both') {
+                            path = path.concat(`/${t}`);
                         }
+                        req.open('PATCH', path, true);
+                        req.setRequestHeader('Authorization', data.admin);
+                        req.responseType = 'json';
+                        req.onload = (event) => {
+                            if (req.status === 200) {
+                                if (t === 'short' || t === 'both') {
+                                    data.alias.short = req.response.alias.short;
+                                    data.link.short = req.response.link.short;
+                                    link.innerText = data.link.short;
+                                    copyShort.setAttribute('data-clipboard-text', data.link.short);
+                                    qrcode.makeCode(data.link.short);
+                                }
+                                if (t === 'long' || t === 'both') {
+                                    data.alias.long = req.response.alias.long;
+                                    data.link.long = req.response.link.long;
+                                    longAliasContent.innerText = data.alias.long;
+                                    copyLong.setAttribute('data-clipboard-text', data.link.long);
+                                }
+                                files.save();
+                            } else {
+                                alert(`An error occured while trying to generate new ${t === 'both' ? 'aliases' : 'alias'}: ${req.response.error}.`);
+                            }
+                        }
+                        req.send();
                     };
-                    req.send();
-                }
-            });
+                });
+                aliasMenu.append(type);
+            }
 
             const extend = document.createElement('div');
             extend.classList.add('item');
-            extend.innerText = 'Extend';
+            extend.innerText = 'Extend duration';
             extend.addEventListener('click', () => {
                 if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
                     const req = new XMLHttpRequest();
@@ -317,8 +336,9 @@ function documentReady() {
             expiration.append(expirationLabel, expirationContent);
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
+            newAlias.append(aliasMenu);
             downloads.append(downloadsMenu);
-            menu.append(download, separator.cloneNode(), copyLong, newAliases, separator, extend, downloads, separator.cloneNode(), forget, revoke);
+            menu.append(download, separator.cloneNode(), copyLong, newAlias, separator, extend, downloads, separator.cloneNode(), forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
             this.file.append(link, info);
