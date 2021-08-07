@@ -121,7 +121,7 @@ async fn create_uploads_dir(path: &Path, should_create: bool) {
     }
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let options = Options::from_args();
     env_logger::Builder::new().filter_level(options.log_level).init();
