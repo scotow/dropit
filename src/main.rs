@@ -33,7 +33,8 @@ mod option;
 mod limit;
 mod asset;
 mod misc;
-pub mod response;
+mod response;
+mod info;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -89,6 +90,7 @@ fn router(
         .patch("/:alias/aliases/long", update::alias::handler_long)
         .patch("/:alias/expiration", update::expiration::handler)
         .patch("/:alias/downloads/:count", update::downloads::handler)
+        .get("/valids/:alias", info::valid::handler)
         .build()
         .unwrap_or_else(|_| exit_error!("Cannot create HTTP router"))
 }

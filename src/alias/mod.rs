@@ -23,6 +23,13 @@ impl Alias {
             Long(a) => &a,
         }
     }
+
+    pub async fn is_used(&self, conn: &mut SqliteConnection) -> Option<bool> {
+        match self {
+            Short(s) => is_alias_used(s, include_query!("exist_alias_short"), conn).await,
+            Long(s) => is_alias_used(s, include_query!("exist_alias_long"), conn).await,
+        }
+    }
 }
 
 impl FromStr for Alias {
@@ -39,18 +46,18 @@ impl FromStr for Alias {
     }
 }
 
-pub async fn is_alias_unused(alias: &str, query: &str, conn: &mut SqliteConnection) -> Option<bool> {
+async fn is_alias_used(alias: &str, query: &str, conn: &mut SqliteConnection) -> Option<bool> {
     sqlx::query(query)
         .bind(alias)
         .fetch_optional(conn).await.ok()?
-        .is_none().into()
+        .is_some().into()
 }
 
 async fn random_unused<F>(conn: &mut SqliteConnection, generator: F, exist_query: &str) -> Option<String>
 where F: Fn() -> Option<String> {
     for _ in 0..GENERATION_MAX_TENTATIVES {
         let alias = generator()?;
-        if is_alias_unused(&alias, exist_query, conn).await? {
+        if !is_alias_used(&alias, exist_query, conn).await? {
             return Some(alias);
         }
     }
@@ -71,7 +78,7 @@ pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(Strin
         // Short alias.
         if aliases.0.is_none() {
             let alias = short::random()?;
-            if is_alias_unused(&alias, include_query!("exist_alias_short"), conn).await? {
+            if !is_alias_used(&alias, include_query!("exist_alias_short"), conn).await? {
                 aliases.0 = Some(alias);
             }
         }
@@ -79,7 +86,7 @@ pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(Strin
         // Long alias.
         if aliases.1.is_none() {
             let alias = long::random()?;
-            if is_alias_unused(&alias, include_query!("exist_alias_long"), conn).await? {
+            if !is_alias_used(&alias, include_query!("exist_alias_long"), conn).await? {
                 aliases.1 = Some(alias);
             }
         }

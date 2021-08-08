@@ -1,7 +1,6 @@
 use hyper::StatusCode;
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
-use serde_json::json;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -86,13 +85,6 @@ impl Error {
             InvalidDownloadsCount => StatusCode::BAD_REQUEST,
         }
     }
-
-    pub fn json_string(&self) -> String {
-        json!({
-            "success": false,
-            "error": self.to_string(),
-        }).to_string()
-    }
 }
 
 impl Serialize for Error {
@@ -174,5 +166,13 @@ pub mod downloads {
     pub use super::Error::{
         InvalidDownloadsCount,
         UnexpectedFileModification,
+    };
+}
+
+pub mod valid {
+    pub use super::Error::{
+        AliasExtract,
+        Database,
+        InvalidAlias,
     };
 }

@@ -1,13 +1,13 @@
 use std::convert::Infallible;
 
 use hyper::{Body, Request, Response};
-use hyper::header::CONTENT_TYPE;
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::error::download as DownloadError;
 use crate::include_query;
 use crate::misc::generic_500;
+use crate::response::error_text_response;
 use crate::storage::dir::Dir;
 
 mod file;
@@ -23,13 +23,7 @@ struct FileInfo {
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let alias = match req.param("alias") {
         Some(alias) => alias.clone(),
-        None => {
-            return Response::builder()
-                .status(DownloadError::AliasExtract.status_code())
-                .header(CONTENT_TYPE, "text/plain")
-                .body(DownloadError::AliasExtract.to_string().into())
-                .or_else(|_| Ok(generic_500()));
-        }
+        None => return error_text_response(DownloadError::AliasExtract).or_else(|_| Ok(generic_500()))
     };
     if alias.contains('+') {
         archive::handler(req).await

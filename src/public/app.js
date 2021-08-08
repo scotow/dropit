@@ -14,7 +14,6 @@ function documentReady() {
             this.files = [];
             setInterval(() => {
                 this.lookForExpired();
-                this.updateButtons();
             }, 15 * 1000);
         }
 
@@ -28,7 +27,6 @@ function documentReady() {
                 document.querySelector('.files').append(file.node);
             }
             this.lookForExpired();
-            this.updateButtons();
         }
 
         add(file) {
@@ -49,34 +47,73 @@ function documentReady() {
             this.save();
         }
 
+        clear() {
+            for (const file of this.files) {
+                file.node.remove();
+            }
+            this.files = [];
+            this.updateButtons();
+            this.save();
+        }
+
+        clearExpired() {
+            this.files = this.files.filter(file => {
+                if (file.state === 'expired') {
+                    file.node.remove();
+                    return false;
+                }
+                return true;
+            });
+            this.updateButtons();
+            this.save();
+        }
+
         save() {
-            localStorage.setItem('files', JSON.stringify(this.files.filter(f => f.info).map(f => f.info)));
+            localStorage.setItem('files', JSON.stringify(
+                this.files.filter(f => f.state === 'available' || f.state === 'expired').map(f => f.info))
+            );
         }
 
         lookForExpired() {
+            const checkRemote = [];
             const now = (new Date()).getTime() / 1000;
-            for (const file of this.files.filter(f => f.info && f.state !== 'expired')) {
+            for (const file of this.files.filter(f => f.state === 'available')) {
                 if (file.info.expiration.date.timestamp < now) {
-                    file.buildExpired();
+                    file.buildExpired(false);
+                } else {
+                    checkRemote.push(file);
                 }
+            }
+
+            if (checkRemote.length > 0 && document.visibilityState === 'visible') {
+                const req = new XMLHttpRequest();
+                req.open('GET', `/valids/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
+                req.responseType = 'json';
+                req.onload = (event) => {
+                    if (req.status === 200) {
+                        for (let i = 0; i < checkRemote.length; i++) {
+                            if (!req.response.valids[i]) {
+                                checkRemote[i].buildExpired(true);
+                            }
+                        }
+                    } else {
+                        console.error(`An error occured while checking expired remote files: ${req.response.error}.`);
+                    }
+                    this.updateButtons();
+                };
+                req.send();
+            } else {
+                this.updateButtons();
             }
         }
 
         updateButtons() {
-            if (this.files.length >= 1) {
-                document.body.classList.add('has-files');
-                document.querySelector('.form-files').classList.add('visible');
-            } else {
-                document.body.classList.remove('has-files');
-                document.querySelector('.form-files').classList.remove('visible');
-            }
-            if (this.files.filter(f => f.info && f.state !== 'expired').length >= 2) {
-                document.querySelector('.archive-link').classList.add('visible');
-            } else {
-                document.querySelector('.archive-link').classList.remove('visible');
-            }
-
-            const aliasGroup = this.files.filter(f => f.info).map(f => f.info.alias.short).join('+');
+            document.body.classList.toggle('has-files', this.files.length >= 1);
+            document.querySelector('.form-files').classList.toggle('visible', this.files.length >= 1);
+            document.querySelector('.clear').classList.toggle('visible', this.files.length >= 1);
+            document.querySelector('.archive-link').classList.toggle('visible', this.files.filter(f => f.state === 'available').length >= 2);
+            
+            const aliasGroup = this.files.filter(f => f.state === 'available').map(f => f.info.alias.short).join('+');
             document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${aliasGroup}`);
         }
     }
@@ -128,14 +165,10 @@ function documentReady() {
                     const resp = req.response; 
                     delete resp.success;
                     this.info = resp;
-                    // for (const key in resp) {
-
-                    //     if (key === 'success') continue;
-                    //     data[key] = resp[key];
-                    // }
 
                     setTimeout(() => {
                         this.buildDetails(resp);
+                        FILES.updateButtons();
                         FILES.save();
                     }, showingProgress ? 550 : 0);
                 } else {
@@ -304,7 +337,7 @@ function documentReady() {
                 type.classList.add('item');
                 type.innerText = t.toTitleCase();
                 type.addEventListener('click', () => {
-                    if (confirm(`Generating new ${t === 'both' ? 'aliases' : 'alias'} will make all people with a current link unable to access it. Confirm?`)) {
+                    if (confirm(`Generating ${t === 'both' ? 'new aliases' : 'a new alias'} will make all people with a current link unable to access it. Confirm?`)) {
                         const req = new XMLHttpRequest();
                         let path = `/${this.info.alias.short}/aliases`;
                         if (t !== 'both') {
@@ -328,7 +361,7 @@ function documentReady() {
                                     longAliasContent.innerText = this.info.alias.long;
                                     copyLong.setAttribute('data-clipboard-text', this.info.link.long);
                                 }
-                                files.save();
+                                FILES.save();
                             } else {
                                 alert(`An error occured while trying to generate new ${t === 'both' ? 'aliases' : 'alias'}: ${req.response.error}.`);
                             }
@@ -352,7 +385,7 @@ function documentReady() {
                         if (req.status === 200) {
                             delete req.response.success;
                             this.info.expiration = req.response;
-                            files.save();
+                            FILES.save();
                             updateExpirationLabel();
                         } else {
                             alert(`An error occured while trying to extend expiration: ${req.response.error}.`);
@@ -451,7 +484,7 @@ function documentReady() {
             this.node.append(remove, error);
         }
 
-        buildExpired() {
+        buildExpired(remotely) {
             this.state = 'expired';
             this.node.classList.add('expired');
 
@@ -463,7 +496,7 @@ function documentReady() {
 
             const label = document.createElement('div');
             label.classList.add('label');
-            label.innerText = 'Expired';
+            label.innerText = remotely ? 'Drained' : 'Expired';
 
             expired.append(label);
             this.node.append(expired);
@@ -512,6 +545,16 @@ function documentReady() {
             files.push(item.getAsFile());
         }
         uploadFiles(files);
+    });
+
+    document.querySelector('.clear > .session').addEventListener('click', (event) => {
+        if (confirm('You are about to clear all your files, but they will still count toward your quota. Confirm?')) {
+            FILES.clear();
+        }
+    });
+
+    document.querySelector('.clear > .expired').addEventListener('click', (event) => {
+        FILES.clearExpired();
     });
 
     document.addEventListener('click', (event) => {

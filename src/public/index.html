@@ -16,10 +16,22 @@
         <div class="indication">Drop some files<br/>to begin</div>
     </div>
     <div class="global-actions">
-        <label class="form-files action clickable">
+        <label class="form-files action single clickable">
+            <div class="label">Add files</div>
             <input type="file" multiple>
         </label>
-        <div class="archive-link action clickable copy"></div>
+        <div class="clear action group">
+            <div class="label">Clear</div>
+            <div class="session action clickable">
+                <div class="label">session</div>
+            </div>
+            <div class="expired action clickable">
+                <div class="label">expired</div>
+            </div>
+        </div>
+        <div class="archive-link action single clickable copy">
+            <div class="label">Copy archive</div>
+        </div>
     </div>
     <div class="files"></div>
 </body>
