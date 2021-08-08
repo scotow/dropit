@@ -1,4 +1,4 @@
-@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro);
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap');
 
 html {
     height: 100%;
@@ -50,7 +50,7 @@ body.dragging::after {
     opacity: 1;
 }
 
-body.dragging > .form-files {
+body.dragging > .global-actions {
     opacity: 0;
 }
 
@@ -200,6 +200,21 @@ body.dragging > .files {
     transition: border 1s linear;
 }
 
+.files > .file.expired {
+    border-color: gray;
+}
+
+.files > .file.expired > .name::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: #131313;
+    opacity: 0.5;
+}
+
 .files > .file.error {
     border-color: #ff5d24;
 }
@@ -212,7 +227,7 @@ body.dragging > .files {
 
 .files > .file > .name {
     position: absolute;
-    top: -12px;
+    top: -10px;
     left: 6px;
     max-width: calc(100% - 20px);
     padding: 0 4px;
@@ -222,6 +237,7 @@ body.dragging > .files {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1;
 }
 
 .files > .file > .progress-bar {
@@ -431,6 +447,48 @@ body.dragging > .files {
         left: 0;
         transform: translateX(-100%);
     }
+}
+
+.files > .file > .expired {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.files > .file > .expired::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    background: black;
+    opacity: 0.5;
+}
+
+.files > .file > .expired > .label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 43px;
+    color: lightgray;
+    font-weight: bold;
+    text-transform: uppercase;
+    transform: translate(-50%, -50%) rotate(-30deg);
+}
+
+.files > .file > .expired > .label::after {
+    content: 'Click to remove';
+    display: block;
+    font-weight: normal;
+    text-transform: none;
+    text-align: center;
+    text-decoration: underline;
+    font-size: 14px;
 }
 
 .files > .file > .error-message {

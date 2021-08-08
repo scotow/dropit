@@ -9,30 +9,99 @@ String.prototype.plural = function(n) {
 document.addEventListener('DOMContentLoaded', documentReady, false);
 
 function documentReady() {
+    class Files {
+        constructor() {
+            this.files = [];
+            setInterval(() => {
+                this.lookForExpired();
+                this.updateButtons();
+            }, 15 * 1000);
+        }
+
+        loadCache() {
+            const filesData = JSON.parse(localStorage.getItem('files') || '[]');
+            for (const data of filesData) {
+                const file = new File(null);
+                this.files.push(file);
+                file.buildBase(data.name);
+                file.buildDetails(data);
+                document.querySelector('.files').append(file.node);
+            }
+            this.lookForExpired();
+            this.updateButtons();
+        }
+
+        add(file) {
+            document.querySelector('.files').append(file.node);
+            
+            this.files.push(file);
+            this.updateButtons();
+            this.save();
+        }
+
+        remove(file) {
+            file.node.remove();
+            
+            const index = this.files.indexOf(file);
+            if (index === -1) return;
+            this.files.splice(index, 1);
+            this.updateButtons();
+            this.save();
+        }
+
+        save() {
+            localStorage.setItem('files', JSON.stringify(this.files.filter(f => f.info).map(f => f.info)));
+        }
+
+        lookForExpired() {
+            const now = (new Date()).getTime() / 1000;
+            for (const file of this.files.filter(f => f.info && f.state !== 'expired')) {
+                if (file.info.expiration.date.timestamp < now) {
+                    file.buildExpired();
+                }
+            }
+        }
+
+        updateButtons() {
+            if (this.files.length >= 1) {
+                document.body.classList.add('has-files');
+                document.querySelector('.form-files').classList.add('visible');
+            } else {
+                document.body.classList.remove('has-files');
+                document.querySelector('.form-files').classList.remove('visible');
+            }
+            if (this.files.filter(f => f.info && f.state !== 'expired').length >= 2) {
+                document.querySelector('.archive-link').classList.add('visible');
+            } else {
+                document.querySelector('.archive-link').classList.remove('visible');
+            }
+
+            const aliasGroup = this.files.filter(f => f.info).map(f => f.info.alias.short).join('+');
+            document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${aliasGroup}`);
+        }
+    }
+
     class File {
         constructor(fileRef) {
             this.fileRef = fileRef;
         }
 
         buildBase(filename) {
-            this.file = document.createElement('div');
-            this.file.classList.add('file');
+            this.node = document.createElement('div');
+            this.node.classList.add('file');
             
-            const name = document.createElement('div');
-            name.classList.add('name');
-            name.innerText = filename;
-            this.file.append(name);
-
-            document.querySelector('.files').append(this.file);
+            this.name = document.createElement('div');
+            this.name.classList.add('name');
+            this.name.innerText = filename;
+            this.node.append(this.name);
         }
 
         startUpload() {
-            const data = { uploaded: false };
-            files.add(data);
+            this.state = 'upload';
 
             this.progressBar = document.createElement('div');
             this.progressBar.classList.add('progress-bar');
-            this.file.append(this.progressBar);
+            this.node.append(this.progressBar);
 
             const req = new XMLHttpRequest();
             req.open('POST', '/', true);
@@ -56,34 +125,28 @@ function documentReady() {
             req.onload = (event) => {
                 clearTimeout(showProgressTimeout);
                 if (req.status === 201) {
-                    data.uploaded = true;
                     const resp = req.response; 
-                    for (const key in resp) {
-                        if (key === 'success') continue;
-                        data[key] = resp[key];
-                    }
-                    files.save();
+                    delete resp.success;
+                    this.info = resp;
+                    // for (const key in resp) {
 
-                    if (showingProgress) {
-                        setTimeout(() => {
-                            this.buildDetails(data);
-                        }, 550);
-                    } else {
-                        this.buildDetails(data);
-                    }
+                    //     if (key === 'success') continue;
+                    //     data[key] = resp[key];
+                    // }
+
+                    setTimeout(() => {
+                        this.buildDetails(resp);
+                        FILES.save();
+                    }, showingProgress ? 550 : 0);
                 } else {
-                    this.file.classList.add('error');
+                    this.node.classList.add('error');
                     this.progressBar.style.backgroundColor = '#ff5d24';
                     this.progressBar.style.width = '100%';
 
-                    files.remove(data);
-                    if (showingProgress) {
-                        setTimeout(() => {
-                            this.buildError(req.response);
-                        }, 550);
-                    } else {
+                    setTimeout(() => {
                         this.buildError(req.response);
-                    }
+                        FILES.save();
+                    }, showingProgress ? 550 : 0);
                 }
             };
             req.send(this.fileRef);
@@ -95,9 +158,12 @@ function documentReady() {
         }
 
         buildDetails(data) {
+            this.state = 'available';
+            this.info = data;
+
             const link = document.createElement('div');
             link.classList.add('link', 'selectable');
-            link.innerText = data.link.short;
+            link.innerText = this.info.link.short;
 
             const info = document.createElement('div');
             info.classList.add('info');
@@ -105,7 +171,7 @@ function documentReady() {
             const qrcodeWrapper = document.createElement('div');
             qrcodeWrapper.classList.add('qrcode', 'hidden');
             const qrcode = new QRCode(qrcodeWrapper, {
-                text: data.link.short,
+                text: this.info.link.short,
                 width: 128,
                 height: 128,
                 colorDark : '#131313',
@@ -130,16 +196,16 @@ function documentReady() {
             const sizeContent = document.createElement('div');
             sizeContent.title = 'Click to toggle between formats';
             sizeContent.classList.add('content', 'clickable');
-            sizeContent.innerText = data.size.readable;
+            sizeContent.innerText = this.info.size.readable;
             let sizeFormat = 'readable';
             sizeContent.addEventListener('click', () => {
                 switch (sizeFormat) {
                     case 'readable':
-                        sizeContent.innerText = `${data.size.bytes.toLocaleString()} B`;
+                        sizeContent.innerText = `${this.info.size.bytes.toLocaleString()} B`;
                         sizeFormat = 'bytes';
                         break;
                     case 'bytes':
-                        sizeContent.innerText = data.size.readable;
+                        sizeContent.innerText = this.info.size.readable;
                         sizeFormat = 'readable';
                         break;
                 }
@@ -152,7 +218,7 @@ function documentReady() {
             longAliasLabel.innerText = 'Long alias';
             const longAliasContent = document.createElement('div');
             longAliasContent.classList.add('content', 'selectable');
-            longAliasContent.innerText = data.alias.long;
+            longAliasContent.innerText = this.info.alias.long;
             
             const expiration = document.createElement('div');
             expiration.classList.add('item');
@@ -161,17 +227,17 @@ function documentReady() {
             expirationLabel.innerText = 'Duration';
             const expirationContent = document.createElement('div');
             expirationContent.classList.add('content', 'clickable');
-            expirationContent.innerText = data.expiration.duration.readable;
+            expirationContent.innerText = this.info.expiration.duration.readable;
             let expirationFormat = 'duration';
-            function updateExpirationLabel() {
+            const updateExpirationLabel = () => {
                 switch (expirationFormat) {
                     case 'date':
                         expirationLabel.innerText = 'Expiration'
-                        expirationContent.innerText = data.expiration.date.readable;
+                        expirationContent.innerText = this.info.expiration.date.readable;
                         break;
                     case 'duration':
                         expirationLabel.innerText = 'Duration'
-                        expirationContent.innerText = data.expiration.duration.readable;
+                        expirationContent.innerText = this.info.expiration.duration.readable;
                         break;
                 }
             }
@@ -191,7 +257,7 @@ function documentReady() {
 
             const copyShort = document.createElement('div');
             copyShort.classList.add('copy-short', 'clickable', 'copy');
-            copyShort.setAttribute('data-clipboard-text', data.link.short);
+            copyShort.setAttribute('data-clipboard-text', this.info.link.short);
             copyShort.innerText = 'Copy Link';
 
             const dropdown = document.createElement('div');
@@ -215,7 +281,7 @@ function documentReady() {
             download.classList.add('item');
             download.innerText = 'Download';
             download.addEventListener('click', () => {
-                document.location = data.link.short;
+                document.location = this.info.link.short;
             });
 
             const separator = document.createElement('div');
@@ -223,7 +289,7 @@ function documentReady() {
 
             const copyLong = document.createElement('div');
             copyLong.classList.add('item', 'copy');
-            copyLong.setAttribute('data-clipboard-text', data.link.long);
+            copyLong.setAttribute('data-clipboard-text', this.info.link.long);
             copyLong.innerText = 'Copy long link';
 
             const newAlias = document.createElement('div');
@@ -240,27 +306,27 @@ function documentReady() {
                 type.addEventListener('click', () => {
                     if (confirm(`Generating new ${t === 'both' ? 'aliases' : 'alias'} will make all people with a current link unable to access it. Confirm?`)) {
                         const req = new XMLHttpRequest();
-                        let path = `/${data.alias.short}/aliases`;
+                        let path = `/${this.info.alias.short}/aliases`;
                         if (t !== 'both') {
                             path = path.concat(`/${t}`);
                         }
                         req.open('PATCH', path, true);
-                        req.setRequestHeader('Authorization', data.admin);
+                        req.setRequestHeader('Authorization', this.info.admin);
                         req.responseType = 'json';
                         req.onload = (event) => {
                             if (req.status === 200) {
                                 if (t === 'short' || t === 'both') {
-                                    data.alias.short = req.response.alias.short;
-                                    data.link.short = req.response.link.short;
-                                    link.innerText = data.link.short;
-                                    copyShort.setAttribute('data-clipboard-text', data.link.short);
-                                    qrcode.makeCode(data.link.short);
+                                    this.info.alias.short = req.response.alias.short;
+                                    this.info.link.short = req.response.link.short;
+                                    link.innerText = this.info.link.short;
+                                    copyShort.setAttribute('data-clipboard-text', this.info.link.short);
+                                    qrcode.makeCode(this.info.link.short);
                                 }
                                 if (t === 'long' || t === 'both') {
-                                    data.alias.long = req.response.alias.long;
-                                    data.link.long = req.response.link.long;
-                                    longAliasContent.innerText = data.alias.long;
-                                    copyLong.setAttribute('data-clipboard-text', data.link.long);
+                                    this.info.alias.long = req.response.alias.long;
+                                    this.info.link.long = req.response.link.long;
+                                    longAliasContent.innerText = this.info.alias.long;
+                                    copyLong.setAttribute('data-clipboard-text', this.info.link.long);
                                 }
                                 files.save();
                             } else {
@@ -279,13 +345,13 @@ function documentReady() {
             extend.addEventListener('click', () => {
                 if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
                     const req = new XMLHttpRequest();
-                    req.open('PATCH', `/${data.alias.short}/expiration`, true);
-                    req.setRequestHeader('Authorization', data.admin);
+                    req.open('PATCH', `/${this.info.alias.short}/expiration`, true);
+                    req.setRequestHeader('Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
                             delete req.response.success;
-                            data.expiration = req.response;
+                            this.info.expiration = req.response;
                             files.save();
                             updateExpirationLabel();
                         } else {
@@ -309,8 +375,8 @@ function documentReady() {
                 count.innerText = n ? `${n} ${'download'.plural(n)}` : 'Unlimited';
                 count.addEventListener('click', () => {
                     const req = new XMLHttpRequest();
-                    req.open('PATCH', `/${data.alias.short}/downloads/${n}`, true);
-                    req.setRequestHeader('Authorization', data.admin);
+                    req.open('PATCH', `/${this.info.alias.short}/downloads/${n}`, true);
+                    req.setRequestHeader('Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
@@ -328,9 +394,7 @@ function documentReady() {
             forget.innerText = 'Forget';
             forget.addEventListener('click', (event) => {
                 if (confirm('Forgetting this file will still count toward your quota. Confirm?')) {
-                    this.file.remove();
-                    fileListUpdated();
-                    files.remove(data);
+                    FILES.remove(this);
                 }
             });
 
@@ -340,14 +404,12 @@ function documentReady() {
             revoke.addEventListener('click', () => {
                 if (confirm('Revoking this file will make all people with a link unable to access it. Confirm?')) {
                     const req = new XMLHttpRequest();
-                    req.open('DELETE', `/${data.alias.short}`, true);
-                    req.setRequestHeader('Authorization', data.admin);
+                    req.open('DELETE', `/${this.info.alias.short}`, true);
+                    req.setRequestHeader('Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
-                            this.file.remove();
-                            fileListUpdated();
-                            files.remove(data);
+                            FILES.remove(this);
                         } else {
                             alert(`An error occured while trying to revoke this file: ${req.response.error}.`);
                         }
@@ -369,15 +431,16 @@ function documentReady() {
             menu.append(download, separator.cloneNode(), copyLong, newAlias, separator, extend, downloads, separator.cloneNode(), forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
-            this.file.append(link, info);
+            this.node.append(link, info);
         }
 
         buildError(data) {
+            this.state = 'error';
+
             const remove = document.createElement('div');
-            remove.classList.add('remove', 'clickable', 'no-select');
+            remove.classList.add('remove', 'clickable');
             remove.addEventListener('click', () => {
-                this.file.remove();
-                fileListUpdated();
+                FILES.remove(this);
             })
 
             const error = document.createElement('div');
@@ -385,47 +448,25 @@ function documentReady() {
             error.innerText = data.error.toTitleCase();
 
             if (this.progressBar) this.progressBar.remove();
-            this.file.append(remove, error);
-        }
-    }
-
-    class Files {
-        constructor() {
-            this.files = JSON.parse(localStorage.getItem('files') || '[]');
-            for (const data of this.valids()) {
-                const file = new File(null);
-                file.buildBase(data.name);
-                file.buildDetails(data);
-            }
-            this.updateArchiveButton(this.files);
-            fileListUpdated(true);
+            this.node.append(remove, error);
         }
 
-        add(file) {
-            this.files.push(file);
-            this.save();
-        }
+        buildExpired() {
+            this.state = 'expired';
+            this.node.classList.add('expired');
 
-        remove(file) {
-            const index = this.files.indexOf(file);
-            if (index === -1) return;
-            this.files.splice(index, 1);
-            this.save();
-        }
+            const expired = document.createElement('div');
+            expired.classList.add('expired');
+            expired.addEventListener('click', (event) => {
+                FILES.remove(this);
+            });
 
-        save() {
-            const valids = this.valids();
-            localStorage.setItem('files', JSON.stringify(valids));
-            this.updateArchiveButton(valids);
-        }
+            const label = document.createElement('div');
+            label.classList.add('label');
+            label.innerText = 'Expired';
 
-        valids() {
-            const now = (new Date()).getTime() / 1000;
-            return this.files.filter((f) => f.uploaded && f.expiration.date.timestamp > now);
-        }
-
-        updateArchiveButton(files) {
-            document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${files.map(f => f.alias.short).join('+')}`);
+            expired.append(label);
+            this.node.append(expired);
         }
     }
 
@@ -435,28 +476,7 @@ function documentReady() {
             const file = new File(f);
             file.buildBase(f.name);
             file.startUpload();
-        }
-        fileListUpdated(false);
-    }
-
-    function fileListUpdated(fast) {
-        const fileCount = document.querySelector('.files').childElementCount;
-        if (fileCount >= 1) {
-            document.body.classList.add('has-files');
-            setTimeout(() => {
-                document.querySelector('.form-files').classList.add('visible');
-            }, fast ? 0 : 1000);
-        } else {
-            document.body.classList.remove('has-files');
-            document.querySelector('.form-files').classList.remove('visible');
-            document.querySelector('.archive-link').classList.remove('visible');
-        }
-        if (fileCount >= 2) {
-            setTimeout(() => {
-                document.querySelector('.archive-link').classList.add('visible');
-            }, fast ? 0 : 1000);
-        } else {
-            document.querySelector('.archive-link').classList.remove('visible');
+            FILES.add(file);
         }
     }
 
@@ -501,6 +521,8 @@ function documentReady() {
         }
     });
 
+    const FILES = new Files();
+    FILES.loadCache();
+
     new ClipboardJS('.copy');
-    const files = new Files();
 }
