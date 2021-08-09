@@ -299,17 +299,6 @@ function documentReady() {
             const menu = document.createElement('div');
             menu.classList.add('menu');
 
-            dropdown.addEventListener('click', (event) => {
-                if (!menu.classList.contains('opened')) {
-                    const opened = document.querySelector('.menu.opened');
-                    if (opened) {
-                        opened.classList.remove('opened');
-                    }
-                }
-                menu.classList.toggle('opened');
-                event.stopPropagation();
-            });
-
             const download = document.createElement('div');
             download.classList.add('item');
             download.innerText = 'Download';
@@ -558,9 +547,30 @@ function documentReady() {
     });
 
     document.addEventListener('click', (event) => {
-        const opened = document.querySelector('.menu.opened');
-        if (opened) {
-            opened.classList.remove('opened');
+        if (event.target.nodeType === Node.ELEMENT_NODE && event.target.classList.contains('dropdown')) {
+            if (event.target.nextSibling.classList.contains('opened')) {
+                for (const opened of document.querySelectorAll('.menu.opened')) {
+                    opened.classList.remove('opened');
+                }
+            } else {
+                for (const opened of document.querySelectorAll('.menu.opened')) {
+                    opened.classList.remove('opened');
+                }
+                event.target.nextSibling.classList.add('opened');
+            }
+        } else if (event.target.nodeType === Node.ELEMENT_NODE && event.target.classList.contains('sub-menu')) {
+            if (event.target.lastChild.classList.contains('opened')) {
+                event.target.lastChild.classList.remove('opened');
+            } else {
+                for (const opened of document.querySelectorAll('.sub-menu > .menu.opened')) {
+                    opened.classList.remove('opened');
+                }
+                event.target.lastChild.classList.add('opened');
+            }
+        } else {
+            for (const opened of document.querySelectorAll('.menu.opened')) {
+                opened.classList.remove('opened');
+            }
         }
     });
 

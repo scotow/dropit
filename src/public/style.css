@@ -431,7 +431,11 @@ body.ready.has-file > .files {
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu:hover > .menu {
-    display: flex;    
+    display: flex;
+}
+
+.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu > .menu.opened {
+    display: flex;
 }
 
 .files > .file > .info > .right > .bottom > .actions > .menu > .separator {
