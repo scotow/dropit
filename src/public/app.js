@@ -27,6 +27,7 @@ function documentReady() {
                 document.querySelector('.files').append(file.node);
             }
             this.lookForExpired();
+            document.body.classList.add('ready');
         }
 
         add(file) {
@@ -108,10 +109,9 @@ function documentReady() {
         }
 
         updateButtons() {
-            document.body.classList.toggle('has-files', this.files.length >= 1);
-            document.querySelector('.form-files').classList.toggle('visible', this.files.length >= 1);
-            document.querySelector('.clear').classList.toggle('visible', this.files.length >= 1);
-            document.querySelector('.archive-link').classList.toggle('visible', this.files.filter(f => f.state === 'available').length >= 2);
+            document.body.classList.toggle('has-file', this.files.length >= 1);
+            document.body.classList.toggle('has-clearable', this.files.filter(f => f.state !== 'upload').length >= 1);
+            document.body.classList.toggle('has-availables', this.files.filter(f => f.state === 'available').length >= 2);
             
             const aliasGroup = this.files.filter(f => f.state === 'available').map(f => f.info.alias.short).join('+');
             document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${aliasGroup}`);
@@ -205,8 +205,8 @@ function documentReady() {
             qrcodeWrapper.classList.add('qrcode', 'hidden');
             const qrcode = new QRCode(qrcodeWrapper, {
                 text: this.info.link.short,
-                width: 128,
-                height: 128,
+                width: 120,
+                height: 120,
                 colorDark : '#131313',
                 colorLight : 'TEMPLATE_COLOR',
                 correctLevel : QRCode.CorrectLevel.L
