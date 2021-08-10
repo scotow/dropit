@@ -275,12 +275,12 @@ body.ready.has-file > .files {
     cursor: pointer;
 }
 
-.files > .file > .info > .qrcode img {
+.files > .file > .info > .qrcode > * {
     border: 4px solid TEMPLATE_COLOR;
     transition: filter ease-out 150ms;
 }
 
-.files > .file > .info > .qrcode.hidden img {
+.files > .file > .info > .qrcode.hidden > * {
     filter: blur(5px);
 }
 
