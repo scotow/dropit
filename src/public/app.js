@@ -548,29 +548,27 @@ function documentReady() {
 
     document.addEventListener('click', (event) => {
         if (event.target.nodeType === Node.ELEMENT_NODE && event.target.classList.contains('dropdown')) {
-            if (event.target.nextSibling.classList.contains('opened')) {
-                for (const opened of document.querySelectorAll('.menu.opened')) {
-                    opened.classList.remove('opened');
-                }
-            } else {
-                for (const opened of document.querySelectorAll('.menu.opened')) {
-                    opened.classList.remove('opened');
-                }
+            for (const opened of document.querySelectorAll('.menu.opened')) {
+                opened.classList.remove('opened');
+            }
+            if (!event.target.nextSibling.classList.contains('opened')) {
                 event.target.nextSibling.classList.add('opened');
             }
         } else if (event.target.nodeType === Node.ELEMENT_NODE && event.target.classList.contains('sub-menu')) {
-            if (event.target.lastChild.classList.contains('opened')) {
-                event.target.lastChild.classList.remove('opened');
-            } else {
-                for (const opened of document.querySelectorAll('.sub-menu > .menu.opened')) {
-                    opened.classList.remove('opened');
-                }
-                event.target.lastChild.classList.add('opened');
+            for (const opened of document.querySelectorAll('.sub-menu > .menu.opened')) {
+                opened.classList.remove('opened');
             }
+            event.target.lastChild.classList.add('opened');
         } else {
             for (const opened of document.querySelectorAll('.menu.opened')) {
                 opened.classList.remove('opened');
             }
+        }
+    });
+
+    document.querySelector('.files').addEventListener('mouseover', (event) => {
+        for (const opened of document.querySelectorAll('.sub-menu > .menu.opened')) {
+            opened.classList.remove('opened');
         }
     });
 
