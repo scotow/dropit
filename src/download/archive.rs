@@ -77,7 +77,11 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
             let name = if *occurrence == 1 {
                 info.name.clone()
             } else {
-                format!("{}-{}", info.name, occurrence)
+                if let Some((name, extension)) = info.name.split_once('.') {
+                    format!("{}-{}.{}", name, occurrence, extension)
+                } else {
+                    format!("{}-{}", info.name, occurrence)
+                }
             };
 
             let mut header = Header::new_gnu();
