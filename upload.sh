@@ -26,6 +26,6 @@ for FILE in $FILES; do
   if [ "$FILE" == "-" ]; then
     curl --header 'Accept: text/plain' --data-binary @"$FILE" "$DOMAIN"; echo
   else
-	  curl --header 'Accept: text/plain' --header "X-Filename: $(tr -dc \40-\176 <<< $FILE)" --data-binary @"$FILE" "$DOMAIN"; echo
+    curl --header 'Accept: text/plain' --header "X-Filename: $(tr -dc \40-\176 <<< $FILE)" --data-binary @"$FILE" "$DOMAIN"; echo
   fi
 done
