@@ -98,7 +98,7 @@ function documentReady() {
                             }
                         }
                     } else {
-                        console.error(`An error occured while checking expired remote files: ${req.response.error}.`);
+                        console.error(`An error occurred while checking expired remote files: ${req.response.error}.`);
                     }
                     this.updateButtons();
                 };
@@ -403,7 +403,7 @@ function documentReady() {
                     req.onload = (event) => {
                         if (req.status === 200) {
                         } else {
-                            alert(`An error occured while trying to set downloads limit: ${req.response.error}.`);
+                            alert(`An error occurred while trying to set downloads limit: ${req.response.error}.`);
                         }
                     };
                     req.send();
@@ -433,7 +433,7 @@ function documentReady() {
                         if (req.status === 200) {
                             FILES.remove(this);
                         } else {
-                            alert(`An error occured while trying to revoke this file: ${req.response.error}.`);
+                            alert(`An error occurred while trying to revoke this file: ${req.response.error}.`);
                         }
                     };
                     req.send();
