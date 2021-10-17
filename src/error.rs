@@ -3,6 +3,8 @@ use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
 use thiserror::Error;
 
+use crate::response::SingleLine;
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("invalid filename header")]
@@ -49,10 +51,16 @@ pub enum Error {
     InvalidAuthorizationHeader,
     #[error("mismatching admin token")]
     InvalidAdminToken,
+    #[error("invalid authorization header")]
+    AccessForbidden,
     #[error("an unexpected error happen while updating file metadata")]
     UnexpectedFileModification,
     #[error("invalid downloads count")]
     InvalidDownloadsCount,
+    #[error("authorization process failure")]
+    AuthProcess,
+    #[error("assets catalogue connection failure")]
+    AssetsCatalogue,
 }
 
 impl Error {
@@ -81,8 +89,11 @@ impl Error {
             PartialRemove => StatusCode::INTERNAL_SERVER_ERROR,
             InvalidAuthorizationHeader => StatusCode::UNAUTHORIZED,
             InvalidAdminToken => StatusCode::FORBIDDEN,
+            AccessForbidden => StatusCode::FORBIDDEN,
             UnexpectedFileModification => StatusCode::INTERNAL_SERVER_ERROR,
             InvalidDownloadsCount => StatusCode::BAD_REQUEST,
+            AuthProcess => StatusCode::INTERNAL_SERVER_ERROR,
+            AssetsCatalogue => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -93,6 +104,12 @@ impl Serialize for Error {
         let mut state = serializer.serialize_struct("Error", 1)?;
         state.serialize_field("error", &self.to_string())?;
         state.end()
+    }
+}
+
+impl SingleLine for Error {
+    fn single_lined(&self) -> String {
+        self.to_string()
     }
 }
 
@@ -174,5 +191,17 @@ pub mod valid {
         AliasExtract,
         Database,
         InvalidAlias,
+    };
+}
+
+pub mod assets {
+    pub use super::Error::AssetsCatalogue;
+}
+
+pub mod auth {
+    pub use super::Error::{
+        AccessForbidden,
+        AuthProcess,
+        InvalidAuthorizationHeader,
     };
 }

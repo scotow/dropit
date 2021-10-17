@@ -13,6 +13,8 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::alias;
+use crate::auth::{Access, Authenticator};
+use crate::error::auth as AuthError;
 use crate::error::Error;
 use crate::error::upload as UploadError;
 use crate::include_query;
@@ -20,7 +22,7 @@ use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
 use crate::misc::generic_500;
 use crate::misc::request_target;
-use crate::response::{json_response, text_response};
+use crate::response::{adaptive_response, error_text_response};
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
@@ -32,7 +34,6 @@ pub mod file;
 
 pub type UploadResult<T> = Result<T, Error>;
 
-#[allow(unused)]
 pub struct UploadRequest {
     pub name: Option<String>,
     pub size: u64,
@@ -41,12 +42,17 @@ pub struct UploadRequest {
 
 #[allow(clippy::wildcard_in_or_patterns)]
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let response_type = req.headers().get(header::ACCEPT).map(|h| h.as_bytes().to_vec());
+    let auth = match req.data::<Authenticator>() {
+        Some(auth) => auth,
+        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
+    };
+    if let Some(resp) = auth.allows(&req, Access::UPLOAD) {
+        return Ok(resp);
+    }
+
+    let response_type = req.headers().get(header::ACCEPT).cloned();
     let upload_res = process_upload(req).await;
-    match response_type.as_deref() {
-        Some(b"text/plain") => text_response(StatusCode::CREATED, upload_res.map(|i| i.short_link())),
-        Some(b"application/json") | _ => json_response(StatusCode::CREATED, upload_res),
-    }.or_else(|_| Ok(generic_500()))
+    adaptive_response(response_type, StatusCode::CREATED, upload_res).or_else(|_| Ok(generic_500()))
 }
 
 #[allow(clippy::bool_comparison)]

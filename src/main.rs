@@ -10,13 +10,17 @@ use structopt::StructOpt;
 use tokio::fs::File;
 use tokio::io::ErrorKind;
 
-use option::Options;
+use options::Options;
 
 use crate::asset::Assets;
+use crate::auth::{Access, Authenticator};
+use crate::error::assets as AssetsError;
+use crate::error::auth as AuthError;
 use crate::limit::Chain as LimiterChain;
 use crate::limit::global::Global;
 use crate::limit::ip::Ip as IpLimiter;
 use crate::misc::generic_500;
+use crate::response::error_text_response;
 use crate::storage::clean::Cleaner;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
@@ -29,12 +33,13 @@ mod update;
 mod error;
 mod storage;
 mod query;
-mod option;
+mod options;
 mod limit;
 mod asset;
 mod misc;
 mod response;
 mod info;
+mod auth;
 
 async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
     log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
@@ -42,9 +47,17 @@ async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
 }
 
 async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let auth = match req.data::<Authenticator>() {
+        Some(auth) => auth,
+        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
+    };
+    if let Some(resp) = auth.allows(&req, Access::WEB_UI) {
+        return Ok(resp);
+    }
+
     let assets = match req.data::<Assets>() {
         Some(assets) => assets,
-        None => return Ok(generic_500()),
+        None => return Ok(error_text_response(AssetsError::AssetsCatalogue).unwrap_or_else(|_| generic_500())),
     };
     match assets.asset_for_path(req.uri().path()).await {
         Some((content, mime_type)) => {
@@ -68,6 +81,7 @@ fn router(
     determiner: Determiner,
     pool: SqlitePool,
     assets: Assets,
+    auth: Authenticator,
 ) -> Router<Body, Infallible> {
     Router::builder()
         .data(Dir::new(uploads_dir))
@@ -76,6 +90,7 @@ fn router(
         .data(determiner)
         .data(pool)
         .data(assets)
+        .data(auth)
         .middleware(Middleware::pre(logger))
         .get("/", asset_handler)
         .get("/index.html", asset_handler)
@@ -154,13 +169,25 @@ async fn main() {
         cleaner.start().await;
     });
 
+    let mut access = Access::empty();
+    if options.auth_upload {
+        access.insert(Access::UPLOAD);
+    }
+    if options.auth_download {
+        access.insert(Access::DOWNLOAD);
+    }
+    if options.auth_web_ui {
+        access.insert(Access::WEB_UI);
+    }
+
     let router = router(
         options.uploads_dir,
         RealIp::new(options.behind_proxy),
         limiters,
         determiner,
         pool,
-        Assets::new(options.color),
+        Assets::new(options.theme),
+        Authenticator::new(access, options.credentials),
     );
 
     let address = SocketAddr::new(options.address, options.port);

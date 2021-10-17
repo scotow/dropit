@@ -8,6 +8,7 @@ use serde::Serialize;
 use crate::error::Error;
 use crate::error::upload as UploadError;
 use crate::misc::format_duration;
+use crate::response::SingleLine;
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -36,9 +37,11 @@ impl UploadInfo {
             expiration
         }
     }
+}
 
-    pub fn short_link(self) -> String {
-        self.link.short
+impl SingleLine for UploadInfo {
+    fn single_lined(&self) -> String {
+        self.link.short.clone()
     }
 }
 

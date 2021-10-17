@@ -5,6 +5,7 @@ use byte_unit::{Byte, ByteError};
 use log::LevelFilter;
 use structopt::StructOpt;
 
+use crate::auth::Credential;
 use crate::upload::expiration::Threshold;
 
 #[derive(StructOpt, Debug)]
@@ -33,8 +34,16 @@ pub struct Options {
     pub ip_file_count: usize,
     #[structopt(short = "S", long, required = true, parse(try_from_str = parse_size))]
     pub global_size_sum: u64,
-    #[structopt(short = "C", long, default_value = "#15b154")]
-    pub color: String,
+    #[structopt(short = "C", long = "credential")]
+    pub credentials: Vec<Credential>,
+    #[structopt(long, requires = "credentials")]
+    pub auth_upload: bool,
+    #[structopt(long, requires = "credentials")]
+    pub auth_download: bool,
+    #[structopt(long, requires = "credentials")]
+    pub auth_web_ui: bool,
+    #[structopt(short = "T", long = "theme", default_value = "#15b154")]
+    pub theme: String,
 }
 
 fn parse_size(s: &str) -> Result<u64, ByteError> {

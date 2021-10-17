@@ -4,6 +4,8 @@ use hyper::{Body, Request, Response};
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
+use crate::auth::{Access, Authenticator};
+use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
 use crate::include_query;
 use crate::misc::generic_500;
@@ -21,6 +23,14 @@ struct FileInfo {
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let auth = match req.data::<Authenticator>() {
+        Some(auth) => auth,
+        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
+    };
+    if let Some(resp) = auth.allows(&req, Access::DOWNLOAD) {
+        return Ok(resp);
+    }
+
     let alias = match req.param("alias") {
         Some(alias) => alias.clone(),
         None => return error_text_response(DownloadError::AliasExtract).or_else(|_| Ok(generic_500()))
