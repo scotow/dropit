@@ -104,14 +104,11 @@ impl Stream for FileStreamer {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let polled = Pin::new(&mut self.file).poll_next(cx);
-        match &polled {
-            Poll::Ready(Some(Ok(data))) => {
-                self.streamed += data.len();
-                if !self.decremented && self.streamed * 100 / self.total >= 95 {
-                    self.downloaded();
-                }
-            },
-            _ => (),
+        if let Poll::Ready(Some(Ok(data))) = &polled {
+            self.streamed += data.len();
+            if !self.decremented && self.streamed * 100 / self.total >= 95 {
+                self.downloaded();
+            }
         }
         polled
     }

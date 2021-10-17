@@ -43,7 +43,7 @@ pub fn request_target(headers: &HeaderMap<HeaderValue>) -> Option<String> {
 }
 
 pub fn format_duration(duration: Duration) -> String {
-    static UNITS: [(u64, &'static str); 5] = [
+    static UNITS: [(u64, &str); 5] = [
         (365 * 24 * 60 * 60, "year"),
         (24 * 60 * 60, "day"),
         (60 * 60, "hour"),

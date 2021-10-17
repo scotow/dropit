@@ -40,7 +40,6 @@ pub struct UploadRequest {
     pub origin: IpAddr,
 }
 
-#[allow(clippy::wildcard_in_or_patterns)]
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let auth = match req.data::<Authenticator>() {
         Some(auth) => auth,

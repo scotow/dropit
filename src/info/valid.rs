@@ -33,7 +33,7 @@ async fn process_valids(req: Request<Body>) -> Result<Vec<bool>, Error> {
     let mut res = Vec::with_capacity(aliases.len());
     for alias in aliases {
         res.push(
-            alias.is_used(&mut conn).await.ok_or_else(|| ValidError::Database)?
+            alias.is_used(&mut conn).await.ok_or(ValidError::Database)?
         );
     }
 

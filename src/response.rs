@@ -28,6 +28,7 @@ pub fn error_text_response(err: Error) -> HttpResult<Response<Body>> {
     build_response(err.status_code(), "text/plain", err.to_string())
 }
 
+#[allow(clippy::wildcard_in_or_patterns)]
 pub fn adaptive_response<C: SingleLine + Serialize>(accept_header: Option<HeaderValue>, code: StatusCode, content: Result<C, Error>) -> HttpResult<Response<Body>> {
     let response_type = accept_header.map(|h| h.as_bytes().to_vec());
     match response_type.as_deref() {
@@ -36,6 +37,7 @@ pub fn adaptive_response<C: SingleLine + Serialize>(accept_header: Option<Header
     }
 }
 
+#[allow(clippy::wildcard_in_or_patterns)]
 pub fn adaptive_error(accept_header: Option<HeaderValue>, err: Error) -> HttpResult<Response<Body>> {
     let response_type = accept_header.map(|h| h.as_bytes().to_vec());
     match response_type.as_deref() {

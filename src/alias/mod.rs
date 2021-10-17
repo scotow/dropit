@@ -19,8 +19,8 @@ pub enum Alias {
 impl Alias {
     pub fn inner(&self) -> &str {
         match self {
-            Short(a) => &a,
-            Long(a) => &a,
+            Short(a) => a,
+            Long(a) => a,
         }
     }
 

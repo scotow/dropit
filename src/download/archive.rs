@@ -76,12 +76,10 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
             *occurrence += 1;
             let name = if *occurrence == 1 {
                 info.name.clone()
+            } else if let Some((name, extension)) = info.name.split_once('.') {
+                format!("{}-{}.{}", name, occurrence, extension)
             } else {
-                if let Some((name, extension)) = info.name.split_once('.') {
-                    format!("{}-{}.{}", name, occurrence, extension)
-                } else {
-                    format!("{}-{}", info.name, occurrence)
-                }
+                format!("{}-{}", info.name, occurrence)
             };
 
             let mut header = Header::new_gnu();
@@ -103,7 +101,7 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
                     break;
                 }
             };
-            match ar.append(&mut header, fd.compat()).await {
+            match ar.append(&header, fd.compat()).await {
                 Ok(_) => (),
                 Err(err) => {
                     log::error!("Failed to append file to archive: {}", err);

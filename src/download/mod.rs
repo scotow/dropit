@@ -49,10 +49,10 @@ async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) -> Result<(), S
         .bind(id)
         .fetch_optional(&mut conn).await
         .map_err(|err| format!("Cannot fetch downloads count: {:?}", err))?
-        .ok_or_else(|| "Cannot find file for downloads count decrement")?;
+        .ok_or("Cannot find file for downloads count decrement")?;
     match downloads {
         None => (),
-        Some(0) => Err(format!("Found a zero downloads counter file: {}", id))?,
+        Some(0) => return Err(format!("Found a zero downloads counter file: {}", id)),
         Some(1) => {
             tokio::fs::remove_file(dir.file_path(id)).await
                 .map_err(|err| format!("Failed to delete decremented to zero file from fs {}: {:?}", id, err))?;
@@ -61,7 +61,7 @@ async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) -> Result<(), S
                 .execute(&mut conn).await
                 .map_err(|err| format!("Failed to delete decremented to zero file from database {}: {:?}", id, err))?;
         },
-        Some(count @ _) => {
+        Some(count) => {
             sqlx::query(include_query!("update_file_downloads"))
                 .bind(count - 1)
                 .bind(id)
