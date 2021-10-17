@@ -14,7 +14,7 @@ impl FromStr for Threshold {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let [size, duration]: [&str; 2] = s.splitn(2, ':')
+        let [size, duration]: [&str; 2] = s.split(':')
             .collect::<Vec<_>>()
             .try_into().map_err(|_| "invalid format (should be SIZE:DURATION_SEC)")?;
         
