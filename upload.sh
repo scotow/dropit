@@ -3,10 +3,17 @@
 set -e -u -o pipefail
 
 readonly DOMAIN=""
+readonly USERNAME="" # Leave empty if disabled serverside.
+readonly PASSWORD="" # Leave empty if disabled serverside.
 
 if [ -z "$DOMAIN" ]; then
   echo "Unspecified domain" >&2
   exit 1
+fi
+
+declare CREDENTIALS=""
+if [ -n "$USERNAME" -a -n "$PASSWORD" ]; then
+  CREDENTIALS="-u $USERNAME:$PASSWORD"
 fi
 
 if [ $# -eq 0 ]; then
@@ -22,10 +29,17 @@ for FILE in $FILES; do
   fi
 done
 
-for FILE in $FILES; do
+upload() {
+  declare FILE="$1"
+  shift
+
   if [ "$FILE" == "-" ]; then
-    curl --header 'Accept: text/plain' --data-binary @"$FILE" "$DOMAIN"; echo
+    curl "$@"; echo
   else
-    curl --header 'Accept: text/plain' --header "X-Filename: $(tr -dc '\40'-'\176' <<< $(basename $FILE))" --data-binary @"$FILE" "$DOMAIN"; echo
+    curl "$@" --header "X-Filename: $(tr -dc '\40'-'\176' <<< $(basename $FILE))"; echo
   fi
+}
+
+for FILE in $FILES; do
+  upload $FILE $CREDENTIALS --header 'Accept: text/plain' --header 'Content-Type:' --data-binary @"$FILE" "$DOMAIN"
 done
