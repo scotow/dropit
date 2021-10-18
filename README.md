@@ -75,7 +75,7 @@ dropit \
 - Setting the duration of files smaller than 64 MB to 24h
 - Setting the duration of files smaller than 256 MB to 6h
 - Forbidding files larger than 256M
-- Protecting upload endpoint with a basic auth and using admin/password as credential 
+- Protecting upload endpoint with a basic auth and using admin/password as credentials
 - Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)
 - Creating (if needed) a directory named "uploads" (default) and storing uploaded files in it
