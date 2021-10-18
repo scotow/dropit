@@ -14,6 +14,7 @@
 - Archive download
 - Downloads limit
 - JSON or plain text response (helpful for scripting)
+- Authentification (upload, download and/or Web UI)
 - Upload files from a minimalist web interface:
     - Drag & drop of files
     - QRCode generation
@@ -31,6 +32,9 @@ USAGE:
     dropit [FLAGS] [OPTIONS] --global-size-sum <global-size-sum> --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
 
 FLAGS:
+        --auth-download              
+        --auth-upload                
+        --auth-web-ui                
     -R, --behind-reverse-proxy       
     -h, --help                       Prints help information
     -v, --verbose                    
@@ -40,12 +44,13 @@ FLAGS:
 
 OPTIONS:
     -a, --address <address>                     [default: 127.0.0.1]
-    -C, --color <color>                         [default: #15b154]
+    -C, --credential <credentials>...          
     -d, --database <database>                   [default: dropit.db]
     -S, --global-size-sum <global-size-sum>    
     -c, --ip-file-count <ip-file-count>        
     -s, --ip-size-sum <ip-size-sum>            
     -p, --port <port>                           [default: 8080]
+    -T, --theme <theme>                         [default: #15b154]
     -t, --threshold <thresholds>...            
     -u, --uploads-dir <uploads-dir>             [default: uploads]
 ```
@@ -59,6 +64,8 @@ dropit \
   --global-size-sum 10GB \
   --threshold 64MB:24h \
   --threshold 256MB:6h \
+  --credential admin:password \
+  --auth-upload \
   --behind-reverse-proxy
 ```
 
@@ -68,6 +75,7 @@ dropit \
 - Setting the duration of files smaller than 64 MB to 24h
 - Setting the duration of files smaller than 256 MB to 6h
 - Forbidding files larger than 256M
+- Protecting upload endpoint with a basic auth and using admin/password as credential 
 - Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)
 - Creating (if needed) a directory named "uploads" (default) and storing uploaded files in it
