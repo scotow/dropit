@@ -15,7 +15,7 @@ pub struct Authenticator {
 }
 
 bitflags! {
-    pub struct Access: u32 {
+    pub struct Access: u8 {
         const UPLOAD = 1 << 0;
         const DOWNLOAD = 1 << 1;
         const WEB_UI = 1 << 2;
