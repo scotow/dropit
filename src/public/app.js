@@ -138,7 +138,9 @@ function documentReady() {
 
             this.progressBar = document.createElement('div');
             this.progressBar.classList.add('progress-bar');
-            this.node.append(this.progressBar);
+            this.percent = document.createElement('div');
+            this.percent.classList.add('percent');
+            this.node.append(this.progressBar, this.percent);
 
             const req = new XMLHttpRequest();
             req.open('POST', '/', true);
@@ -157,6 +159,7 @@ function documentReady() {
                 this.progress = event.loaded / event.total;
                 if (showingProgress) {
                     this.updateProgressBar();
+                    this.percent.innerText = `${Math.floor(this.progress * 100)}%`;
                 }
             };
             req.onload = (event) => {
@@ -453,6 +456,7 @@ function documentReady() {
             menu.append(download, separator.cloneNode(), copyLong, newAlias, separator, extend, downloads, separator.cloneNode(), forget, revoke);
 
             if (this.progressBar) this.progressBar.remove();
+            if (this.percent) this.percent.remove();
             this.node.append(link, info);
         }
 
@@ -470,6 +474,7 @@ function documentReady() {
             error.innerText = data.error.toTitleCase();
 
             if (this.progressBar) this.progressBar.remove();
+            if (this.percent) this.percent.remove();
             this.node.append(remove, error);
         }
 

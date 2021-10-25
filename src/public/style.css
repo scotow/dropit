@@ -201,6 +201,7 @@ body.ready.has-file > .files {
     margin: 0 14px 34px;
     padding: 14px 10px 10px;
     box-sizing: border-box;
+    background: #101010;
     border: 1px solid TEMPLATE_COLOR;
     border-radius: 6px;
     transition: border 1s linear;
@@ -247,6 +248,14 @@ body.ready.has-file > .files {
     box-sizing: content-box;
     border-radius: 4px;
     transition: background-color linear 500ms, width ease-out 500ms;
+}
+
+.files > .file > .percent {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-weight: bold;
+    font-size: 14px;
 }
 
 .files > .file > .link {
