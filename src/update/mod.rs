@@ -19,8 +19,11 @@ async fn authorize(req: &Request<Body>) -> Result<(String, u64, PoolConnection<S
         .parse::<Alias>()
         .map_err(|_| AdminError::InvalidAlias)?;
 
-    let auth = req.headers()
-        .get(header::AUTHORIZATION).ok_or(AdminError::InvalidAuthorizationHeader)?
+    let headers = req.headers();
+    let auth = headers
+        .get("X-Authorization") // Prioritize X-Authorization because Safari doesn't overwrite XMLHttpRequest's Authorization header.
+        .or(headers.get(header::AUTHORIZATION))
+        .ok_or(AdminError::InvalidAuthorizationHeader)?
         .to_str().map_err(|_| AdminError::InvalidAuthorizationHeader)?;
 
     let mut conn = req.data::<SqlitePool>().ok_or(AdminError::Database)?

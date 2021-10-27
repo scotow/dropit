@@ -337,6 +337,7 @@ function documentReady() {
                         }
                         req.open('PATCH', path, true);
                         req.setRequestHeader('Authorization', this.info.admin);
+                        req.setRequestHeader('X-Authorization', this.info.admin);
                         req.responseType = 'json';
                         req.onload = (event) => {
                             if (req.status === 200) {
@@ -372,6 +373,7 @@ function documentReady() {
                     const req = new XMLHttpRequest();
                     req.open('PATCH', `/${this.info.alias.short}/expiration`, true);
                     req.setRequestHeader('Authorization', this.info.admin);
+                    req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
@@ -402,6 +404,7 @@ function documentReady() {
                     const req = new XMLHttpRequest();
                     req.open('PATCH', `/${this.info.alias.short}/downloads/${n}`, true);
                     req.setRequestHeader('Authorization', this.info.admin);
+                    req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
@@ -431,6 +434,7 @@ function documentReady() {
                     const req = new XMLHttpRequest();
                     req.open('DELETE', `/${this.info.alias.short}`, true);
                     req.setRequestHeader('Authorization', this.info.admin);
+                    req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = (event) => {
                         if (req.status === 200) {
