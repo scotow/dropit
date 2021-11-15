@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 
-use async_tar::{Builder, Header, HeaderMode};
 use hyper::{
     Body,
-    header::{CONTENT_DISPOSITION, CONTENT_TYPE},
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
     Request,
     Response,
     StatusCode
@@ -13,8 +12,8 @@ use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio::io::{duplex, DuplexStream};
-use tokio_util::compat::TokioAsyncReadCompatExt;
 use tokio_util::io::ReaderStream;
+use zipit::{Archive, archive_size, FileDateTime};
 
 use crate::alias::Alias;
 use crate::download::FileInfo;
@@ -26,11 +25,12 @@ use crate::storage::dir::Dir;
 
 pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     match process_download(req).await {
-        Ok(stream) => {
+        Ok((size, stream)) => {
             Response::builder()
                 .status(StatusCode::OK)
-                .header(CONTENT_TYPE, "application/x-tar")
-                .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.tar""#)
+                .header(CONTENT_LENGTH, size)
+                .header(CONTENT_TYPE, "application/zip")
+                .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
                 .body(Body::wrap_stream(ReaderStream::new(stream)))
         },
         Err(err) => {
@@ -42,7 +42,7 @@ pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Infall
     }.or_else(|_| Ok(generic_500()))
 }
 
-async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
+async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), Error> {
     let alias = req.param("alias")
         .ok_or(DownloadError::AliasExtract)?;
 
@@ -65,44 +65,37 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
         );
     }
 
+    let mut name_occurrences = HashMap::new();
+    for mut info in &mut info {
+        let occurrence = name_occurrences.entry(info.name.clone()).or_insert(0u16);
+        *occurrence += 1;
+        if *occurrence >= 2 {
+            if let Some((name, extension)) = info.name.split_once('.') {
+                info.name = format!("{}-{}.{}", name, occurrence, extension);
+            } else {
+                info.name = format!("{}-{}", info.name, occurrence);
+            }
+        }
+    }
+    let archive_size = archive_size(
+        info
+            .iter()
+            .map(|f| (f.name.as_ref(), f.size as usize))
+    );
+
     let (w, r) = duplex(64000);
     tokio::spawn(async move {
-        let mut name_occurrences = HashMap::new();
-        let mut ar = Builder::new(w.compat());
-        ar.mode(HeaderMode::Deterministic);
-
-        for info in info.iter() {
-            let occurrence = name_occurrences.entry(&info.name).or_insert(0u16);
-            *occurrence += 1;
-            let name = if *occurrence == 1 {
-                info.name.clone()
-            } else if let Some((name, extension)) = info.name.split_once('.') {
-                format!("{}-{}.{}", name, occurrence, extension)
-            } else {
-                format!("{}-{}", info.name, occurrence)
-            };
-
-            let mut header = Header::new_gnu();
-            match header.set_path(name) {
-                Ok(_) => (),
-                Err(err) => {
-                    log::error!("Failed to write file path to archive: {}", err);
-                    break;
-                }
-            }
-            header.set_mode(0o644);
-            header.set_size(info.size as u64);
-            header.set_cksum();
-
-            let fd = match File::open(dir.file_path(&info.id)).await {
+        let mut archive = Archive::new(w);
+        for info in info {
+            let mut fd = match File::open(dir.file_path(&info.id)).await {
                 Ok(fd) => fd,
                 Err(err) => {
                     log::error!("Failed to open file for archive streaming: {}", err);
                     break;
                 }
             };
-            match ar.append(&header, fd.compat()).await {
-                Ok(_) => (),
+            match archive.append(info.name, FileDateTime::now(), &mut fd).await {
+                Ok(fd) => fd,
                 Err(err) => {
                     log::error!("Failed to append file to archive: {}", err);
                     break;
@@ -116,12 +109,11 @@ async fn process_download(req: Request<Body>) -> Result<DuplexStream, Error> {
                 },
             }
         }
-
-        match ar.finish().await {
+        match archive.finalize().await {
             Ok(_) => (),
             Err(err) => log::error!("Failed to write archive's completion data: {}", err),
         }
     });
 
-    Ok(r)
+    Ok((archive_size, r))
 }
