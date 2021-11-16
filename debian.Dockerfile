@@ -1,4 +1,4 @@
-FROM rust:1.54-slim AS builder
+FROM rust:1.56-slim AS builder
 
 # Required by sqlx even if we don't use any SSL connection.
 RUN apt-get update && apt-get install -y openssl libssl-dev pkg-config
