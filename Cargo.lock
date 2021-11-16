@@ -228,7 +228,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dropit"
-version = "0.16.0"
+version = "0.16.1"
 dependencies = [
  "async-trait",
  "base64",
@@ -1644,8 +1644,9 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
 name = "zipit"
-version = "0.1.0"
-source = "git+https://github.com/scotow/zipit?rev=bf619da#bf619da318ba0fef285fc763bd27f2675b6efe6e"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a175150c3ac3710443dfb78a5c1942cac356e85cf055749a00b357fd4701e6ce"
 dependencies = [
  "chrono",
  "crc32fast",
