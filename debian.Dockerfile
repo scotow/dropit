@@ -9,7 +9,7 @@ RUN cargo build --release
 
 #------------
 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 COPY --from=builder /app/target/release/dropit /dropit
 
