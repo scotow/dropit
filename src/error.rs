@@ -116,96 +116,48 @@ impl SingleLine for Error {
 
 pub mod upload {
     pub use super::Error::{
-        AliasGeneration,
-        ContentLength,
-        CopyFile,
-        CreateFile,
-        Database,
-        FilenameHeader,
-        Origin,
-        PathResolve,
-        QuotaAccess,
-        QuotaExceeded,
-        SizeMismatch,
-        Target,
-        TimeCalculation,
-        TooLarge,
+        AliasGeneration, ContentLength, CopyFile, CreateFile, Database, FilenameHeader, Origin,
+        PathResolve, QuotaAccess, QuotaExceeded, SizeMismatch, Target, TimeCalculation, TooLarge,
     };
 }
 
 pub mod download {
     pub use super::Error::{
-        AliasExtract,
-        Database,
-        FileNotFound,
-        InvalidAlias,
-        OpenFile,
-        PathResolve,
+        AliasExtract, Database, FileNotFound, InvalidAlias, OpenFile, PathResolve,
     };
 }
 
 pub mod admin {
     pub use super::Error::{
-        AliasExtract,
-        Database,
-        FileNotFound,
-        InvalidAdminToken,
-        InvalidAlias,
+        AliasExtract, Database, FileNotFound, InvalidAdminToken, InvalidAlias,
         InvalidAuthorizationHeader,
     };
 }
 
 pub mod revoke {
-    pub use super::Error::{
-        PartialRemove,
-        PathResolve,
-        RemoveFile,
-    };
+    pub use super::Error::{PartialRemove, PathResolve, RemoveFile};
 }
 
 pub mod alias {
-    pub use super::Error::{
-        AliasGeneration,
-        Database,
-        Target,
-        UnexpectedFileModification,
-    };
+    pub use super::Error::{AliasGeneration, Database, Target, UnexpectedFileModification};
 }
 
 pub mod expiration {
-    pub use super::Error::{
-        Database,
-        TimeCalculation,
-        TooLarge,
-    };
+    pub use super::Error::{Database, TimeCalculation, TooLarge};
 }
 
 pub mod downloads {
-    pub use super::Error::{
-        InvalidDownloadsCount,
-        UnexpectedFileModification,
-    };
+    pub use super::Error::{InvalidDownloadsCount, UnexpectedFileModification};
 }
 
 pub mod valid {
-    pub use super::Error::{
-        AliasExtract,
-        Database,
-        InvalidAlias,
-    };
+    pub use super::Error::{AliasExtract, Database, InvalidAlias};
 }
 
 pub mod assets {
-    pub use super::Error::{
-        AssetNotFound,
-        AssetsCatalogue,
-    };
+    pub use super::Error::{AssetNotFound, AssetsCatalogue};
 }
 
 pub mod auth {
-    pub use super::Error::{
-        AccessForbidden,
-        AuthProcess,
-        InvalidAuthorizationHeader,
-    };
+    pub use super::Error::{AccessForbidden, AuthProcess, InvalidAuthorizationHeader};
 }

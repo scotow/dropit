@@ -21,7 +21,14 @@ pub struct UploadInfo {
 }
 
 impl UploadInfo {
-    pub fn new(admin: String, name: String, size: u64, alias: (String, String), link_base: String, expiration: Expiration) -> Self {
+    pub fn new(
+        admin: String,
+        name: String,
+        size: u64,
+        alias: (String, String),
+        link_base: String,
+        expiration: Expiration,
+    ) -> Self {
         Self {
             admin,
             name,
@@ -34,7 +41,7 @@ impl UploadInfo {
                 short: format!("{}/{}", link_base, &alias.0),
                 long: format!("{}/{}", link_base, &alias.1),
             },
-            expiration
+            expiration,
         }
     }
 }
@@ -55,7 +62,9 @@ impl From<u64> for Size {
     fn from(bytes: u64) -> Self {
         Self {
             bytes,
-            readable: Byte::from_bytes(bytes).get_appropriate_unit(false).to_string(),
+            readable: Byte::from_bytes(bytes)
+                .get_appropriate_unit(false)
+                .to_string(),
         }
     }
 }
@@ -88,12 +97,10 @@ impl TryFrom<Duration> for Expiration {
     type Error = Error;
 
     fn try_from(duration: Duration) -> Result<Self, Self::Error> {
-        Ok(
-            Self {
-                duration: ExpirationDuration::from(duration),
-                date: ExpirationDate::try_from(duration)?,
-            }
-        )
+        Ok(Self {
+            duration: ExpirationDuration::from(duration),
+            date: ExpirationDate::try_from(duration)?,
+        })
     }
 }
 
@@ -123,15 +130,16 @@ impl TryFrom<Duration> for ExpirationDate {
 
     fn try_from(duration: Duration) -> Result<Self, Self::Error> {
         let expiration = SystemTime::now() + duration;
-        Ok(
-            Self {
-                timestamp: expiration.duration_since(UNIX_EPOCH).map_err(|_| UploadError::TimeCalculation)?.as_secs(),
-                readable: {
-                    let mut full = format_rfc3339_seconds(expiration).to_string();
-                    full.truncate(full.len() - 4);
-                    full.replace('T', " ").replace('-', "/")
-                },
-            }
-        )
+        Ok(Self {
+            timestamp: expiration
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| UploadError::TimeCalculation)?
+                .as_secs(),
+            readable: {
+                let mut full = format_rfc3339_seconds(expiration).to_string();
+                full.truncate(full.len() - 4);
+                full.replace('T', " ").replace('-', "/")
+            },
+        })
     }
 }

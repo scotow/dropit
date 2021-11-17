@@ -8,37 +8,34 @@ use crate::misc::request_target;
 use crate::response::json_response;
 
 pub async fn handler_short(req: Request<Body>) -> Result<Response<Body>, Error> {
-    Ok(
-        json_response(
-            StatusCode::OK,
-            process_short(req).await
-                .map(|(base, alias)| json!({
+    Ok(json_response(
+        StatusCode::OK,
+        process_short(req).await.map(|(base, alias)| {
+            json!({
                 "alias": { "short": &alias },
                 "link": { "short": format!("{}/{}", base, &alias) }
-            }))?
-        )?
-    )
+            })
+        })?,
+    )?)
 }
 
 pub async fn handler_long(req: Request<Body>) -> Result<Response<Body>, Error> {
-    Ok(
-        json_response(
-            StatusCode::OK,
-            process_long(req).await
-                .map(|(base, alias)| json!({
+    Ok(json_response(
+        StatusCode::OK,
+        process_long(req).await.map(|(base, alias)| {
+            json!({
                 "alias": { "long": &alias },
                 "link": { "long": format!("{}/{}", base, &alias) }
-            }))?
-        )?
-    )
+            })
+        })?,
+    )?)
 }
 
 pub async fn handler_both(req: Request<Body>) -> Result<Response<Body>, Error> {
-    Ok(
-        json_response(
-            StatusCode::OK,
-            process_both(req).await
-                .map(|(base, short, long)| json!({
+    Ok(json_response(
+        StatusCode::OK,
+        process_both(req).await.map(|(base, short, long)| {
+            json!({
                 "alias": {
                     "short": &short,
                     "long": &long,
@@ -47,20 +44,22 @@ pub async fn handler_both(req: Request<Body>) -> Result<Response<Body>, Error> {
                     "short": format!("{}/{}", base, &short),
                     "long": format!("{}/{}", base, &long),
                 }
-            }))?
-        )?
-    )
+            })
+        })?,
+    )?)
 }
 
 async fn process_short(req: Request<Body>) -> Result<(String, String), Error> {
     let (id, _size, mut conn) = super::authorize(&req).await?;
-    let alias = alias::random_unused_short(&mut conn).await
+    let alias = alias::random_unused_short(&mut conn)
+        .await
         .ok_or(AliasError::AliasGeneration)?;
 
     let affected = sqlx::query(include_query!("update_file_short_alias"))
         .bind(&alias)
         .bind(&id)
-        .execute(&mut conn).await
+        .execute(&mut conn)
+        .await
         .map_err(|_| AliasError::Database)?
         .rows_affected();
 
@@ -74,13 +73,15 @@ async fn process_short(req: Request<Body>) -> Result<(String, String), Error> {
 
 async fn process_long(req: Request<Body>) -> Result<(String, String), Error> {
     let (id, _size, mut conn) = super::authorize(&req).await?;
-    let alias = alias::random_unused_long(&mut conn).await
+    let alias = alias::random_unused_long(&mut conn)
+        .await
         .ok_or(AliasError::AliasGeneration)?;
 
     let affected = sqlx::query(include_query!("update_file_long_alias"))
         .bind(&alias)
         .bind(&id)
-        .execute(&mut conn).await
+        .execute(&mut conn)
+        .await
         .map_err(|_| AliasError::Database)?
         .rows_affected();
 
@@ -94,14 +95,16 @@ async fn process_long(req: Request<Body>) -> Result<(String, String), Error> {
 
 async fn process_both(req: Request<Body>) -> Result<(String, String, String), Error> {
     let (id, _size, mut conn) = super::authorize(&req).await?;
-    let (short, long) = alias::random_unused_aliases(&mut conn).await
+    let (short, long) = alias::random_unused_aliases(&mut conn)
+        .await
         .ok_or(AliasError::AliasGeneration)?;
 
     let affected = sqlx::query(include_query!("update_file_aliases"))
         .bind(&short)
         .bind(&long)
         .bind(&id)
-        .execute(&mut conn).await
+        .execute(&mut conn)
+        .await
         .map_err(|_| AliasError::Database)?
         .rows_affected();
 

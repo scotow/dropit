@@ -44,7 +44,9 @@ impl Cleaner {
 
         let files = match sqlx::query_as::<_, (String,)>(include_query!("get_files_expired"))
             .bind(now_timestamp as i64)
-            .fetch_all(&mut conn).await {
+            .fetch_all(&mut conn)
+            .await
+        {
             Ok(files) => files,
             Err(err) => {
                 log::error!("Cannot fetch expired files: {:?}", err);
@@ -55,12 +57,18 @@ impl Cleaner {
         if !files.is_empty() {
             for (id,) in files {
                 if let Err(err) = tokio::fs::remove_file(self.dir.join(&id)).await {
-                    log::error!("Cannot remove file with id from file system {}: {}", id, err);
+                    log::error!(
+                        "Cannot remove file with id from file system {}: {}",
+                        id,
+                        err
+                    );
                     continue;
                 }
                 if let Err(err) = sqlx::query(include_query!("delete_file"))
                     .bind(&id)
-                    .execute(&mut conn).await {
+                    .execute(&mut conn)
+                    .await
+                {
                     log::error!("Cannot remove file with id {} from database: {:?}", id, err);
                 }
             }

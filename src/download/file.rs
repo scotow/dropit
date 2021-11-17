@@ -4,10 +4,7 @@ use std::task::{Context, Poll};
 use futures::Stream;
 use hyper::{
     Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
-    Request,
-    Response,
-    StatusCode
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH}, Request, Response, StatusCode,
 };
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
@@ -23,31 +20,40 @@ use crate::storage::dir::Dir;
 
 pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let (info, stream) = process_download(req).await?;
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(CONTENT_LENGTH, info.size as u64)
-            .header(CONTENT_DISPOSITION, format!(r#"attachment; filename="{}""#, info.name))
-            .body(Body::wrap_stream(stream))?
-    )
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_LENGTH, info.size as u64)
+        .header(
+            CONTENT_DISPOSITION,
+            format!(r#"attachment; filename="{}""#, info.name),
+        )
+        .body(Body::wrap_stream(stream))?)
 }
 
 async fn process_download(req: Request<Body>) -> Result<(FileInfo, FileStreamer), Error> {
-    let alias = req.param("alias")
+    let alias = req
+        .param("alias")
         .ok_or(DownloadError::AliasExtract)?
         .parse::<Alias>()
         .map_err(|_| DownloadError::InvalidAlias)?;
 
-    let pool = req.data::<SqlitePool>().ok_or(DownloadError::Database)?.clone();
+    let pool = req
+        .data::<SqlitePool>()
+        .ok_or(DownloadError::Database)?
+        .clone();
     let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
     let info = sqlx::query_as::<_, FileInfo>(include_query!("get_file"))
-        .bind(alias.inner()).bind(alias.inner())
-        .fetch_optional(&mut conn).await.map_err(|_| DownloadError::Database)?
+        .bind(alias.inner())
+        .bind(alias.inner())
+        .fetch_optional(&mut conn)
+        .await
+        .map_err(|_| DownloadError::Database)?
         .ok_or(DownloadError::FileNotFound)?;
 
     let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
-    let fd = File::open(dir.file_path(&info.id)
-    ).await.map_err(|_| DownloadError::OpenFile)?;
+    let fd = File::open(dir.file_path(&info.id))
+        .await
+        .map_err(|_| DownloadError::OpenFile)?;
 
     let streamer = FileStreamer::new(fd, &info, dir, pool);
     Ok((info, streamer))

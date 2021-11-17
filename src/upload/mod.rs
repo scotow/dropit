@@ -27,9 +27,9 @@ use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
 use crate::upload::origin::RealIp;
 
-pub mod origin;
 pub mod expiration;
 pub mod file;
+pub mod origin;
 
 pub type UploadResult<T> = Result<T, Error>;
 
@@ -40,17 +40,18 @@ pub struct UploadRequest {
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let auth = req.data::<Authenticator>()
-        .ok_or(AuthError::AuthProcess)?;
+    let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
     if let Some(resp) = auth.allows(&req, Access::UPLOAD) {
         return Ok(resp);
     }
 
     let response_type = req.headers().get(header::ACCEPT).cloned();
     let upload_res = process_upload(req).await?;
-    Ok(
-        adaptive_response(response_type, StatusCode::CREATED, upload_res)?
-    )
+    Ok(adaptive_response(
+        response_type,
+        StatusCode::CREATED,
+        upload_res,
+    )?)
 }
 
 #[allow(clippy::bool_comparison)]
@@ -60,29 +61,45 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
     let upload_req = UploadRequest {
         name: parse_filename_header(req.headers())?,
         size: parse_file_size(req.headers())?,
-        origin: req.data::<RealIp>().ok_or(UploadError::Origin)?
-            .find(&req).ok_or(UploadError::Origin)?,
+        origin: req
+            .data::<RealIp>()
+            .ok_or(UploadError::Origin)?
+            .find(&req)
+            .ok_or(UploadError::Origin)?,
     };
 
-    let pool = req.data::<SqlitePool>().ok_or(UploadError::Database)?.clone();
+    let pool = req
+        .data::<SqlitePool>()
+        .ok_or(UploadError::Database)?
+        .clone();
     let mut conn = pool.acquire().await.map_err(|_| UploadError::Database)?;
 
     // Quota.
-    if req.data::<ChainLimiter>().ok_or(UploadError::QuotaAccess)?
-        .accept(&upload_req, &mut conn).await
-        .ok_or(UploadError::QuotaAccess)? == false {
+    if req
+        .data::<ChainLimiter>()
+        .ok_or(UploadError::QuotaAccess)?
+        .accept(&upload_req, &mut conn)
+        .await
+        .ok_or(UploadError::QuotaAccess)?
+        == false
+    {
         return Err(UploadError::QuotaExceeded);
     }
 
     // Aliases and links.
-    let (short, long) = alias::random_unused_aliases(&mut conn).await
+    let (short, long) = alias::random_unused_aliases(&mut conn)
+        .await
         .ok_or(UploadError::AliasGeneration)?;
     let link_base = request_target(req.headers()).ok_or(UploadError::Target)?;
 
     // Expiration.
-    let determiner = req.data::<Determiner>().ok_or(UploadError::TimeCalculation)?;
+    let determiner = req
+        .data::<Determiner>()
+        .ok_or(UploadError::TimeCalculation)?;
     let expiration = Expiration::try_from(
-        determiner.determine(upload_req.size).ok_or(UploadError::TooLarge)?
+        determiner
+            .determine(upload_req.size)
+            .ok_or(UploadError::TooLarge)?,
     )?;
 
     sqlx::query(include_query!("insert_file"))
@@ -94,48 +111,54 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
         .bind(upload_req.size as i64)
         .bind(&short)
         .bind(&long)
-        .execute(&mut conn).await.map_err(|_| UploadError::Database)?;
+        .execute(&mut conn)
+        .await
+        .map_err(|_| UploadError::Database)?;
     drop(conn);
 
     // Copy body to file system.
-    let path = req.data::<Dir>().ok_or(UploadError::PathResolve)?.file_path(&id);
-    let file = File::create(&path).await.map_err(|_| UploadError::CreateFile)?;
+    let path = req
+        .data::<Dir>()
+        .ok_or(UploadError::PathResolve)?
+        .file_path(&id);
+    let file = File::create(&path)
+        .await
+        .map_err(|_| UploadError::CreateFile)?;
     match write_file(&upload_req, req.into_body(), file).await {
         Ok(_) => (),
         Err(err) => {
             clean_failed_upload(path.as_path(), &id, &pool).await;
-            return Err(err)
+            return Err(err);
         }
     }
 
-    Ok(
-        UploadInfo::new(
-            admin,
-            upload_req.name.unwrap_or_else(|| long.clone()),
-            upload_req.size,
-            (short, long),
-            link_base,
-            expiration,
-        )
-    )
+    Ok(UploadInfo::new(
+        admin,
+        upload_req.name.unwrap_or_else(|| long.clone()),
+        upload_req.size,
+        (short, long),
+        link_base,
+        expiration,
+    ))
 }
 
 fn parse_filename_header(headers: &HeaderMap) -> UploadResult<Option<String>> {
     if let Some(header) = headers.get("X-Filename") {
-        Ok(Some(
-            sanitize(
-                percent_decode_str(
-                    std::str::from_utf8(header.as_bytes()).map_err(|_| UploadError::Database)?
-                ).decode_utf8().map_err(|_| UploadError::FilenameHeader)?
+        Ok(Some(sanitize(
+            percent_decode_str(
+                std::str::from_utf8(header.as_bytes()).map_err(|_| UploadError::Database)?,
             )
-        ))
+            .decode_utf8()
+            .map_err(|_| UploadError::FilenameHeader)?,
+        )))
     } else {
         Ok(None)
     }
 }
 
 fn parse_file_size(headers: &HeaderMap) -> UploadResult<u64> {
-    headers.get(header::CONTENT_LENGTH)
+    headers
+        .get(header::CONTENT_LENGTH)
         .ok_or(UploadError::ContentLength)?
         .to_str()
         .map_err(|_| UploadError::ContentLength)?
@@ -167,12 +190,18 @@ async fn write_file(req: &UploadRequest, mut body: Body, mut file: File) -> Uplo
 
 async fn clean_failed_upload(file_path: &Path, id: &str, pool: &SqlitePool) {
     if let Err(err) = tokio::fs::remove_file(file_path).await {
-        log::error!("Cannot remove file with id {} from file system, file will retain quota: {}", id, err);
+        log::error!(
+            "Cannot remove file with id {} from file system, file will retain quota: {}",
+            id,
+            err
+        );
         return;
     }
     if let Err(err) = sqlx::query(include_query!("delete_file"))
         .bind(&id)
-        .execute(pool).await {
+        .execute(pool)
+        .await
+    {
         log::error!("Cannot remove file with id {} from database: {:?}", id, err);
     }
 }

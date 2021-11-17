@@ -5,8 +5,8 @@ use sqlx::SqliteConnection;
 use crate::alias::Alias::{Long, Short};
 use crate::include_query;
 
-pub mod short;
 pub mod long;
+pub mod short;
 
 const GENERATION_MAX_TENTATIVES: u8 = 20;
 
@@ -49,12 +49,21 @@ impl FromStr for Alias {
 async fn is_alias_used(alias: &str, query: &str, conn: &mut SqliteConnection) -> Option<bool> {
     sqlx::query(query)
         .bind(alias)
-        .fetch_optional(conn).await.ok()?
-        .is_some().into()
+        .fetch_optional(conn)
+        .await
+        .ok()?
+        .is_some()
+        .into()
 }
 
-async fn random_unused<F>(conn: &mut SqliteConnection, generator: F, exist_query: &str) -> Option<String>
-where F: Fn() -> Option<String> {
+async fn random_unused<F>(
+    conn: &mut SqliteConnection,
+    generator: F,
+    exist_query: &str,
+) -> Option<String>
+where
+    F: Fn() -> Option<String>,
+{
     for _ in 0..GENERATION_MAX_TENTATIVES {
         let alias = generator()?;
         if !is_alias_used(&alias, exist_query, conn).await? {
@@ -92,7 +101,7 @@ pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(Strin
         }
 
         if let (Some(short), Some(long)) = aliases {
-            return Some((short, long))
+            return Some((short, long));
         }
     }
     None

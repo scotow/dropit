@@ -25,7 +25,9 @@ impl Limiter for Ip {
     async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> Option<bool> {
         let (size, count) = sqlx::query_as::<_, (i64, i64)>(include_query!("get_limit_origin"))
             .bind(req.origin.to_string())
-            .fetch_one(conn).await.ok()?;
+            .fetch_one(conn)
+            .await
+            .ok()?;
         Some(size as u64 + req.size <= self.size_sum && count as usize + 1 <= self.file_count)
     }
 }

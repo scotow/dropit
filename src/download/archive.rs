@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use hyper::{
     Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
-    Request,
-    Response,
-    StatusCode
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE}, Request, Response, StatusCode,
 };
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
@@ -23,36 +20,40 @@ use crate::storage::dir::Dir;
 
 pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let (size, stream) = process_download(req).await?;
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(CONTENT_LENGTH, size)
-            .header(CONTENT_TYPE, "application/zip")
-            .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
-            .body(Body::wrap_stream(ReaderStream::new(stream)))?
-    )
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_LENGTH, size)
+        .header(CONTENT_TYPE, "application/zip")
+        .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
+        .body(Body::wrap_stream(ReaderStream::new(stream)))?)
 }
 
 async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), Error> {
-    let alias = req.param("alias")
-        .ok_or(DownloadError::AliasExtract)?;
+    let alias = req.param("alias").ok_or(DownloadError::AliasExtract)?;
 
-    let aliases = alias.split('+')
+    let aliases = alias
+        .split('+')
         .map(|a| a.parse::<Alias>().map_err(|_| DownloadError::InvalidAlias))
         .collect::<Result<Vec<_>, _>>()?;
 
     let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
 
-    let pool = req.data::<SqlitePool>().ok_or(DownloadError::Database)?.clone();
+    let pool = req
+        .data::<SqlitePool>()
+        .ok_or(DownloadError::Database)?
+        .clone();
     let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
 
     let mut info = Vec::with_capacity(aliases.len());
     for alias in aliases {
         info.push(
             sqlx::query_as::<_, FileInfo>(include_query!("get_file"))
-                .bind(alias.inner()).bind(alias.inner())
-                .fetch_optional(&mut conn).await.map_err(|_| DownloadError::Database)?
-                .ok_or(DownloadError::FileNotFound)?
+                .bind(alias.inner())
+                .bind(alias.inner())
+                .fetch_optional(&mut conn)
+                .await
+                .map_err(|_| DownloadError::Database)?
+                .ok_or(DownloadError::FileNotFound)?,
         );
     }
 
@@ -68,11 +69,7 @@ async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), E
             }
         }
     }
-    let archive_size = archive_size(
-        info
-            .iter()
-            .map(|f| (f.name.as_ref(), f.size as usize))
-    );
+    let archive_size = archive_size(info.iter().map(|f| (f.name.as_ref(), f.size as usize)));
 
     let (w, r) = duplex(64000);
     tokio::spawn(async move {
@@ -85,7 +82,10 @@ async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), E
                     break;
                 }
             };
-            match archive.append(info.name, FileDateTime::now(), &mut fd).await {
+            match archive
+                .append(info.name, FileDateTime::now(), &mut fd)
+                .await
+            {
                 Ok(fd) => fd,
                 Err(err) => {
                     log::error!("Failed to append file to archive: {}", err);
@@ -97,7 +97,7 @@ async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), E
                 Err(err) => {
                     log::error!("Failed to process file downloads counter update: {}", err);
                     break;
-                },
+                }
             }
         }
         match archive.finalize().await {

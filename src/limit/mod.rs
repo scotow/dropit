@@ -3,8 +3,8 @@ use sqlx::SqliteConnection;
 
 use crate::upload::UploadRequest;
 
-pub mod ip;
 pub mod global;
+pub mod ip;
 
 #[async_trait]
 pub trait Limiter {
@@ -24,7 +24,7 @@ impl Limiter for Chain {
     async fn accept(&self, req: &UploadRequest, conn: &mut SqliteConnection) -> Option<bool> {
         for l in self.0.iter() {
             if !l.accept(req, conn).await? {
-                return Some(false)
+                return Some(false);
             }
         }
         Some(true)

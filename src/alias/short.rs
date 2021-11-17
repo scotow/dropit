@@ -6,10 +6,10 @@ use rand::thread_rng;
 use regex::Regex;
 
 lazy_static! {
-    static ref CHARS: &'static[u8; 55] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-    static ref REGEX: Regex = Regex::new(
-        &format!("^[{}]{{6}}$", str::from_utf8(*CHARS).unwrap())
-    ).unwrap();
+    static ref CHARS: &'static [u8; 55] =
+        b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    static ref REGEX: Regex =
+        Regex::new(&format!("^[{}]{{6}}$", str::from_utf8(*CHARS).unwrap())).unwrap();
 }
 
 pub fn is_match(alias: &str) -> bool {
@@ -29,21 +29,11 @@ pub fn random() -> Option<String> {
 mod tests {
     #[test]
     fn random() {
-        [
-            "nXL4fq",
-            "hT8cFn",
-            "bEC9v8",
-            "aBvyRK"
-        ]
+        ["nXL4fq", "hT8cFn", "bEC9v8", "aBvyRK"]
             .iter()
             .for_each(|a| assert!(super::REGEX.is_match(a)));
 
-        [
-            "AAAAA",
-            "AAAAAAA",
-            "iAAAAA",
-            "0AAAAA"
-        ]
+        ["AAAAA", "AAAAAAA", "iAAAAA", "0AAAAA"]
             .iter()
             .for_each(|a| assert!(!super::REGEX.is_match(a)));
 

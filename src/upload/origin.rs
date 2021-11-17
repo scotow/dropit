@@ -12,7 +12,12 @@ impl RealIp {
 
     pub fn find(&self, req: &Request<Body>) -> Option<IpAddr> {
         if self.0 {
-            req.headers().get("X-Forwarded-For")?.to_str().ok()?.parse::<IpAddr>().ok()
+            req.headers()
+                .get("X-Forwarded-For")?
+                .to_str()
+                .ok()?
+                .parse::<IpAddr>()
+                .ok()
         } else {
             Some(req.remote_addr().ip())
         }

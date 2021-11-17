@@ -26,19 +26,19 @@ use crate::upload::expiration::Determiner;
 use crate::upload::origin::RealIp;
 
 mod alias;
-mod download;
-mod upload;
-mod update;
-mod error;
-mod storage;
-mod query;
-mod options;
-mod limit;
 mod assets;
-mod misc;
-mod response;
-mod info;
 mod auth;
+mod download;
+mod error;
+mod info;
+mod limit;
+mod misc;
+mod options;
+mod query;
+mod response;
+mod storage;
+mod update;
+mod upload;
 
 fn router(
     uploads_dir: PathBuf,
@@ -82,22 +82,21 @@ async fn error_handler(error: routerify::RouteError, req_info: RequestInfo) -> R
         Err(_) => return generic_500(),
     };
     let response_type = req_info.headers().get(header::ACCEPT).cloned();
-    adaptive_error(response_type, *error)
-        .unwrap_or_else(|_| generic_500())
+    adaptive_error(response_type, *error).unwrap_or_else(|_| generic_500())
 }
 
 async fn create_uploads_dir(path: &Path, should_create: bool) {
     match File::open(&path).await {
-        Ok(fd) => {
-            match fd.metadata().await {
-                Ok(md) => if !md.is_dir() {
+        Ok(fd) => match fd.metadata().await {
+            Ok(md) => {
+                if !md.is_dir() {
                     exit_error!("Uploads path is not a directory");
-                },
-                Err(_) => {
-                    exit_error!("Cannot fetch uploads dir metadata");
                 }
             }
-        }
+            Err(_) => {
+                exit_error!("Cannot fetch uploads dir metadata");
+            }
+        },
         Err(err) => {
             if err.kind() == ErrorKind::NotFound {
                 if should_create {
@@ -117,14 +116,16 @@ async fn create_uploads_dir(path: &Path, should_create: bool) {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let options = Options::from_args();
-    env_logger::Builder::new().filter_level(options.log_level).init();
+    env_logger::Builder::new()
+        .filter_level(options.log_level)
+        .init();
 
     let limiters = LimiterChain::new(vec![
         Box::new(IpLimiter::new(options.ip_size_sum, options.ip_file_count)),
         Box::new(Global::new(options.global_size_sum)),
     ]);
-    let determiner = Determiner::new(options.thresholds)
-        .unwrap_or_else(|| exit_error!("Invalid thresholds"));
+    let determiner =
+        Determiner::new(options.thresholds).unwrap_or_else(|| exit_error!("Invalid thresholds"));
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -132,11 +133,13 @@ async fn main() {
             SqliteConnectOptions::new()
                 .filename(&options.database)
                 .create_if_missing(!options.no_database_creation)
-                .busy_timeout(Duration::from_secs(30))
-        ).await
+                .busy_timeout(Duration::from_secs(30)),
+        )
+        .await
         .unwrap_or_else(|e| exit_error!("Cannot create database pool: {}", e));
     sqlx::query(include_query!("migration"))
-        .execute(&pool).await
+        .execute(&pool)
+        .await
         .unwrap_or_else(|e| exit_error!("Cannot run migration query: {}", e));
 
     create_uploads_dir(&options.uploads_dir, !options.no_uploads_dir_creation).await;
@@ -172,6 +175,7 @@ async fn main() {
 
     log::info!("App is running on: {}", address);
     Server::bind(&address)
-        .serve(service).await
+        .serve(service)
+        .await
         .unwrap_or_else(|e| exit_error!("Server stopped: {}", e))
 }
