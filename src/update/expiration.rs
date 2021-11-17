@@ -1,4 +1,4 @@
-use std::convert::{Infallible, TryFrom};
+use std::convert::TryFrom;
 
 use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
@@ -6,13 +6,17 @@ use routerify::ext::RequestExt;
 use crate::error::Error;
 use crate::error::expiration as ExpirationError;
 use crate::include_query;
-use crate::misc::generic_500;
 use crate::response::json_response;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::Expiration;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(StatusCode::OK, process_extend(req).await).or_else(|_| Ok(generic_500()))
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK, 
+            process_extend(req).await?
+        )?
+    )
 }
 
 async fn process_extend(req: Request<Body>) -> Result<Expiration, Error> {

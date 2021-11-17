@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 use serde_json::{Map, Value};
@@ -7,15 +5,17 @@ use serde_json::{Map, Value};
 use crate::error::Error;
 use crate::error::revoke as RevokeError;
 use crate::include_query;
-use crate::misc::generic_500;
 use crate::response::json_response;
 use crate::storage::dir::Dir;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
-        StatusCode::OK,
-        process_revoke(req).await.map(|_| Value::Object(Map::new()))
-    ).or_else(|_| Ok(generic_500()))
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK,
+            process_revoke(req).await
+                .map(|_| Value::Object(Map::new()))?
+        )?    
+    )
 }
 
 async fn process_revoke(req: Request<Body>) -> Result<(), Error> {

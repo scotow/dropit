@@ -1,26 +1,25 @@
-use std::{convert::Infallible, net::SocketAddr};
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use hyper::{Body, header, Request, Response, Server, StatusCode};
-use routerify::{ext::RequestExt, Middleware, Router, RouterService};
+use hyper::{Body, header, Response, Server};
+use routerify::{RequestInfo, Router, RouterService};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
 use structopt::StructOpt;
 use tokio::fs::File;
 use tokio::io::ErrorKind;
 
-use options::Options;
-
-use crate::asset::Assets;
+use crate::assets::Assets;
 use crate::auth::{Access, Authenticator};
-use crate::error::assets as AssetsError;
+use crate::error::{assets as AssetsError, Error};
 use crate::error::auth as AuthError;
 use crate::limit::Chain as LimiterChain;
 use crate::limit::global::Global;
 use crate::limit::ip::Ip as IpLimiter;
-use crate::misc::generic_500;
-use crate::response::error_text_response;
+use crate::options::Options;
+use crate::response::adaptive_error;
+use crate::response::generic_500;
 use crate::storage::clean::Cleaner;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
@@ -35,44 +34,11 @@ mod storage;
 mod query;
 mod options;
 mod limit;
-mod asset;
+mod assets;
 mod misc;
 mod response;
 mod info;
 mod auth;
-
-async fn logger(req: Request<Body>) -> Result<Request<Body>, Infallible> {
-    log::info!("{} {} {}", req.remote_addr(), req.method(), req.uri().path());
-    Ok(req)
-}
-
-async fn asset_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let auth = match req.data::<Authenticator>() {
-        Some(auth) => auth,
-        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
-    };
-    if let Some(resp) = auth.allows(&req, Access::WEB_UI) {
-        return Ok(resp);
-    }
-
-    let assets = match req.data::<Assets>() {
-        Some(assets) => assets,
-        None => return Ok(error_text_response(AssetsError::AssetsCatalogue).unwrap_or_else(|_| generic_500())),
-    };
-    match assets.asset_for_path(req.uri().path()).await {
-        Some((content, mime_type)) => {
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(header::CONTENT_TYPE, mime_type)
-                .body(Body::from(content))
-        }
-        None => {
-            Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(Body::empty())
-        }
-    }.or_else(|_| Ok(generic_500()))
-}
 
 fn router(
     uploads_dir: PathBuf,
@@ -82,7 +48,7 @@ fn router(
     pool: SqlitePool,
     assets: Assets,
     auth: Authenticator,
-) -> Router<Body, Infallible> {
+) -> Router<Body, Error> {
     Router::builder()
         .data(Dir::new(uploads_dir))
         .data(real_ip)
@@ -91,11 +57,10 @@ fn router(
         .data(pool)
         .data(assets)
         .data(auth)
-        .middleware(Middleware::pre(logger))
-        .get("/", asset_handler)
-        .get("/index.html", asset_handler)
-        .get("/style.css", asset_handler)
-        .get("/app.js", asset_handler)
+        .get("/", assets::handler)
+        .get("/index.html", assets::handler)
+        .get("/style.css", assets::handler)
+        .get("/app.js", assets::handler)
         .get("/:alias", download::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)
@@ -106,8 +71,19 @@ fn router(
         .patch("/:alias/expiration", update::expiration::handler)
         .patch("/:alias/downloads/:count", update::downloads::handler)
         .get("/valids/:alias", info::valid::handler)
+        .err_handler_with_info(error_handler)
         .build()
         .unwrap_or_else(|_| exit_error!("Cannot create HTTP router"))
+}
+
+async fn error_handler(error: routerify::RouteError, req_info: RequestInfo) -> Response<Body> {
+    let error = match error.downcast::<Error>() {
+        Ok(error) => error,
+        Err(_) => return generic_500(),
+    };
+    let response_type = req_info.headers().get(header::ACCEPT).cloned();
+    adaptive_error(response_type, *error)
+        .unwrap_or_else(|_| generic_500())
 }
 
 async fn create_uploads_dir(path: &Path, should_create: bool) {

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::Infallible;
 
 use hyper::{
     Body,
@@ -20,26 +19,18 @@ use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
 use crate::include_query;
-use crate::misc::generic_500;
 use crate::storage::dir::Dir;
 
-pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    match process_download(req).await {
-        Ok((size, stream)) => {
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(CONTENT_LENGTH, size)
-                .header(CONTENT_TYPE, "application/zip")
-                .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
-                .body(Body::wrap_stream(ReaderStream::new(stream)))
-        },
-        Err(err) => {
-            Response::builder()
-                .status(err.status_code())
-                .header(CONTENT_TYPE, "text/plain")
-                .body(err.to_string().into())
-        }
-    }.or_else(|_| Ok(generic_500()))
+pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    let (size, stream) = process_download(req).await?;
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_LENGTH, size)
+            .header(CONTENT_TYPE, "application/zip")
+            .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
+            .body(Body::wrap_stream(ReaderStream::new(stream)))?
+    )
 }
 
 async fn process_download(req: Request<Body>) -> Result<(usize, DuplexStream), Error> {

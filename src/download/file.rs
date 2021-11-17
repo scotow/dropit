@@ -1,11 +1,10 @@
-use std::convert::Infallible;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::Stream;
 use hyper::{
     Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH},
     Request,
     Response,
     StatusCode
@@ -20,25 +19,17 @@ use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
 use crate::include_query;
-use crate::misc::generic_500;
 use crate::storage::dir::Dir;
 
-pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    match process_download(req).await {
-        Ok((info, stream)) => {
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(CONTENT_LENGTH, info.size as u64)
-                .header(CONTENT_DISPOSITION, format!(r#"attachment; filename="{}""#, info.name))
-                .body(Body::wrap_stream(stream))
-        },
-        Err(err) => {
-            Response::builder()
-                .status(err.status_code())
-                .header(CONTENT_TYPE, "text/plain")
-                .body(err.to_string().into())
-        }
-    }.or_else(|_| Ok(generic_500()))
+pub(super) async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    let (info, stream) = process_download(req).await?;
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(CONTENT_LENGTH, info.size as u64)
+            .header(CONTENT_DISPOSITION, format!(r#"attachment; filename="{}""#, info.name))
+            .body(Body::wrap_stream(stream))?
+    )
 }
 
 async fn process_download(req: Request<Body>) -> Result<(FileInfo, FileStreamer), Error> {

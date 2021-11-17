@@ -1,5 +1,10 @@
 use std::borrow::Cow;
 
+use hyper::{Body, header, Request, Response, StatusCode};
+use routerify::ext::RequestExt;
+
+use crate::{Access, AssetsError, Authenticator, AuthError, Error};
+
 #[cfg(debug_assertions)]
 pub struct Assets {
     color: String,
@@ -83,3 +88,22 @@ impl Assets {
     }
 }
 
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    let auth = req.data::<Authenticator>()
+        .ok_or(AuthError::AuthProcess)?;
+    if let Some(resp) = auth.allows(&req, Access::WEB_UI) {
+        return Ok(resp);
+    }
+
+    let assets = req.data::<Assets>()
+        .ok_or(AssetsError::AssetsCatalogue)?;
+    let (content, mime_type) = assets.asset_for_path(req.uri().path()).await
+        .ok_or(AssetsError::AssetNotFound)?;
+
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, mime_type)
+            .body(Body::from(content))?
+    )
+}

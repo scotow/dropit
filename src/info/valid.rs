@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 use serde_json::json;
@@ -8,16 +6,18 @@ use sqlx::SqlitePool;
 use crate::alias::Alias;
 use crate::error::Error;
 use crate::error::valid as ValidError;
-use crate::misc::generic_500;
 use crate::response::json_response;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
-        StatusCode::OK,
-        process_valids(req).await.map(|res| json!({
-            "valids": res,
-        }))
-    ).or_else(|_| Ok(generic_500()))
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK,
+            process_valids(req).await
+                .map(|res| json!({
+                "valids": res,
+            }))?
+        )?
+    )
 }
 
 async fn process_valids(req: Request<Body>) -> Result<Vec<bool>, Error> {

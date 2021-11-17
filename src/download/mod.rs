@@ -1,15 +1,11 @@
-use std::convert::Infallible;
-
 use hyper::{Body, Request, Response};
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
+use crate::{Error, include_query};
 use crate::auth::{Access, Authenticator};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
-use crate::include_query;
-use crate::misc::generic_500;
-use crate::response::error_text_response;
 use crate::storage::dir::Dir;
 
 mod file;
@@ -22,19 +18,15 @@ struct FileInfo {
     size: i64,
 }
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let auth = match req.data::<Authenticator>() {
-        Some(auth) => auth,
-        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
-    };
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    let auth = req.data::<Authenticator>()
+        .ok_or(AuthError::AuthProcess)?;
     if let Some(resp) = auth.allows(&req, Access::DOWNLOAD) {
         return Ok(resp);
     }
 
-    let alias = match req.param("alias") {
-        Some(alias) => alias.clone(),
-        None => return error_text_response(DownloadError::AliasExtract).or_else(|_| Ok(generic_500()))
-    };
+    let alias = req.param("alias")
+        .ok_or(DownloadError::AliasExtract)?;
     if alias.contains('+') {
         archive::handler(req).await
     } else {

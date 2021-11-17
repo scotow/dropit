@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 use serde_json::{Map, Value};
@@ -7,14 +5,16 @@ use serde_json::{Map, Value};
 use crate::error::downloads as DownloadsError;
 use crate::error::Error;
 use crate::include_query;
-use crate::misc::generic_500;
 use crate::response::json_response;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
         StatusCode::OK,
-        process_downloads(req).await.map(|_| Value::Object(Map::new()))
-    ).or_else(|_| Ok(generic_500()))
+        process_downloads(req).await
+            .map(|_| Value::Object(Map::new()))?
+        )?
+    )
 }
 
 async fn process_downloads(req: Request<Body>) -> Result<(), Error> {

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use hyper::{Body, HeaderMap, Response, StatusCode};
 use hyper::header::HeaderValue;
+use hyper::HeaderMap;
 
 #[macro_export]
 macro_rules! exit_error {
@@ -11,12 +11,6 @@ macro_rules! exit_error {
             std::process::exit(1)
         }
     }
-}
-
-pub fn generic_500() -> Response<Body> {
-    let mut resp = Response::new(Body::empty());
-    *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-    resp
 }
 
 fn protocol(headers: &HeaderMap<HeaderValue>) -> Option<String> {

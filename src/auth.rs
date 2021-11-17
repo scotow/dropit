@@ -6,8 +6,8 @@ use bitflags::bitflags;
 use hyper::{Body, header, Request, Response};
 
 use crate::error::auth as AuthError;
-use crate::misc::generic_500;
 use crate::response::adaptive_error;
+use crate::response::generic_500;
 
 pub struct Authenticator {
     access: Access,

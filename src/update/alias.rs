@@ -1,41 +1,44 @@
-use std::convert::Infallible;
-
 use hyper::{Body, Request, Response, StatusCode};
 use serde_json::json;
 
 use crate::{alias, include_query};
 use crate::error::alias as AliasError;
 use crate::error::Error;
-use crate::misc::{generic_500, request_target};
+use crate::misc::request_target;
 use crate::response::json_response;
 
-pub async fn handler_short(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
-        StatusCode::OK,
-        process_short(req).await
-            .map(|(base, alias)| json!({
+pub async fn handler_short(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK,
+            process_short(req).await
+                .map(|(base, alias)| json!({
                 "alias": { "short": &alias },
                 "link": { "short": format!("{}/{}", base, &alias) }
-            }))
-    ).or_else(|_| Ok(generic_500()))
+            }))?
+        )?
+    )
 }
 
-pub async fn handler_long(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
-        StatusCode::OK,
-        process_long(req).await
-            .map(|(base, alias)| json!({
+pub async fn handler_long(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK,
+            process_long(req).await
+                .map(|(base, alias)| json!({
                 "alias": { "long": &alias },
                 "link": { "long": format!("{}/{}", base, &alias) }
-            }))
-    ).or_else(|_| Ok(generic_500()))
+            }))?
+        )?
+    )
 }
 
-pub async fn handler_both(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    json_response(
-        StatusCode::OK,
-        process_both(req).await
-            .map(|(base, short, long)| json!({
+pub async fn handler_both(req: Request<Body>) -> Result<Response<Body>, Error> {
+    Ok(
+        json_response(
+            StatusCode::OK,
+            process_both(req).await
+                .map(|(base, short, long)| json!({
                 "alias": {
                     "short": &short,
                     "long": &long,
@@ -44,8 +47,9 @@ pub async fn handler_both(req: Request<Body>) -> Result<Response<Body>, Infallib
                     "short": format!("{}/{}", base, &short),
                     "long": format!("{}/{}", base, &long),
                 }
-            }))
-    ).or_else(|_| Ok(generic_500()))
+            }))?
+        )?
+    )
 }
 
 async fn process_short(req: Request<Body>) -> Result<(String, String), Error> {

@@ -1,12 +1,12 @@
 use hyper::StatusCode;
-use serde::{Serialize, Serializer};
-use serde::ser::SerializeStruct;
 use thiserror::Error;
 
 use crate::response::SingleLine;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("internal server error")]
+    GenericError,
     #[error("invalid filename header")]
     FilenameHeader,
     #[error("invalid content length")]
@@ -61,12 +61,15 @@ pub enum Error {
     AuthProcess,
     #[error("assets catalogue connection failure")]
     AssetsCatalogue,
+    #[error("asset not found")]
+    AssetNotFound,
 }
 
 impl Error {
     pub fn status_code(&self) -> StatusCode {
         use Error::*;
         match self {
+            GenericError => StatusCode::INTERNAL_SERVER_ERROR,
             FilenameHeader => StatusCode::BAD_REQUEST,
             ContentLength => StatusCode::BAD_REQUEST,
             TooLarge => StatusCode::BAD_REQUEST,
@@ -94,16 +97,14 @@ impl Error {
             InvalidDownloadsCount => StatusCode::BAD_REQUEST,
             AuthProcess => StatusCode::INTERNAL_SERVER_ERROR,
             AssetsCatalogue => StatusCode::INTERNAL_SERVER_ERROR,
+            AssetNotFound => StatusCode::NOT_FOUND,
         }
     }
 }
 
-impl Serialize for Error {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
-        S: Serializer {
-        let mut state = serializer.serialize_struct("Error", 1)?;
-        state.serialize_field("error", &self.to_string())?;
-        state.end()
+impl From<hyper::http::Error> for Error {
+    fn from(_: hyper::http::Error) -> Self {
+        Self::GenericError
     }
 }
 
@@ -195,7 +196,10 @@ pub mod valid {
 }
 
 pub mod assets {
-    pub use super::Error::AssetsCatalogue;
+    pub use super::Error::{
+        AssetNotFound,
+        AssetsCatalogue,
+    };
 }
 
 pub mod auth {

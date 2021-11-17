@@ -1,4 +1,4 @@
-use std::convert::{Infallible, TryFrom};
+use std::convert::TryFrom;
 use std::net::IpAddr;
 use std::path::Path;
 
@@ -20,9 +20,8 @@ use crate::error::upload as UploadError;
 use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
-use crate::misc::generic_500;
 use crate::misc::request_target;
-use crate::response::{adaptive_response, error_text_response};
+use crate::response::adaptive_response;
 use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
@@ -40,18 +39,18 @@ pub struct UploadRequest {
     pub origin: IpAddr,
 }
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let auth = match req.data::<Authenticator>() {
-        Some(auth) => auth,
-        None => return Ok(error_text_response(AuthError::AuthProcess).unwrap_or_else(|_| generic_500())),
-    };
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
+    let auth = req.data::<Authenticator>()
+        .ok_or(AuthError::AuthProcess)?;
     if let Some(resp) = auth.allows(&req, Access::UPLOAD) {
         return Ok(resp);
     }
 
     let response_type = req.headers().get(header::ACCEPT).cloned();
-    let upload_res = process_upload(req).await;
-    adaptive_response(response_type, StatusCode::CREATED, upload_res).or_else(|_| Ok(generic_500()))
+    let upload_res = process_upload(req).await?;
+    Ok(
+        adaptive_response(response_type, StatusCode::CREATED, upload_res)?
+    )
 }
 
 #[allow(clippy::bool_comparison)]
