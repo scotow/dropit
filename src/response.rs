@@ -6,6 +6,10 @@ use serde_json::Value;
 
 use crate::error::Error;
 
+pub trait SingleLine {
+    fn single_lined(&self) -> String;
+}
+
 pub fn json_response<S: Serialize>(code: StatusCode, content: S) -> HttpResult<Response<Body>> {
     let mut json = serde_json::to_value(content).unwrap();
     json.as_object_mut()
@@ -62,8 +66,4 @@ pub fn generic_500() -> Response<Body> {
     let mut resp = Response::new(Body::empty());
     *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
     resp
-}
-
-pub trait SingleLine {
-    fn single_lined(&self) -> String;
 }

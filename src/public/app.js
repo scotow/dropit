@@ -356,7 +356,7 @@ function documentReady() {
                                 }
                                 FILES.save();
                             } else {
-                                alert(`An error occured while trying to generate new ${t === 'both' ? 'aliases' : 'alias'}: ${req.response.error}.`);
+                                alert(`An error occured while trying to generate ${t === 'both' ? 'new aliases' : 'a new alias'}: ${req.response.error}.`);
                             }
                         }
                         req.send();
