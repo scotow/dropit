@@ -61,6 +61,7 @@ fn router(
         .get("/index.html", assets::handler)
         .get("/style.css", assets::handler)
         .get("/app.js", assets::handler)
+        .get("/icon.png", assets::handler)
         .get("/:alias", download::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)

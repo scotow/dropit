@@ -16,75 +16,94 @@ impl Assets {
         Self { color }
     }
 
-    async fn load_file(file: &str) -> String {
+    async fn load_file(file: &str) -> Vec<u8> {
+        tokio::fs::read(format!("src/public/{}", file))
+            .await
+            .unwrap()
+    }
+
+    async fn load_string(file: &str) -> String {
         tokio::fs::read_to_string(format!("src/public/{}", file))
             .await
             .unwrap()
     }
 
-    async fn html(&self) -> (Cow<'static, str>, &str) {
+    async fn html(&self) -> (Cow<'static, [u8]>, &str) {
         (Cow::from(Self::load_file("index.html").await), "text/html")
     }
 
-    async fn css(&self) -> (Cow<'static, str>, &str) {
+    async fn css(&self) -> (Cow<'static, [u8]>, &str) {
         (
             Cow::from(
-                Self::load_file("style.css")
+                Self::load_string("style.css")
                     .await
-                    .replace("TEMPLATE_COLOR", &self.color),
+                    .replace("TEMPLATE_COLOR", &self.color)
+                    .into_bytes(),
             ),
             "text/css",
         )
     }
 
-    async fn js(&self) -> (Cow<'static, str>, &str) {
+    async fn js(&self) -> (Cow<'static, [u8]>, &str) {
         (
             Cow::from(
-                Self::load_file("app.js")
+                Self::load_string("app.js")
                     .await
-                    .replace("TEMPLATE_COLOR", &self.color),
+                    .replace("TEMPLATE_COLOR", &self.color)
+                    .into_bytes(),
             ),
             "application/javascript",
         )
+    }
+
+    async fn icon(&self) -> (Cow<'static, [u8]>, &str) {
+        (Cow::from(Self::load_file("icon.png").await), "image/png")
     }
 }
 
 #[cfg(not(debug_assertions))]
 pub struct Assets {
-    html: Cow<'static, str>,
-    css: Cow<'static, str>,
-    js: Cow<'static, str>,
+    html: Cow<'static, [u8]>,
+    css: Cow<'static, [u8]>,
+    js: Cow<'static, [u8]>,
+    icon: Cow<'static, [u8]>,
 }
 
 #[cfg(not(debug_assertions))]
 impl Assets {
     pub fn new(color: String) -> Self {
         Self {
-            html: Cow::from(include_str!("public/index.html")),
-            css: Cow::from(include_str!("public/style.css").replace("TEMPLATE_COLOR", &color)),
-            js: Cow::from(include_str!("public/app.js").replace("TEMPLATE_COLOR", &color)),
+            html: Cow::from(include_bytes!("public/index.html").as_ref()),
+            css: Cow::from(include_str!("public/style.css").replace("TEMPLATE_COLOR", &color).into_bytes()),
+            js: Cow::from(include_str!("public/app.js").replace("TEMPLATE_COLOR", &color).into_bytes()),
+            icon: Cow::from(include_bytes!("public/icon.png").as_ref()),
         }
     }
 
-    async fn html(&self) -> (Cow<'static, str>, &str) {
+    async fn html(&self) -> (Cow<'static, [u8]>, &str) {
         (self.html.clone(), "text/html")
     }
 
-    async fn css(&self) -> (Cow<'static, str>, &str) {
+    async fn css(&self) -> (Cow<'static, [u8]>, &str) {
         (self.css.clone(), "text/css")
     }
 
-    async fn js(&self) -> (Cow<'static, str>, &str) {
+    async fn js(&self) -> (Cow<'static, [u8]>, &str) {
         (self.js.clone(), "application/javascript")
+    }
+
+    async fn icon(&self) -> (Cow<'static, [u8]>, &str) {
+        (self.icon.clone(), "image/png")
     }
 }
 
 impl Assets {
-    pub async fn asset_for_path(&self, path: &str) -> Option<(Cow<'static, str>, &str)> {
+    pub async fn asset_for_path(&self, path: &str) -> Option<(Cow<'static, [u8]>, &str)> {
         match path {
             "/" | "/index.html" => Some(self.html().await),
             "/style.css" => Some(self.css().await),
             "/app.js" => Some(self.js().await),
+            "/icon.png" => Some(self.icon().await),
             _ => None,
         }
     }
