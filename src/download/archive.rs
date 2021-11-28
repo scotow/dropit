@@ -7,15 +7,13 @@ use hyper::{
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
-use tokio::io::{duplex, DuplexStream};
+use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use zipit::{Archive, archive_size, FileDateTime};
 
-use crate::alias::Alias;
 use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
-use crate::include_query;
 use crate::storage::dir::Dir;
 
 pub(super) async fn handler(

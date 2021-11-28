@@ -1,5 +1,4 @@
 use hyper::{Body, Request, Response};
-use hyper::header::USER_AGENT;
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 

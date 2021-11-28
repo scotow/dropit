@@ -2,8 +2,8 @@ use byte_unit::Byte;
 use hyper::{Body, Request, StatusCode};
 use hyper::header::{CONTENT_TYPE, USER_AGENT};
 
-use crate::{Error, Response};
 use crate::download::FileInfo;
+use crate::Response;
 
 const BOTS: &[&'static str] = &["discord", "facebook", "twitter"];
 

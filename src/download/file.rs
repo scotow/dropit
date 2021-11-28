@@ -11,11 +11,9 @@ use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::alias::Alias;
 use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
-use crate::include_query;
 use crate::storage::dir::Dir;
 
 pub(super) async fn handler(
