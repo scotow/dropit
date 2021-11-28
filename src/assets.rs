@@ -74,8 +74,16 @@ impl Assets {
     pub fn new(color: String) -> Self {
         Self {
             html: Cow::from(include_bytes!("public/index.html").as_ref()),
-            css: Cow::from(include_str!("public/style.css").replace("TEMPLATE_COLOR", &color).into_bytes()),
-            js: Cow::from(include_str!("public/app.js").replace("TEMPLATE_COLOR", &color).into_bytes()),
+            css: Cow::from(
+                include_str!("public/style.css")
+                    .replace("TEMPLATE_COLOR", &color)
+                    .into_bytes(),
+            ),
+            js: Cow::from(
+                include_str!("public/app.js")
+                    .replace("TEMPLATE_COLOR", &color)
+                    .into_bytes(),
+            ),
             icon: Cow::from(include_bytes!("public/icon.png").as_ref()),
         }
     }
