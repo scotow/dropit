@@ -1,8 +1,10 @@
 use hyper::{Body, Request, Response};
+use hyper::header::USER_AGENT;
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::{Error, include_query};
+use crate::alias::Alias;
 use crate::auth::{Access, Authenticator};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
@@ -10,6 +12,7 @@ use crate::storage::dir::Dir;
 
 mod archive;
 mod file;
+mod open_graph;
 
 #[derive(FromRow)]
 struct FileInfo {
@@ -25,10 +28,38 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     }
 
     let alias = req.param("alias").ok_or(DownloadError::AliasExtract)?;
-    if alias.contains('+') {
-        archive::handler(req).await
-    } else {
-        file::handler(req).await
+    let aliases = alias
+        .split('+')
+        .map(|a| a.parse::<Alias>().map_err(|_| DownloadError::InvalidAlias))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let pool = req
+        .data::<SqlitePool>()
+        .ok_or(DownloadError::Database)?
+        .clone();
+    let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
+
+    let mut files_info = Vec::with_capacity(aliases.len());
+    for alias in aliases {
+        files_info.push(
+            sqlx::query_as::<_, FileInfo>(include_query!("get_file"))
+                .bind(alias.inner())
+                .bind(alias.inner())
+                .fetch_optional(&mut conn)
+                .await
+                .map_err(|_| DownloadError::Database)?
+                .ok_or(DownloadError::FileNotFound)?,
+        );
+    }
+
+    if let Some(og_resp) = open_graph::proxy_request(&req, &files_info) {
+        return Ok(og_resp);
+    }
+
+    match files_info.len() {
+        0 => Err(DownloadError::AliasExtract),
+        1 => file::handler(req, &files_info[0], pool).await,
+        _ => archive::handler(req, files_info, pool).await,
     }
 }
 
