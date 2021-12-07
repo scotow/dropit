@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::str::FromStr;
 
 use bitflags::bitflags;
@@ -43,11 +42,10 @@ impl Authenticator {
             Some(decoded) => decoded,
             None => return false,
         };
-        let [username, password]: [&str; 2] =
-            match decoded.split(':').collect::<Vec<_>>().try_into() {
-                Ok(parts) => parts,
-                Err(_) => return false,
-            };
+        let (username, password) = match decoded.split_once(':') {
+            Some(parts) => parts,
+            None => return false,
+        };
         if let Some(p) = self.credentials.get(username) {
             password == p
         } else {
@@ -97,11 +95,9 @@ impl FromStr for Credential {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let [username, password]: [&str; 2] = s
-            .split(':')
-            .collect::<Vec<_>>()
-            .try_into()
-            .map_err(|_| "invalid format (should be USERNAME:PASSWORD)")?;
+        let (username, password) = s
+            .split_once(':')
+            .ok_or("invalid format (should be USERNAME:PASSWORD)")?;
 
         Ok(Self(username.to_owned(), password.to_owned()))
     }
