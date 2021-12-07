@@ -119,7 +119,7 @@ impl Assets {
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
-    if let Some(resp) = auth.allows(&req, Access::WEB_UI) {
+    if let Some(resp) = auth.allows(&req, Access::WEB_UI).await {
         return Ok(resp);
     }
 

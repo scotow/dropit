@@ -22,7 +22,7 @@ struct FileInfo {
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
-    if let Some(resp) = auth.allows(&req, Access::DOWNLOAD) {
+    if let Some(resp) = auth.allows(&req, Access::DOWNLOAD).await {
         return Ok(resp);
     }
 

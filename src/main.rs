@@ -167,7 +167,7 @@ async fn main() {
         determiner,
         pool,
         Assets::new(options.theme),
-        Authenticator::new(access, options.credentials),
+        Authenticator::new(access, options.credentials, None),
     );
 
     let address = SocketAddr::new(options.address, options.port);
