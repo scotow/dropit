@@ -2,7 +2,7 @@
 name = "dropit"
 version = "0.17.1"
 authors = ["Scotow <contact@scotow.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 tokio = { version = "1.13", features = ["io-util", "macros", "sync", "fs", "rt-multi-thread"] }
