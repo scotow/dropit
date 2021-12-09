@@ -34,14 +34,24 @@ pub struct Options {
     pub ip_file_count: usize,
     #[structopt(short = "S", long, required = true, parse(try_from_str = parse_size))]
     pub global_size_sum: u64,
+    #[structopt(long)] // requires_any = "credentials" | "ldap..."
+    pub auth_upload: bool,
+    #[structopt(long)] // requires_any = "credentials" | "ldap..."
+    pub auth_download: bool,
+    #[structopt(long)] // requires_any = "credentials" | "ldap..."
+    pub auth_web_ui: bool,
     #[structopt(short = "C", long = "credential")]
     pub credentials: Vec<Credential>,
-    #[structopt(long, requires = "credentials")]
-    pub auth_upload: bool,
-    #[structopt(long, requires = "credentials")]
-    pub auth_download: bool,
-    #[structopt(long, requires = "credentials")]
-    pub auth_web_ui: bool,
+    #[structopt(long)]
+    pub ldap_address: Option<String>,
+    #[structopt(long)]
+    pub ldap_search_dn: Option<String>,
+    #[structopt(long)]
+    pub ldap_search_password: Option<String>,
+    #[structopt(long)]
+    pub ldap_base_dn: Option<String>,
+    #[structopt(long, default_value = "uid")]
+    pub ldap_attribute: String,
     #[structopt(short = "T", long = "theme", default_value = "#15b154")]
     pub theme: String,
 }

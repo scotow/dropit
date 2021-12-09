@@ -11,7 +11,7 @@ use tokio::fs::File;
 use tokio::io::ErrorKind;
 
 use crate::assets::Assets;
-use crate::auth::{Access, Authenticator};
+use crate::auth::{Access, Authenticator, LdapAuthenticator};
 use crate::error::{assets as AssetsError, Error};
 use crate::error::auth as AuthError;
 use crate::limit::Chain as LimiterChain;
@@ -160,6 +160,19 @@ async fn main() {
         access.insert(Access::WEB_UI);
     }
 
+    let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) = (options.ldap_address, options.ldap_base_dn) {
+        Some(
+            LdapAuthenticator::new(
+                ldap_address,
+                options.ldap_search_dn.and_then(|lsd| options.ldap_search_password.map(|lsp| (lsd, lsp))),
+                ldap_base_dn,
+                options.ldap_attribute,
+            )
+        )
+    } else {
+        None
+    };
+
     let router = router(
         options.uploads_dir,
         RealIp::new(options.behind_proxy),
@@ -167,7 +180,7 @@ async fn main() {
         determiner,
         pool,
         Assets::new(options.theme),
-        Authenticator::new(access, options.credentials, None),
+        Authenticator::new(access, options.credentials, ldap),
     );
 
     let address = SocketAddr::new(options.address, options.port);
