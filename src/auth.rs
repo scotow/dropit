@@ -125,7 +125,6 @@ pub struct LdapAuthenticator {
 }
 
 impl LdapAuthenticator {
-    #[allow(dead_code)]
     pub fn new(address: String, search_credentials: Option<(String, String)>, base_dn: String, attribute: String) -> Self {
         Self {
             address,
