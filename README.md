@@ -14,14 +14,14 @@
 - Archive download
 - Downloads limit
 - JSON or plain text response (helpful for scripting)
-- Authentification (upload, download and/or Web UI)
+- Authenticate upload, download and/or Web UI using Basic HTTP Auth or LDAP
 - Upload files from a minimalist web interface:
-    - Drag & drop of files
-    - QRCode generation
-    - Upload progress bar
-    - Readable size, duration and expiration
-    - Cache uploads links
-    - Customizable color
+  - Drag & drop of files
+  - QRCode generation
+  - Upload progress bar
+  - Readable size, duration and expiration
+  - Cache uploads links
+  - Customizable color
   
 ## Configuration
 
@@ -43,16 +43,21 @@ FLAGS:
     -V, --version                    Prints version information
 
 OPTIONS:
-    -a, --address <address>                     [default: 127.0.0.1]
-    -C, --credential <credentials>...          
-    -d, --database <database>                   [default: dropit.db]
-    -S, --global-size-sum <global-size-sum>    
-    -c, --ip-file-count <ip-file-count>        
-    -s, --ip-size-sum <ip-size-sum>            
-    -p, --port <port>                           [default: 8080]
-    -T, --theme <theme>                         [default: #15b154]
-    -t, --threshold <thresholds>...            
-    -u, --uploads-dir <uploads-dir>             [default: uploads]
+    -a, --address <address>                               [default: 127.0.0.1]
+    -C, --credential <credentials>...                    
+    -d, --database <database>                             [default: dropit.db]
+    -S, --global-size-sum <global-size-sum>              
+    -c, --ip-file-count <ip-file-count>                  
+    -s, --ip-size-sum <ip-size-sum>                      
+        --ldap-address <ldap-address>                    
+        --ldap-attribute <ldap-attribute>                 [default: uid]
+        --ldap-base-dn <ldap-base-dn>                    
+        --ldap-search-dn <ldap-search-dn>                
+        --ldap-search-password <ldap-search-password>    
+    -p, --port <port>                                     [default: 8080]
+    -T, --theme <theme>                                   [default: #15b154]
+    -t, --threshold <thresholds>...                      
+    -u, --uploads-dir <uploads-dir>                       [default: uploads]
 ```
 
 Here is an example of a Dropit instance:
