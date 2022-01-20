@@ -4,7 +4,7 @@ use std::task::{Context, Poll};
 use futures::Stream;
 use hyper::{
     Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH}, Request, Response, StatusCode,
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE}, Request, Response, StatusCode,
 };
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
@@ -30,6 +30,7 @@ pub(super) async fn handler(
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_LENGTH, info.size as u64)
+        .header(CONTENT_TYPE, "application/octet-stream")
         .header(
             CONTENT_DISPOSITION,
             format!(r#"attachment; filename="{}""#, info.name),
