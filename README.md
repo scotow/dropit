@@ -5,9 +5,9 @@
 ## Features
 
 - Upload files from the terminal (by using `curl` or the [shell script](https://github.com/scotow/dropit/blob/master/upload.sh))
-- Short and long alias generation, short to copy/past it and long to easily share it verbally
+- Short and long aliases generation, short to copy/past and long to easily share it verbally
 - Configurable expiration based on file size
-- Quota determiner based on user IP
+- Quota based on users' IP addresses
 - Revocable files
 - Expiration refresh
 - Alias regeneration
@@ -16,7 +16,7 @@
 - JSON or plain text response (helpful for scripting)
 - Authenticate upload, download and/or Web UI using Basic HTTP Auth or LDAP
 - Upload files from a minimalist web interface:
-  - Drag & drop of files
+  - Drag & drop
   - QRCode generation
   - Upload progress bar
   - Readable size, duration and expiration
@@ -110,7 +110,7 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 
 ## Libraries
 
-- `hyper` as an HTTP backend and `routerify` to help with the routing. Evaluating alternatives like `warp` in the future
-- `Sqlite` and `sqlx` as a metadata storage
+- `hyper` as an HTTP backend and `routerify` to help with the routing
+- `SQLite` and `sqlx` as a metadata storage
 - `tokio` as an async runtime
 - `structopt` for options parsing and usage generation
