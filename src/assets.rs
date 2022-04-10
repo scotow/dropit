@@ -1,7 +1,8 @@
-use crate::AssetsError;
-use crate::Error;
 use hyper::{header, Body, Request, Response, StatusCode};
 use rust_embed::RustEmbed;
+
+use crate::AssetsError;
+use crate::Error;
 
 #[derive(RustEmbed)]
 #[folder = "src/public/"]

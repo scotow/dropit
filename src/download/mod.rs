@@ -1,7 +1,8 @@
+use std::sync::Arc;
+
 use hyper::{Body, Request, Response};
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
-use std::sync::Arc;
 
 use crate::alias::Alias;
 use crate::auth::{Authenticator, Features};

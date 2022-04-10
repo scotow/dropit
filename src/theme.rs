@@ -1,6 +1,7 @@
-use crate::Error;
 use hyper::{header, Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
+
+use crate::Error;
 
 pub struct Theme(String);
 
