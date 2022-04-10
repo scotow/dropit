@@ -5,8 +5,8 @@ use byte_unit::Byte;
 use humantime::format_rfc3339_seconds;
 use serde::Serialize;
 
-use crate::error::Error;
 use crate::error::upload as UploadError;
+use crate::error::Error;
 use crate::misc::format_duration;
 use crate::response::SingleLine;
 

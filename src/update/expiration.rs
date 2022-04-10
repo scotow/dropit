@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 
-use crate::error::Error;
 use crate::error::expiration as ExpirationError;
+use crate::error::Error;
 use crate::include_query;
 use crate::response::json_response;
 use crate::upload::expiration::Determiner;

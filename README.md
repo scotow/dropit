@@ -104,10 +104,6 @@ Please read [Binding to all interfaces](#binding-to-all-interfaces) if you can't
 
 By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. If you **don't** want to host Dropit behind a reverse proxy or if you are using the Docker image, you should specify the `0.0.0.0` address by using the `-a | --address` option.
 
-## Foreseeable features
-
-*Currently empty. Opened for ideas.*
-
 ## Libraries
 
 - `hyper` as an HTTP backend and `routerify` to help with the routing

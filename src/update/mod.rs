@@ -1,7 +1,7 @@
-use hyper::{Body, header, Request};
+use hyper::{header, Body, Request};
 use routerify::ext::RequestExt;
-use sqlx::{Sqlite, SqlitePool};
 use sqlx::pool::PoolConnection;
+use sqlx::{Sqlite, SqlitePool};
 
 use crate::alias::Alias;
 use crate::error::admin as AdminError;

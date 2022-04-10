@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
 use hyper::{
-    Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE}, Request, Response, StatusCode,
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    Body, Request, Response, StatusCode,
 };
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
-use zipit::{Archive, archive_size, FileDateTime};
+use zipit::{archive_size, Archive, FileDateTime};
 
 use crate::download::FileInfo;
 use crate::error::download as DownloadError;

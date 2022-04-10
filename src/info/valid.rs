@@ -4,8 +4,8 @@ use serde_json::json;
 use sqlx::SqlitePool;
 
 use crate::alias::Alias;
-use crate::error::Error;
 use crate::error::valid as ValidError;
+use crate::error::Error;
 use crate::response::json_response;
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {

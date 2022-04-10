@@ -2,12 +2,12 @@ use hyper::{Body, Request, Response};
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::{Error, include_query};
 use crate::alias::Alias;
-use crate::auth::{Access, Authenticator};
+use crate::auth::{Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
 use crate::storage::dir::Dir;
+use crate::{include_query, Error};
 
 mod archive;
 mod file;
@@ -22,7 +22,7 @@ struct FileInfo {
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
-    if let Some(resp) = auth.allows(&req, Access::DOWNLOAD).await {
+    if let Err(resp) = auth.allows(&req, Features::DOWNLOAD).await {
         return Ok(resp);
     }
 

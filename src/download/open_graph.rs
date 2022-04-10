@@ -1,6 +1,6 @@
 use byte_unit::Byte;
-use hyper::{Body, Request, StatusCode};
 use hyper::header::{CONTENT_TYPE, USER_AGENT};
+use hyper::{Body, Request, StatusCode};
 
 use crate::download::FileInfo;
 use crate::Response;

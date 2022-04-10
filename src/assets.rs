@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
-use hyper::{Body, header, Request, Response, StatusCode};
+use hyper::{header, Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 
-use crate::{Access, AssetsError, Authenticator, AuthError, Error};
+use crate::{AssetsError, Error};
 
 #[cfg(debug_assertions)]
 pub struct Assets {
@@ -28,11 +28,11 @@ impl Assets {
             .unwrap()
     }
 
-    async fn html(&self) -> (Cow<'static, [u8]>, &str) {
+    async fn home_html(&self) -> (Cow<'static, [u8]>, &str) {
         (Cow::from(Self::load_file("index.html").await), "text/html")
     }
 
-    async fn css(&self) -> (Cow<'static, [u8]>, &str) {
+    async fn home_css(&self) -> (Cow<'static, [u8]>, &str) {
         (
             Cow::from(
                 Self::load_string("style.css")
@@ -44,7 +44,7 @@ impl Assets {
         )
     }
 
-    async fn js(&self) -> (Cow<'static, [u8]>, &str) {
+    async fn home_js(&self) -> (Cow<'static, [u8]>, &str) {
         (
             Cow::from(
                 Self::load_string("app.js")
@@ -58,6 +58,20 @@ impl Assets {
 
     async fn icon(&self) -> (Cow<'static, [u8]>, &str) {
         (Cow::from(Self::load_file("icon.png").await), "image/png")
+    }
+
+    async fn login_html(&self) -> (Cow<'static, [u8]>, &str) {
+        (
+            Cow::from(Self::load_file("login/index.html").await),
+            "text/html",
+        )
+    }
+
+    async fn login_js(&self) -> (Cow<'static, [u8]>, &str) {
+        (
+            Cow::from(Self::load_file("login/app.js").await),
+            "application/javascript",
+        )
     }
 }
 
@@ -108,21 +122,18 @@ impl Assets {
 impl Assets {
     pub async fn asset_for_path(&self, path: &str) -> Option<(Cow<'static, [u8]>, &str)> {
         match path {
-            "/" | "/index.html" => Some(self.html().await),
-            "/style.css" => Some(self.css().await),
-            "/app.js" => Some(self.js().await),
+            "/" | "/index.html" => Some(self.home_html().await),
+            "/style.css" => Some(self.home_css().await),
+            "/app.js" => Some(self.home_js().await),
             "/icon.png" => Some(self.icon().await),
+            "/login/" | "/login/index.html" => Some(self.login_html().await),
+            "/login/app.js" => Some(self.login_js().await),
             _ => None,
         }
     }
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
-    if let Some(resp) = auth.allows(&req, Access::WEB_UI).await {
-        return Ok(resp);
-    }
-
     let assets = req.data::<Assets>().ok_or(AssetsError::AssetsCatalogue)?;
     let (content, mime_type) = assets
         .asset_for_path(req.uri().path())

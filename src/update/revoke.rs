@@ -2,8 +2,8 @@ use hyper::{Body, Request, Response, StatusCode};
 use routerify::ext::RequestExt;
 use serde_json::{Map, Value};
 
-use crate::error::Error;
 use crate::error::revoke as RevokeError;
+use crate::error::Error;
 use crate::include_query;
 use crate::response::json_response;
 use crate::storage::dir::Dir;

@@ -6,6 +6,7 @@ String.prototype.plural = function(n) {
     return n >= 2 ? `${this}s` : this;
 };
 
+shouldLogin();
 document.addEventListener('DOMContentLoaded', documentReady, false);
 
 function documentReady() {
@@ -585,4 +586,20 @@ function documentReady() {
     FILES.loadCache();
 
     new ClipboardJS('.copy');
+}
+
+function shouldLogin() {
+    const req = new XMLHttpRequest();
+    req.open('GET', '/auth', true);
+    req.responseType = 'json';
+    req.onload = (_event) => {
+        if (req.status === 200) {
+            if (req.response.required) {
+                window.location = '/login/';
+            }
+        } else {
+            console.error(`An error occurred while checking for session token: ${req.response.error}.`);
+        }
+    };
+    req.send();
 }

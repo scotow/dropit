@@ -3,8 +3,8 @@ use std::task::{Context, Poll};
 
 use futures::Stream;
 use hyper::{
-    Body,
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE}, Request, Response, StatusCode,
+    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    Body, Request, Response, StatusCode,
 };
 use routerify::ext::RequestExt;
 use sqlx::SqlitePool;

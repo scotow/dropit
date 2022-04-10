@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use hyper::header::HeaderValue;
-use hyper::HeaderMap;
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::{HeaderMap, Request};
 
 #[macro_export]
 macro_rules! exit_error {
@@ -34,6 +34,10 @@ fn host(headers: &HeaderMap<HeaderValue>) -> Option<String> {
 // Return the origin target of the request, e.g. https://example.com
 pub fn request_target(headers: &HeaderMap<HeaderValue>) -> Option<String> {
     Some(format!("{}://{}", protocol(headers)?, host(headers)?))
+}
+
+pub fn header_str<B>(req: &Request<B>, header: HeaderName) -> Option<&str> {
+    req.headers().get(header).and_then(|h| h.to_str().ok())
 }
 
 pub fn format_duration(duration: Duration) -> String {

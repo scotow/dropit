@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::path::Path;
 
 use futures::StreamExt;
-use hyper::{Body, header, HeaderMap, Request, Response, StatusCode};
+use hyper::{header, Body, HeaderMap, Request, Response, StatusCode};
 use percent_encoding::percent_decode_str;
 use routerify::ext::RequestExt;
 use sanitize_filename::sanitize;
@@ -13,10 +13,10 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 use crate::alias;
-use crate::auth::{Access, Authenticator};
+use crate::auth::{Authenticator, Features};
 use crate::error::auth as AuthError;
-use crate::error::Error;
 use crate::error::upload as UploadError;
+use crate::error::Error;
 use crate::include_query;
 use crate::limit::Chain as ChainLimiter;
 use crate::limit::Limiter;
@@ -41,7 +41,7 @@ pub struct UploadRequest {
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
-    if let Some(resp) = auth.allows(&req, Access::UPLOAD).await {
+    if let Err(resp) = auth.allows(&req, Features::UPLOAD).await {
         return Ok(resp);
     }
 

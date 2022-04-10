@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use hyper::{Body, header, Response, Server};
+use hyper::{header, Body, Response, Server};
 use routerify::{RequestInfo, Router, RouterService};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
@@ -11,12 +11,11 @@ use tokio::fs::File;
 use tokio::io::ErrorKind;
 
 use crate::assets::Assets;
-use crate::auth::{Access, Authenticator, LdapAuthenticator};
+use crate::auth::{Authenticator, Features, LdapAuthenticator};
 use crate::error::{assets as AssetsError, Error};
-use crate::error::auth as AuthError;
-use crate::limit::Chain as LimiterChain;
 use crate::limit::global::Global;
 use crate::limit::ip::Ip as IpLimiter;
+use crate::limit::Chain as LimiterChain;
 use crate::options::Options;
 use crate::response::adaptive_error;
 use crate::response::generic_500;
@@ -62,6 +61,10 @@ fn router(
         .get("/style.css", assets::handler)
         .get("/app.js", assets::handler)
         .get("/icon.png", assets::handler)
+        .get("/login/", assets::handler)
+        .get("/login/index.html", assets::handler)
+        .get("/login/app.js", assets::handler)
+        .get("/auth", auth::upload_requires_auth::handler)
         .get("/:alias", download::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)
@@ -149,26 +152,25 @@ async fn main() {
         cleaner.start().await;
     });
 
-    let mut access = Access::empty();
+    let mut access = Features::empty();
     if options.auth_upload {
-        access.insert(Access::UPLOAD);
+        access.insert(Features::UPLOAD);
     }
     if options.auth_download {
-        access.insert(Access::DOWNLOAD);
-    }
-    if options.auth_web_ui {
-        access.insert(Access::WEB_UI);
+        access.insert(Features::DOWNLOAD);
     }
 
-    let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) = (options.ldap_address, options.ldap_base_dn) {
-        Some(
-            LdapAuthenticator::new(
-                ldap_address,
-                options.ldap_search_dn.and_then(|lsd| options.ldap_search_password.map(|lsp| (lsd, lsp))),
-                ldap_base_dn,
-                options.ldap_attribute,
-            )
-        )
+    let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) =
+        (options.ldap_address, options.ldap_base_dn)
+    {
+        Some(LdapAuthenticator::new(
+            ldap_address,
+            options
+                .ldap_search_dn
+                .and_then(|lsd| options.ldap_search_password.map(|lsp| (lsd, lsp))),
+            ldap_base_dn,
+            options.ldap_attribute,
+        ))
     } else {
         None
     };

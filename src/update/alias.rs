@@ -1,11 +1,11 @@
 use hyper::{Body, Request, Response, StatusCode};
 use serde_json::json;
 
-use crate::{alias, include_query};
 use crate::error::alias as AliasError;
 use crate::error::Error;
 use crate::misc::request_target;
 use crate::response::json_response;
+use crate::{alias, include_query};
 
 pub async fn handler_short(req: Request<Body>) -> Result<Response<Body>, Error> {
     Ok(json_response(

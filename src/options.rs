@@ -38,8 +38,6 @@ pub struct Options {
     pub auth_upload: bool,
     #[structopt(long)] // requires_any = "credentials" | "ldap..."
     pub auth_download: bool,
-    #[structopt(long)] // requires_any = "credentials" | "ldap..."
-    pub auth_web_ui: bool,
     #[structopt(short = "C", long = "credential")]
     pub credentials: Vec<Credential>,
     #[structopt(long)]
