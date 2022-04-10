@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
+use hyper::http::HeaderValue;
 use hyper::{header, Body, Request, Response};
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use crate::auth::Credential;
 use crate::error::auth as AuthError;
@@ -13,7 +16,7 @@ pub struct Authenticator {
     protected: Features,
     static_credentials: HashMap<String, String>,
     ldap: Option<LdapAuthenticator>,
-    sessions: HashSet<String>,
+    sessions: RwLock<HashSet<String>>,
 }
 
 impl Authenticator {
@@ -29,7 +32,7 @@ impl Authenticator {
                 .map(|Credential(u, p)| (u, p))
                 .collect(),
             ldap,
-            sessions: HashSet::new(),
+            sessions: Default::default(),
         }
     }
 
@@ -50,7 +53,7 @@ impl Authenticator {
             return Ok(());
         }
 
-        if self.verify_cookie(req) {
+        if self.verify_cookie(req).await {
             return Ok(());
         }
 
@@ -73,6 +76,7 @@ impl Authenticator {
             None => return Ok(false),
         };
 
+        let response_type = req.headers().get(header::ACCEPT).cloned();
         let content = header.trim_start_matches("Basic ");
         let decoded = match base64::decode(content)
             .map(|b| String::from_utf8(b).ok())
@@ -80,17 +84,17 @@ impl Authenticator {
             .flatten()
         {
             Some(decoded) => decoded,
-            None => return Err(forbidden_error_response(req)),
+            None => return Err(forbidden_error_response(response_type)),
         };
         let (username, password) = match decoded.split_once(':') {
             Some(parts) => parts,
-            None => return Err(forbidden_error_response(req)),
+            None => return Err(forbidden_error_response(response_type)),
         };
 
         Ok(self.verify_credentials(username, password).await)
     }
 
-    pub fn verify_cookie(&self, req: &Request<Body>) -> bool {
+    pub async fn verify_cookie(&self, req: &Request<Body>) -> bool {
         let header = match header_str(req, header::COOKIE) {
             Some(header) => header,
             None => return false,
@@ -105,7 +109,7 @@ impl Authenticator {
             None => return false,
         };
 
-        self.sessions.contains(session)
+        self.sessions.read().await.contains(session)
     }
 
     async fn verify_credentials(&self, username: &str, password: &str) -> bool {
@@ -125,9 +129,23 @@ impl Authenticator {
 
         false
     }
+
+    pub async fn create_session(
+        &self,
+        username: &str,
+        password: &str,
+        response_type: Option<HeaderValue>,
+    ) -> Result<String, Response<Body>> {
+        if !self.verify_credentials(username, password).await {
+            return Err(forbidden_error_response(response_type));
+        }
+
+        let token = Uuid::new_v4().to_hyphenated_ref().to_string();
+        self.sessions.write().await.insert(token.clone());
+        Ok(token)
+    }
 }
 
-fn forbidden_error_response(req: &Request<Body>) -> Response<Body> {
-    let response_type = req.headers().get(header::ACCEPT).cloned();
+fn forbidden_error_response(response_type: Option<HeaderValue>) -> Response<Body> {
     adaptive_error(response_type, AuthError::AccessForbidden).unwrap_or_else(|_| generic_500())
 }

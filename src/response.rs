@@ -18,6 +18,18 @@ pub fn json_response<S: Serialize>(code: StatusCode, content: S) -> HttpResult<R
     build_response(code, "application/json", json.to_string())
 }
 
+pub fn json_error(error: Error) -> HttpResult<Response<Body>> {
+    build_response(
+        error.status_code(),
+        "application/json",
+        json!({
+            "success": false,
+            "error": error.to_string(),
+        })
+        .to_string(),
+    )
+}
+
 #[allow(clippy::wildcard_in_or_patterns)]
 pub fn adaptive_response<C: SingleLine + Serialize>(
     accept_header: Option<HeaderValue>,
@@ -34,20 +46,14 @@ pub fn adaptive_response<C: SingleLine + Serialize>(
 #[allow(clippy::wildcard_in_or_patterns)]
 pub fn adaptive_error(
     accept_header: Option<HeaderValue>,
-    err: Error,
+    error: Error,
 ) -> HttpResult<Response<Body>> {
     let response_type = accept_header.map(|h| h.as_bytes().to_vec());
     match response_type.as_deref() {
-        Some(b"text/plain") => build_response(err.status_code(), "text/plain", err.single_lined()),
-        Some(b"application/json") | _ => build_response(
-            err.status_code(),
-            "application/json",
-            json!({
-                "success": false,
-                "error": err.to_string(),
-            })
-            .to_string(),
-        ),
+        Some(b"text/plain") => {
+            build_response(error.status_code(), "text/plain", error.single_lined())
+        }
+        Some(b"application/json") | _ => json_error(error),
     }
 }
 

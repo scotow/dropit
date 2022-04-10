@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 
 use hyper::{header, Body, Response, Server};
@@ -55,7 +56,7 @@ fn router(
         .data(determiner)
         .data(pool)
         .data(assets)
-        .data(auth)
+        .data(Arc::new(auth))
         .get("/", assets::handler)
         .get("/index.html", assets::handler)
         .get("/style.css", assets::handler)
@@ -63,8 +64,10 @@ fn router(
         .get("/icon.png", assets::handler)
         .get("/login/", assets::handler)
         .get("/login/index.html", assets::handler)
+        .get("/login/style.css", assets::handler)
         .get("/login/app.js", assets::handler)
         .get("/auth", auth::upload_requires_auth::handler)
+        .post("/auth", auth::login::handler)
         .get("/:alias", download::handler)
         .post("/", upload::handler)
         .post("/upload", upload::handler)

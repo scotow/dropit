@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::net::IpAddr;
 use std::path::Path;
+use std::sync::Arc;
 
 use futures::StreamExt;
 use hyper::{header, Body, HeaderMap, Request, Response, StatusCode};
@@ -40,7 +41,9 @@ pub struct UploadRequest {
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
+    let auth = req
+        .data::<Arc<Authenticator>>()
+        .ok_or(AuthError::AuthProcess)?;
     if let Err(resp) = auth.allows(&req, Features::UPLOAD).await {
         return Ok(resp);
     }

@@ -67,6 +67,13 @@ impl Assets {
         )
     }
 
+    async fn login_css(&self) -> (Cow<'static, [u8]>, &str) {
+        (
+            Cow::from(Self::load_file("login/style.css").await),
+            "text/css",
+        )
+    }
+
     async fn login_js(&self) -> (Cow<'static, [u8]>, &str) {
         (
             Cow::from(Self::load_file("login/app.js").await),
@@ -127,6 +134,7 @@ impl Assets {
             "/app.js" => Some(self.home_js().await),
             "/icon.png" => Some(self.icon().await),
             "/login/" | "/login/index.html" => Some(self.login_html().await),
+            "/login/style.css" => Some(self.login_css().await),
             "/login/app.js" => Some(self.login_js().await),
             _ => None,
         }

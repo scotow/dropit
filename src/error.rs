@@ -51,7 +51,7 @@ pub enum Error {
     InvalidAuthorizationHeader,
     #[error("mismatching admin token")]
     InvalidAdminToken,
-    #[error("invalid authorization header")]
+    #[error("invalid credentials or authentication process")]
     AccessForbidden,
     #[error("an unexpected error happen while updating file metadata")]
     UnexpectedFileModification,
@@ -104,6 +104,12 @@ impl Error {
 
 impl From<hyper::http::Error> for Error {
     fn from(_: hyper::http::Error) -> Self {
+        Self::GenericError
+    }
+}
+
+impl From<hyper::Error> for Error {
+    fn from(_: hyper::Error) -> Self {
         Self::GenericError
     }
 }

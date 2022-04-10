@@ -598,6 +598,7 @@ function shouldLogin() {
                 window.location = '/login/';
             }
         } else {
+            alert(`An error occurred while checking for session token: ${req.response.error}.`);
             console.error(`An error occurred while checking for session token: ${req.response.error}.`);
         }
     };

@@ -1,6 +1,7 @@
 use hyper::{Body, Request, Response};
 use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
+use std::sync::Arc;
 
 use crate::alias::Alias;
 use crate::auth::{Authenticator, Features};
@@ -21,7 +22,9 @@ struct FileInfo {
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let auth = req.data::<Authenticator>().ok_or(AuthError::AuthProcess)?;
+    let auth = req
+        .data::<Arc<Authenticator>>()
+        .ok_or(AuthError::AuthProcess)?;
     if let Err(resp) = auth.allows(&req, Features::DOWNLOAD).await {
         return Ok(resp);
     }
