@@ -11,7 +11,6 @@ use structopt::StructOpt;
 use tokio::fs::File;
 use tokio::io::ErrorKind;
 
-use crate::assets::Assets;
 use crate::auth::{Authenticator, Features, LdapAuthenticator};
 use crate::error::{assets as AssetsError, Error};
 use crate::limit::global::Global;
@@ -49,7 +48,6 @@ fn router(
     determiner: Determiner,
     pool: SqlitePool,
     auth: Authenticator,
-    assets: Assets,
     theme: Theme,
 ) -> Router<Body, Error> {
     Router::builder()
@@ -59,7 +57,6 @@ fn router(
         .data(determiner)
         .data(pool)
         .data(Arc::new(auth))
-        .data(assets)
         .data(theme)
         .get("/", assets::handler)
         .get("/index.html", assets::handler)
@@ -190,7 +187,6 @@ async fn main() {
         determiner,
         pool,
         Authenticator::new(access, options.credentials, ldap),
-        Assets::new(options.theme.clone()),
         Theme::new(&options.theme),
     );
 
