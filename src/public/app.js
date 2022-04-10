@@ -1,8 +1,8 @@
-String.prototype.toTitleCase = function() {
+String.prototype.toTitleCase = function () {
     return this.charAt(0).toUpperCase() + this.substr(1);
 };
 
-String.prototype.plural = function(n) {
+String.prototype.plural = function (n) {
     return n >= 2 ? `${this}s` : this;
 };
 
@@ -33,7 +33,7 @@ function documentReady() {
 
         add(file) {
             document.querySelector('.files').append(file.node);
-            
+
             this.files.push(file);
             this.updateButtons();
             this.save();
@@ -41,7 +41,7 @@ function documentReady() {
 
         remove(file) {
             file.node.remove();
-            
+
             const index = this.files.indexOf(file);
             if (index === -1) return;
             this.files.splice(index, 1);
@@ -113,7 +113,7 @@ function documentReady() {
             document.body.classList.toggle('has-file', this.files.length >= 1);
             document.body.classList.toggle('has-clearable', this.files.filter(f => f.state !== 'upload').length >= 1);
             document.body.classList.toggle('has-availables', this.files.filter(f => f.state === 'available').length >= 2);
-            
+
             const aliasGroup = this.files.filter(f => f.state === 'available').map(f => f.info.alias.short).join('+');
             document.querySelector('.archive-link').setAttribute('data-clipboard-text', `${window.location.origin}/${aliasGroup}`);
         }
@@ -127,7 +127,7 @@ function documentReady() {
         buildBase(filename) {
             this.node = document.createElement('div');
             this.node.classList.add('file');
-            
+
             this.name = document.createElement('div');
             this.name.classList.add('name');
             this.name.innerText = filename;
@@ -155,7 +155,7 @@ function documentReady() {
                 showingProgress = true;
                 this.updateProgressBar();
             }, 500);
-            
+
             req.upload.onprogress = (event) => {
                 this.progress = event.loaded / event.total;
                 if (showingProgress) {
@@ -166,7 +166,7 @@ function documentReady() {
             req.onload = (event) => {
                 clearTimeout(showProgressTimeout);
                 if (req.status === 201) {
-                    const resp = req.response; 
+                    const resp = req.response;
                     delete resp.success;
                     this.info = resp;
 
@@ -207,14 +207,17 @@ function documentReady() {
 
             const qrcodeWrapper = document.createElement('div');
             qrcodeWrapper.classList.add('qrcode', 'hidden');
-            const qrcode = new QRCode(qrcodeWrapper, {
-                text: this.info.link.short,
-                width: 120,
-                height: 120,
-                colorDark : '#131313',
-                colorLight : 'TEMPLATE_COLOR',
-                correctLevel : QRCode.CorrectLevel.L
+
+            const qrcode = new QRCode({
+                content: this.info.link.short,
+                color: '#131313',
+                background: 'var(--theme)',
+                container: 'svg-viewbox',
+                padding: 0,
+                join: true,
+                ecl: 'L',
             });
+            qrcodeWrapper.innerHTML = qrcode.svg();
             qrcodeWrapper.onclick = () => {
                 qrcodeWrapper.classList.toggle('hidden');
             };
@@ -256,7 +259,7 @@ function documentReady() {
             const longAliasContent = document.createElement('div');
             longAliasContent.classList.add('content', 'selectable');
             longAliasContent.innerText = this.info.alias.long;
-            
+
             const expiration = document.createElement('div');
             expiration.classList.add('item');
             const expirationLabel = document.createElement('div');
@@ -347,7 +350,17 @@ function documentReady() {
                                     this.info.link.short = req.response.link.short;
                                     link.innerText = this.info.link.short;
                                     copyShort.setAttribute('data-clipboard-text', this.info.link.short);
-                                    qrcode.makeCode(this.info.link.short);
+
+                                    const qrcode = new QRCode({
+                                        content: this.info.link.short,
+                                        color: '#131313',
+                                        background: 'var(--theme)',
+                                        container: 'svg-viewbox',
+                                        padding: 0,
+                                        join: true,
+                                        ecl: 'L',
+                                    });
+                                    qrcodeWrapper.innerHTML = qrcode.svg();
                                 }
                                 if (t === 'long' || t === 'both') {
                                     this.info.alias.long = req.response.alias.long;

@@ -23,7 +23,7 @@ body::before {
     left: 0;
     right: 0;
     height: 4px;
-    background: #15b154;
+    background: var(--theme);
     z-index: 10;
 }
 
@@ -76,7 +76,7 @@ body::before {
     width: 50px;
     height: 50px;
     font-size: 0;
-    background-color: #15b154;
+    background-color: var(--theme);
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMjAgNTEyIj48cGF0aCBkPSJNOTYgNDgwYy04LjE4OCAwLTE2LjM4LTMuMTI1LTIyLjYyLTkuMzc1Yy0xMi41LTEyLjUtMTIuNS0zMi43NSAwLTQ1LjI1TDI0Mi44IDI1Nkw3My4zOCA4Ni42M2MtMTIuNS0xMi41LTEyLjUtMzIuNzUgMC00NS4yNXMzMi43NS0xMi41IDQ1LjI1IDBsMTkyIDE5MmMxMi41IDEyLjUgMTIuNSAzMi43NSAwIDQ1LjI1bC0xOTIgMTkyQzExMi40IDQ3Ni45IDEwNC4yIDQ4MCA5NiA0ODB6Ii8+PC9zdmc+);
     background-size: 14px;
     background-repeat: no-repeat;

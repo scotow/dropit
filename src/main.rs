@@ -22,6 +22,7 @@ use crate::response::adaptive_error;
 use crate::response::generic_500;
 use crate::storage::clean::Cleaner;
 use crate::storage::dir::Dir;
+use crate::theme::Theme;
 use crate::upload::expiration::Determiner;
 use crate::upload::origin::RealIp;
 
@@ -37,6 +38,7 @@ mod options;
 mod query;
 mod response;
 mod storage;
+mod theme;
 mod update;
 mod upload;
 
@@ -46,8 +48,9 @@ fn router(
     limiters: LimiterChain,
     determiner: Determiner,
     pool: SqlitePool,
-    assets: Assets,
     auth: Authenticator,
+    assets: Assets,
+    theme: Theme,
 ) -> Router<Body, Error> {
     Router::builder()
         .data(Dir::new(uploads_dir))
@@ -55,8 +58,9 @@ fn router(
         .data(limiters)
         .data(determiner)
         .data(pool)
-        .data(assets)
         .data(Arc::new(auth))
+        .data(assets)
+        .data(theme)
         .get("/", assets::handler)
         .get("/index.html", assets::handler)
         .get("/style.css", assets::handler)
@@ -66,6 +70,7 @@ fn router(
         .get("/login/index.html", assets::handler)
         .get("/login/style.css", assets::handler)
         .get("/login/app.js", assets::handler)
+        .get("/theme.css", theme::handler)
         .get("/auth", auth::upload_requires_auth::handler)
         .post("/auth", auth::login::handler)
         .get("/:alias", download::handler)
@@ -184,8 +189,9 @@ async fn main() {
         limiters,
         determiner,
         pool,
-        Assets::new(options.theme),
         Authenticator::new(access, options.credentials, ldap),
+        Assets::new(options.theme.clone()),
+        Theme::new(&options.theme),
     );
 
     let address = SocketAddr::new(options.address, options.port);
