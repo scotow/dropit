@@ -9,7 +9,7 @@ tokio = { version = "1.13", features = ["io-util", "macros", "sync", "fs", "rt-m
 hyper = { version = "0.14", features = ["stream"] }
 routerify = "2.2"
 futures = "0.3"
-sqlx = { version = "0.5", default-features = false, features = ["runtime-tokio-native-tls", "sqlite", "macros"] }
+sqlx = { version = "0.5", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
 tokio-util = { version = "0.6", default-features = false, features = ["io", "compat"] }
 lazy_static = "1.4"
 rand = "0.8"
@@ -29,5 +29,5 @@ sanitize-filename = "0.3"
 base64 = "0.13"
 bitflags = "1.3"
 zipit = { version = "0.2.1", features = ["chrono-datetime"] }
-ldap3 = { version = "0.9.3", default-features = false, features = ["tls"] }
+ldap3 = { version = "0.9.3", default-features = false, features = ["tls-rustls"] }
 rust-embed = "6.3.0"
