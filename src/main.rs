@@ -3,18 +3,18 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use clap::Parser;
 use hyper::{header, Body, Response, Server};
 use routerify::{RequestInfo, Router, RouterService};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
-use structopt::StructOpt;
 use tokio::fs::File;
 use tokio::io::ErrorKind;
 
-use crate::auth::{Authenticator, Features, LdapAuthenticator};
+use crate::auth::{Authenticator, Features, LdapAuthenticator, Origin};
 use crate::error::{assets as AssetsError, Error};
 use crate::limit::global::Global;
-use crate::limit::ip::Ip as IpLimiter;
+use crate::limit::origin::Origin as OriginLimiter;
 use crate::limit::Chain as LimiterChain;
 use crate::options::Options;
 use crate::response::adaptive_error;
@@ -48,6 +48,7 @@ fn router(
     determiner: Determiner,
     pool: SqlitePool,
     auth: Authenticator,
+    origin: Origin,
     theme: Theme,
 ) -> Router<Body, Error> {
     Router::builder()
@@ -57,6 +58,7 @@ fn router(
         .data(determiner)
         .data(pool)
         .data(Arc::new(auth))
+        .data(origin)
         .data(theme)
         .get("/", assets::handler)
         .get("/index.html", assets::handler)
@@ -124,17 +126,20 @@ async fn create_uploads_dir(path: &Path, should_create: bool) {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    let options = Options::from_args();
+    let options = Options::parse();
     env_logger::Builder::new()
         .filter_level(options.log_level)
         .init();
 
     let limiters = LimiterChain::new(vec![
-        Box::new(IpLimiter::new(options.ip_size_sum, options.ip_file_count)),
+        Box::new(OriginLimiter::new(
+            options.origin_size_sum,
+            options.origin_file_count,
+        )),
         Box::new(Global::new(options.global_size_sum)),
     ]);
-    let determiner =
-        Determiner::new(options.thresholds).unwrap_or_else(|| exit_error!("Invalid thresholds"));
+    let determiner = Determiner::new(options.thresholds.clone())
+        .unwrap_or_else(|| exit_error!("Invalid thresholds"));
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -157,36 +162,34 @@ async fn main() {
         cleaner.start().await;
     });
 
-    let mut access = Features::empty();
-    if options.auth_upload {
-        access.insert(Features::UPLOAD);
-    }
-    if options.auth_download {
-        access.insert(Features::DOWNLOAD);
-    }
-
     let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) =
-        (options.ldap_address, options.ldap_base_dn)
+        (options.ldap_address.as_ref(), options.ldap_base_dn.as_ref())
     {
         Some(LdapAuthenticator::new(
-            ldap_address,
-            options
-                .ldap_search_dn
-                .and_then(|lsd| options.ldap_search_password.map(|lsp| (lsd, lsp))),
-            ldap_base_dn,
-            options.ldap_attribute,
+            ldap_address.clone(),
+            options.ldap_search_dn.as_ref().and_then(|lsd| {
+                options
+                    .ldap_search_password
+                    .as_ref()
+                    .map(|lsp| (lsd.clone(), lsp.clone()))
+            }),
+            ldap_base_dn.clone(),
+            options.ldap_attribute.clone(),
         ))
     } else {
         None
     };
 
     let router = router(
-        options.uploads_dir,
+        options.uploads_dir.clone(),
         RealIp::new(options.behind_proxy),
         limiters,
         determiner,
         pool,
-        Authenticator::new(access, options.credentials, ldap),
+        Authenticator::new(options.access(), options.credentials.clone(), ldap),
+        options
+            .origin()
+            .unwrap_or_else(|| exit_error!("Invalid origin method")),
         Theme::new(&options.theme),
     );
 

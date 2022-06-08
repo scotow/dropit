@@ -1,12 +1,15 @@
+pub use authenticator::AuthStatus;
 pub use authenticator::Authenticator;
 pub use credential::Credential;
 pub use features::Features;
 pub use ldap::LdapAuthenticator;
+pub use origin::Origin;
 
 mod authenticator;
 mod credential;
 mod features;
 mod ldap;
+mod origin;
 
 pub mod upload_requires_auth {
     use std::sync::Arc;
@@ -37,7 +40,7 @@ pub mod upload_requires_auth {
         Ok(json_response(
             StatusCode::OK,
             RequiresAuth {
-                required: !auth.verify_cookie(&req).await,
+                required: auth.verify_cookie(&req).await.is_none(),
             },
         )?)
     }

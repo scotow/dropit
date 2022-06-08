@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::net::IpAddr;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -13,8 +12,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
-use crate::alias;
-use crate::auth::{Authenticator, Features};
+use crate::auth::{AuthStatus, Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::upload as UploadError;
 use crate::error::Error;
@@ -27,6 +25,7 @@ use crate::storage::dir::Dir;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::{Expiration, UploadInfo};
 use crate::upload::origin::RealIp;
+use crate::{alias, Origin};
 
 pub mod expiration;
 pub mod file;
@@ -37,19 +36,21 @@ pub type UploadResult<T> = Result<T, Error>;
 pub struct UploadRequest {
     pub name: Option<String>,
     pub size: u64,
-    pub origin: IpAddr,
+    pub origin: String,
 }
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req
         .data::<Arc<Authenticator>>()
         .ok_or(AuthError::AuthProcess)?;
-    if let Err(resp) = auth.allows(&req, Features::UPLOAD).await {
-        return Ok(resp);
-    }
+    let username = match auth.allows(&req, Features::UPLOAD).await {
+        AuthStatus::NotNeeded => None,
+        AuthStatus::Valid(username) => Some(username),
+        AuthStatus::Error(err) => return Ok(err),
+    };
 
     let response_type = req.headers().get(header::ACCEPT).cloned();
-    let upload_res = process_upload(req).await?;
+    let upload_res = process_upload(req, username).await?;
     Ok(adaptive_response(
         response_type,
         StatusCode::CREATED,
@@ -58,17 +59,21 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
 }
 
 #[allow(clippy::bool_comparison)]
-async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
-    let id = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let admin = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let upload_req = UploadRequest {
-        name: parse_filename_header(req.headers())?,
-        size: parse_file_size(req.headers())?,
-        origin: req
+async fn process_upload(req: Request<Body>, username: Option<String>) -> UploadResult<UploadInfo> {
+    let origin = match *req.data::<Origin>().ok_or(UploadError::Origin)? {
+        Origin::IpAddress => req
             .data::<RealIp>()
             .ok_or(UploadError::Origin)?
             .find(&req)
-            .ok_or(UploadError::Origin)?,
+            .ok_or(UploadError::Origin)?
+            .to_string(),
+        Origin::Username => username.ok_or(UploadError::Origin)?,
+    };
+
+    let upload_req = UploadRequest {
+        name: parse_filename_header(req.headers())?,
+        size: parse_file_size(req.headers())?,
+        origin,
     };
 
     let pool = req
@@ -104,6 +109,9 @@ async fn process_upload(req: Request<Body>) -> UploadResult<UploadInfo> {
             .determine(upload_req.size)
             .ok_or(UploadError::TooLarge)?,
     )?;
+
+    let id = Uuid::new_v4().to_hyphenated_ref().to_string();
+    let admin = Uuid::new_v4().to_hyphenated_ref().to_string();
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)

@@ -4,7 +4,7 @@ use sqlx::SqliteConnection;
 use crate::upload::UploadRequest;
 
 pub mod global;
-pub mod ip;
+pub mod origin;
 
 #[async_trait]
 pub trait Limiter {

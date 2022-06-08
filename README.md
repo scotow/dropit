@@ -7,7 +7,7 @@
 - Upload files from the terminal (by using `curl` or the [shell script](https://github.com/scotow/dropit/blob/master/upload.sh))
 - Short and long aliases generation, short to copy/past and long to easily share it verbally
 - Configurable expiration based on file size
-- Quota based on users' IP addresses
+- Quota based on users' IP addresses or usernames
 - Revocable files
 - Expiration refresh
 - Alias regeneration
@@ -29,43 +29,44 @@
 
 ```
 USAGE:
-    dropit [FLAGS] [OPTIONS] --global-size-sum <global-size-sum> --ip-file-count <ip-file-count> --ip-size-sum <ip-size-sum> --threshold <thresholds>...
-
-FLAGS:
-        --auth-download              
-        --auth-upload                
-        --auth-web-ui                
-    -R, --behind-reverse-proxy       
-    -h, --help                       Prints help information
-    -v, --verbose                    
-    -D, --no-database-creation       
-    -U, --no-uploads-dir-creation    
-    -V, --version                    Prints version information
+    dropit [OPTIONS] --threshold <THRESHOLDS> --origin-size-sum <ORIGIN_SIZE_SUM> --origin-file-count <ORIGIN_FILE_COUNT> --global-size-sum <GLOBAL_SIZE_SUM>
 
 OPTIONS:
-    -a, --address <address>                               [default: 127.0.0.1]
-    -C, --credential <credentials>...                    
-    -d, --database <database>                             [default: dropit.db]
-    -S, --global-size-sum <global-size-sum>              
-    -c, --ip-file-count <ip-file-count>                  
-    -s, --ip-size-sum <ip-size-sum>                      
-        --ldap-address <ldap-address>                    
-        --ldap-attribute <ldap-attribute>                 [default: uid]
-        --ldap-base-dn <ldap-base-dn>                    
-        --ldap-search-dn <ldap-search-dn>                
-        --ldap-search-password <ldap-search-password>    
-    -p, --port <port>                                     [default: 8080]
-    -T, --theme <theme>                                   [default: #15b154]
-    -t, --threshold <thresholds>...                      
-    -u, --uploads-dir <uploads-dir>                       [default: uploads]
+    -a, --address <ADDRESS>                              [default: 127.0.0.1]
+        --auth-download                                  
+        --auth-upload                                    
+    -c, --origin-file-count <ORIGIN_FILE_COUNT>          
+    -C, --credential <CREDENTIALS>                       
+    -d, --database <DATABASE>                            [default: dropit.db]
+    -D, --no-database-creation                           
+    -h, --help                                           Print help information
+        --ldap-address <LDAP_ADDRESS>                    
+        --ldap-attribute <LDAP_ATTRIBUTE>                [default: uid]
+        --ldap-base-dn <LDAP_BASE_DN>                    
+        --ldap-search-dn <LDAP_SEARCH_DN>                
+        --ldap-search-password <LDAP_SEARCH_PASSWORD>    
+    -o, --ip-origin                                      
+    -O, --username-origin                                
+    -p, --port <PORT>                                    [default: 8080]
+    -R, --behind-reverse-proxy                           
+    -s, --origin-size-sum <ORIGIN_SIZE_SUM>              
+    -S, --global-size-sum <GLOBAL_SIZE_SUM>              
+    -t, --threshold <THRESHOLDS>                         
+    -T, --theme <THEME>                                  [default: #15b154]
+    -u, --uploads-dir <UPLOADS_DIR>                      [default: uploads]
+    -U, --no-uploads-dir-creation                        
+    -v, --verbose                                        
+    -V, --version                                        Print version information
+
 ```
 
 Here is an example of a Dropit instance:
 
 ```
 dropit \
-  --ip-size-sum 512MB \
-  --ip-file-count 64 \
+  --ip-origin
+  --origin-size-sum 512MB \
+  --origin-file-count 64 \
   --global-size-sum 10GB \
   --threshold 64MB:24h \
   --threshold 256MB:6h \
@@ -74,12 +75,13 @@ dropit \
   --behind-reverse-proxy
 ```
 
+- Using uploader IP address to limit / calculate upload quota 
 - Allowing at most 64 simultaneous files from the same IP
-- Allowing a total of 512 MB of file content from the same IP
-- Allowing a total of 10 GB of file content from anybody
-- Setting the duration of files smaller than 64 MB to 24h
-- Setting the duration of files smaller than 256 MB to 6h
-- Forbidding files larger than 256M
+- Allowing a total of 512MB of file content from the same IP
+- Allowing a total of 10GB of file content from anybody
+- Setting the duration of files smaller than 64MB to 24h
+- Setting the duration of files smaller than 256MB to 6h
+- Forbidding files larger than 256MB
 - Protecting upload endpoint with a basic auth and using admin/password as credentials
 - Using the X-Forwarded-For header to determine user IP address
 - Listening on default address and port (127.0.0.1:8080)

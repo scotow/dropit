@@ -5,7 +5,7 @@ use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::alias::Alias;
-use crate::auth::{Authenticator, Features};
+use crate::auth::{AuthStatus, Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
 use crate::storage::dir::Dir;
@@ -26,7 +26,7 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let auth = req
         .data::<Arc<Authenticator>>()
         .ok_or(AuthError::AuthProcess)?;
-    if let Err(resp) = auth.allows(&req, Features::DOWNLOAD).await {
+    if let AuthStatus::Error(resp) = auth.allows(&req, Features::DOWNLOAD).await {
         return Ok(resp);
     }
 

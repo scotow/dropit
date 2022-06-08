@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use hyper::http::HeaderValue;
 use hyper::{header, Body, Request, Response};
@@ -12,11 +12,17 @@ use crate::response::adaptive_error;
 use crate::response::generic_500;
 use crate::{Features, LdapAuthenticator};
 
+pub enum AuthStatus {
+    NotNeeded,
+    Valid(String),
+    Error(Response<Body>),
+}
+
 pub struct Authenticator {
     protected: Features,
     static_credentials: HashMap<String, String>,
     ldap: Option<LdapAuthenticator>,
-    sessions: RwLock<HashSet<String>>,
+    sessions: RwLock<HashMap<String, String>>,
 }
 
 impl Authenticator {
@@ -40,40 +46,40 @@ impl Authenticator {
         self.protected.contains(feature)
     }
 
-    pub async fn allows(
-        &self,
-        req: &Request<Body>,
-        feature: Features,
-    ) -> Result<(), Response<Body>> {
+    pub async fn allows(&self, req: &Request<Body>, feature: Features) -> AuthStatus {
         if !self.protected.contains(feature) {
-            return Ok(());
+            return AuthStatus::NotNeeded;
         }
 
-        if self.verify_authorization_header(req).await? {
-            return Ok(());
+        match self.verify_authorization_header(req).await {
+            Ok(Some(username)) => return AuthStatus::Valid(username),
+            Err(err) => return AuthStatus::Error(err),
+            Ok(None) => (),
+        };
+
+        if let Some(username) = self.verify_cookie(req).await {
+            return AuthStatus::Valid(username);
         }
 
-        if self.verify_cookie(req).await {
-            return Ok(());
-        }
-
-        Err(Response::builder()
-            .status(AuthError::InvalidAuthorizationHeader.status_code())
-            .header(header::CONTENT_TYPE, "text/plain")
-            .header(header::WWW_AUTHENTICATE, "Basic")
-            .body(Body::from(
-                AuthError::InvalidAuthorizationHeader.to_string(),
-            ))
-            .unwrap_or_else(|_| generic_500()))
+        AuthStatus::Error(
+            Response::builder()
+                .status(AuthError::InvalidAuthorizationHeader.status_code())
+                .header(header::CONTENT_TYPE, "text/plain")
+                .header(header::WWW_AUTHENTICATE, "Basic")
+                .body(Body::from(
+                    AuthError::InvalidAuthorizationHeader.to_string(),
+                ))
+                .unwrap_or_else(|_| generic_500()),
+        )
     }
 
     async fn verify_authorization_header(
         &self,
         req: &Request<Body>,
-    ) -> Result<bool, Response<Body>> {
+    ) -> Result<Option<String>, Response<Body>> {
         let header = match header_str(req, header::AUTHORIZATION) {
             Some(header) => header,
-            None => return Ok(false),
+            None => return Ok(None),
         };
 
         let response_type = req.headers().get(header::ACCEPT).cloned();
@@ -94,40 +100,32 @@ impl Authenticator {
         Ok(self.verify_credentials(username, password).await)
     }
 
-    pub async fn verify_cookie(&self, req: &Request<Body>) -> bool {
-        let header = match header_str(req, header::COOKIE) {
-            Some(header) => header,
-            None => return false,
-        };
-
-        let session = match header
+    pub async fn verify_cookie(&self, req: &Request<Body>) -> Option<String> {
+        let header = header_str(req, header::COOKIE)?;
+        let session = header
             .split("; ")
             .filter_map(|p| p.split_once('='))
-            .find_map(|(k, v)| (k == "session").then(|| v))
-        {
-            Some(session) => session,
-            None => return false,
-        };
+            .find_map(|(k, v)| (k == "session").then(|| v))?;
 
-        self.sessions.read().await.contains(session)
+        self.sessions.read().await.get(session).cloned()
     }
 
-    async fn verify_credentials(&self, username: &str, password: &str) -> bool {
+    async fn verify_credentials(&self, username: &str, password: &str) -> Option<String> {
         if let Some(p) = self.static_credentials.get(username) {
-            return password == p;
+            return (password == p).then(|| username.to_owned());
         }
 
         if let Some(ldap) = &self.ldap {
             return match ldap.is_authorized(username, password).await {
-                Ok(success) => success,
+                Ok(success) => success.then(|| username.to_owned()),
                 Err(err) => {
                     log::error!("Cannot authenticate user using LDAP: {:?}", err);
-                    false
+                    None
                 }
             };
         }
 
-        false
+        None
     }
 
     pub async fn create_session(
@@ -136,12 +134,15 @@ impl Authenticator {
         password: &str,
         response_type: Option<HeaderValue>,
     ) -> Result<String, Response<Body>> {
-        if !self.verify_credentials(username, password).await {
+        if self.verify_credentials(username, password).await.is_none() {
             return Err(forbidden_error_response(response_type));
         }
 
         let token = Uuid::new_v4().to_hyphenated_ref().to_string();
-        self.sessions.write().await.insert(token.clone());
+        self.sessions
+            .write()
+            .await
+            .insert(token.clone(), username.to_owned());
         Ok(token)
     }
 }

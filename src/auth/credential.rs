@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Credential(pub String, pub String);
 
 impl FromStr for Credential {
