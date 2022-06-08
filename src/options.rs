@@ -7,7 +7,7 @@ use log::LevelFilter;
 
 use crate::auth::{Credential, Origin};
 use crate::upload::expiration::Threshold;
-use crate::Features;
+use crate::{exit_error, Features};
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]
@@ -71,6 +71,16 @@ pub struct Options {
 }
 
 impl Options {
+    pub fn validate(&self) {
+        if (self.auth_upload || self.auth_download)
+            && (self.credentials.is_empty() && self.ldap_address.is_none())
+        {
+            exit_error!(
+                "At least one authentication method is required if you protect parts of the API"
+            );
+        }
+    }
+
     pub fn origin(&self) -> Option<Origin> {
         if self.ip_origin {
             Some(Origin::IpAddress)
