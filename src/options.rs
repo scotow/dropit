@@ -42,7 +42,7 @@ pub struct Options {
         long,
         conflicts_with = "ip-origin",
         required_unless_present = "ip-origin"
-    )]
+    )] // requires_any = "credentials" | "ldap..."
     pub username_origin: bool,
     #[clap(short = 's', long, required = true, parse(try_from_str = parse_size))]
     pub origin_size_sum: u64,
@@ -78,6 +78,9 @@ impl Options {
             exit_error!(
                 "At least one authentication method is required if you protect parts of the API"
             );
+        }
+        if self.username_origin && self.credentials.is_empty() && self.ldap_address.is_none() {
+            exit_error!("At least one authentication method is required if you calculate quota using usernames")
         }
     }
 
