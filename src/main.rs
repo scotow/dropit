@@ -41,6 +41,7 @@ mod theme;
 mod update;
 mod upload;
 
+#[allow(clippy::too_many_arguments)]
 fn router(
     uploads_dir: PathBuf,
     real_ip: RealIp,

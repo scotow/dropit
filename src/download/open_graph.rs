@@ -5,7 +5,7 @@ use hyper::{Body, Request, StatusCode};
 use crate::download::FileInfo;
 use crate::Response;
 
-const BOTS: &[&'static str] = &["discord", "facebook", "twitter"];
+const BOTS: &[&str] = &["discord", "facebook", "twitter"];
 
 pub(super) fn proxy_request(
     req: &Request<Body>,
@@ -42,9 +42,7 @@ pub(super) fn proxy_request(
             format!(
                 "{} ({})",
                 info.name,
-                Byte::from_bytes(info.size as u64)
-                    .get_appropriate_unit(false)
-                    .to_string()
+                Byte::from_bytes(info.size as u64).get_appropriate_unit(false)
             )
         })
         .collect::<Vec<_>>();
@@ -52,11 +50,9 @@ pub(super) fn proxy_request(
         .replacen("$TITLE", title, 1)
         .replacen("$DESCRIPTION", &description.join("&#10;&#13;"), 1);
 
-    Some(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(CONTENT_TYPE, "text/html")
-            .body(Body::from(page))
-            .ok()?,
-    )
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "text/html")
+        .body(Body::from(page))
+        .ok()
 }

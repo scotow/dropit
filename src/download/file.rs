@@ -25,7 +25,7 @@ pub(super) async fn handler(
     let fd = File::open(dir.file_path(&info.id))
         .await
         .map_err(|_| DownloadError::OpenFile)?;
-    let streamer = FileStreamer::new(fd, &info, dir, pool);
+    let streamer = FileStreamer::new(fd, info, dir, pool);
 
     Ok(Response::builder()
         .status(StatusCode::OK)

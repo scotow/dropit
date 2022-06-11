@@ -6,7 +6,7 @@ use crate::response::SingleLine;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("internal server error")]
-    GenericError,
+    Generic,
     #[error("invalid filename header")]
     FilenameHeader,
     #[error("invalid content length")]
@@ -69,7 +69,7 @@ impl Error {
     pub fn status_code(&self) -> StatusCode {
         use Error::*;
         match self {
-            GenericError => StatusCode::INTERNAL_SERVER_ERROR,
+            Generic => StatusCode::INTERNAL_SERVER_ERROR,
             FilenameHeader => StatusCode::BAD_REQUEST,
             ContentLength => StatusCode::BAD_REQUEST,
             TooLarge => StatusCode::BAD_REQUEST,
@@ -104,13 +104,13 @@ impl Error {
 
 impl From<hyper::http::Error> for Error {
     fn from(_: hyper::http::Error) -> Self {
-        Self::GenericError
+        Self::Generic
     }
 }
 
 impl From<hyper::Error> for Error {
     fn from(_: hyper::Error) -> Self {
-        Self::GenericError
+        Self::Generic
     }
 }
 

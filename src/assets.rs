@@ -11,7 +11,7 @@ struct Assets;
 
 pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
     let path = req.uri().path();
-    let path = if path.ends_with("/") {
+    let path = if path.ends_with('/') {
         format!("{}index.html", path)
     } else {
         path.to_owned()

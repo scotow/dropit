@@ -23,7 +23,7 @@ async fn authorize(req: &Request<Body>) -> Result<(String, u64, PoolConnection<S
     let headers = req.headers();
     let auth = headers
         .get("X-Authorization") // Prioritize X-Authorization because Safari doesn't overwrite XMLHttpRequest's Authorization header.
-        .or(headers.get(header::AUTHORIZATION))
+        .or_else(|| headers.get(header::AUTHORIZATION))
         .ok_or(AdminError::InvalidAuthorizationHeader)?
         .to_str()
         .map_err(|_| AdminError::InvalidAuthorizationHeader)?;
