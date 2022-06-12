@@ -1,4 +1,7 @@
+use axum::response::{IntoResponse, Response};
+use axum::Json;
 use hyper::StatusCode;
+use serde_json::json;
 use thiserror::Error;
 
 use crate::response::SingleLine;
@@ -99,6 +102,19 @@ impl Error {
             AssetsCatalogue => StatusCode::INTERNAL_SERVER_ERROR,
             AssetNotFound => StatusCode::NOT_FOUND,
         }
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        (
+            self.status_code(),
+            Json(json!({
+                "success": false,
+                "error": self.to_string(),
+            })),
+        )
+            .into_response()
     }
 }
 

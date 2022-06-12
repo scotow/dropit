@@ -5,9 +5,9 @@ use byte_unit::{Byte, ByteError};
 use clap::Parser;
 use log::LevelFilter;
 
-use crate::auth::{Credential, Origin};
-use crate::upload::expiration::Threshold;
-use crate::{exit_error, Features};
+use crate::auth::{Credential, Features, Origin};
+// use crate::upload::expiration::Threshold;
+// use crate::exit_error;
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]
@@ -28,8 +28,8 @@ pub struct Options {
     pub port: u16,
     #[clap(short = 'R', long = "behind-reverse-proxy")]
     pub behind_proxy: bool,
-    #[clap(short = 't', long = "threshold", required = true)]
-    pub thresholds: Vec<Threshold>,
+    // #[clap(short = 't', long = "threshold", required = true)]
+    // pub thresholds: Vec<Threshold>,
     #[clap(
         short = 'o',
         long,
@@ -71,29 +71,29 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn validate(&self) {
-        if (self.auth_upload || self.auth_download)
-            && (self.credentials.is_empty() && self.ldap_address.is_none())
-        {
-            exit_error!(
-                "At least one authentication method is required if you protect parts of the API"
-            );
-        }
-        if self.username_origin && self.credentials.is_empty() && self.ldap_address.is_none() {
-            exit_error!("At least one authentication method is required if you calculate quota using usernames")
-        }
-    }
-
-    pub fn origin(&self) -> Option<Origin> {
-        if self.ip_origin {
-            Some(Origin::IpAddress)
-        } else if self.username_origin {
-            Some(Origin::Username)
-        } else {
-            None
-        }
-    }
-
+    //     pub fn validate(&self) {
+    //         if (self.auth_upload || self.auth_download)
+    //             && (self.credentials.is_empty() && self.ldap_address.is_none())
+    //         {
+    //             exit_error!(
+    //                 "At least one authentication method is required if you protect parts of the API"
+    //             );
+    //         }
+    //         if self.username_origin && self.credentials.is_empty() && self.ldap_address.is_none() {
+    //             exit_error!("At least one authentication method is required if you calculate quota using usernames")
+    //         }
+    //     }
+    //
+    //     pub fn origin(&self) -> Option<Origin> {
+    //         if self.ip_origin {
+    //             Some(Origin::IpAddress)
+    //         } else if self.username_origin {
+    //             Some(Origin::Username)
+    //         } else {
+    //             None
+    //         }
+    //     }
+    //
     pub fn access(&self) -> Features {
         let mut access = Features::empty();
         if self.auth_upload {

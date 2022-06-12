@@ -1,3 +1,4 @@
+use axum::headers::Cookie;
 use std::collections::HashMap;
 
 use hyper::http::HeaderValue;
@@ -8,9 +9,10 @@ use uuid::Uuid;
 use crate::auth::Credential;
 use crate::error::auth as AuthError;
 use crate::misc::header_str;
-use crate::response::adaptive_error;
-use crate::response::generic_500;
-use crate::{Features, LdapAuthenticator};
+// use crate::response::adaptive_error;
+// use crate::response::generic_500;
+use crate::auth::{Features, LdapAuthenticator};
+use crate::Error;
 
 pub enum AuthStatus {
     NotNeeded,
@@ -46,67 +48,62 @@ impl Authenticator {
         self.protected.contains(feature)
     }
 
-    pub async fn allows(&self, req: &Request<Body>, feature: Features) -> AuthStatus {
-        if !self.protected.contains(feature) {
-            return AuthStatus::NotNeeded;
-        }
-
-        match self.verify_authorization_header(req).await {
-            Ok(Some(username)) => return AuthStatus::Valid(username),
-            Err(err) => return AuthStatus::Error(err),
-            Ok(None) => (),
-        };
-
-        if let Some(username) = self.verify_cookie(req).await {
-            return AuthStatus::Valid(username);
-        }
-
-        AuthStatus::Error(
-            Response::builder()
-                .status(AuthError::InvalidAuthorizationHeader.status_code())
-                .header(header::CONTENT_TYPE, "text/plain")
-                .header(header::WWW_AUTHENTICATE, "Basic")
-                .body(Body::from(
-                    AuthError::InvalidAuthorizationHeader.to_string(),
-                ))
-                .unwrap_or_else(|_| generic_500()),
-        )
-    }
-
-    async fn verify_authorization_header(
-        &self,
-        req: &Request<Body>,
-    ) -> Result<Option<String>, Response<Body>> {
-        let header = match header_str(req, header::AUTHORIZATION) {
-            Some(header) => header,
-            None => return Ok(None),
-        };
-
-        let response_type = req.headers().get(header::ACCEPT).cloned();
-        let content = header.trim_start_matches("Basic ");
-        let decoded = match base64::decode(content)
-            .map(|b| String::from_utf8(b).ok())
-            .ok()
-            .flatten()
-        {
-            Some(decoded) => decoded,
-            None => return Err(forbidden_error_response(response_type)),
-        };
-        let (username, password) = match decoded.split_once(':') {
-            Some(parts) => parts,
-            None => return Err(forbidden_error_response(response_type)),
-        };
-
-        Ok(self.verify_credentials(username, password).await)
-    }
-
-    pub async fn verify_cookie(&self, req: &Request<Body>) -> Option<String> {
-        let header = header_str(req, header::COOKIE)?;
-        let session = header
-            .split("; ")
-            .filter_map(|p| p.split_once('='))
-            .find_map(|(k, v)| (k == "session").then(|| v))?;
-
+    // pub async fn allows(&self, req: &Request<Body>, feature: Features) -> AuthStatus {
+    //     if !self.protected.contains(feature) {
+    //         return AuthStatus::NotNeeded;
+    //     }
+    //
+    //     match self.verify_authorization_header(req).await {
+    //         Ok(Some(username)) => return AuthStatus::Valid(username),
+    //         Err(err) => return AuthStatus::Error(err),
+    //         Ok(None) => (),
+    //     };
+    //
+    //     if let Some(username) = self.verify_cookie(req).await {
+    //         return AuthStatus::Valid(username);
+    //     }
+    //
+    //     AuthStatus::Error(
+    //         Response::builder()
+    //             .status(AuthError::InvalidAuthorizationHeader.status_code())
+    //             .header(header::CONTENT_TYPE, "text/plain")
+    //             .header(header::WWW_AUTHENTICATE, "Basic")
+    //             .body(Body::from(
+    //                 AuthError::InvalidAuthorizationHeader.to_string(),
+    //             ))
+    //             .unwrap_or_else(|_| generic_500()),
+    //     )
+    // }
+    //
+    // async fn verify_authorization_header(
+    //     &self,
+    //     req: &Request<Body>,
+    // ) -> Result<Option<String>, Response<Body>> {
+    //     let header = match header_str(req, header::AUTHORIZATION) {
+    //         Some(header) => header,
+    //         None => return Ok(None),
+    //     };
+    //
+    //     let response_type = req.headers().get(header::ACCEPT).cloned();
+    //     let content = header.trim_start_matches("Basic ");
+    //     let decoded = match base64::decode(content)
+    //         .map(|b| String::from_utf8(b).ok())
+    //         .ok()
+    //         .flatten()
+    //     {
+    //         Some(decoded) => decoded,
+    //         None => return Err(forbidden_error_response(response_type)),
+    //     };
+    //     let (username, password) = match decoded.split_once(':') {
+    //         Some(parts) => parts,
+    //         None => return Err(forbidden_error_response(response_type)),
+    //     };
+    //
+    //     Ok(self.verify_credentials(username, password).await)
+    // }
+    //
+    pub async fn verify_cookie(&self, cookies: Cookie) -> Option<String> {
+        let session = cookies.get("session")?;
         self.sessions.read().await.get(session).cloned()
     }
 
@@ -132,10 +129,10 @@ impl Authenticator {
         &self,
         username: &str,
         password: &str,
-        response_type: Option<HeaderValue>,
-    ) -> Result<String, Response<Body>> {
+        // response_type: Option<HeaderValue>,
+    ) -> Result<String, Error> {
         if self.verify_credentials(username, password).await.is_none() {
-            return Err(forbidden_error_response(response_type));
+            return Err(AuthError::AccessForbidden);
         }
 
         let token = Uuid::new_v4().to_hyphenated_ref().to_string();
@@ -147,6 +144,6 @@ impl Authenticator {
     }
 }
 
-fn forbidden_error_response(response_type: Option<HeaderValue>) -> Response<Body> {
-    adaptive_error(response_type, AuthError::AccessForbidden).unwrap_or_else(|_| generic_500())
-}
+// fn forbidden_error_response(response_type: Option<HeaderValue>) -> Response<Body> {
+//     adaptive_error(response_type, AuthError::AccessForbidden).unwrap_or_else(|_| generic_500())
+// }

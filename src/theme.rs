@@ -1,21 +1,29 @@
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::{Extension, Router};
 use hyper::{header, Body, Request, Response, StatusCode};
-use routerify::ext::RequestExt;
 
 use crate::Error;
 
+#[derive(Clone, Debug)]
 pub struct Theme(String);
 
 impl Theme {
     pub fn new(color: &str) -> Self {
-        Self(format!(":root {{\n    --theme: {};\n}}", color))
+        Self(format!(":root {{\n\t--theme: {};\n}}", color))
     }
 }
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let theme = req.data::<Theme>().ok_or(Error::AssetsCatalogue)?;
+async fn handler(Extension(theme): Extension<Theme>) -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "text/css")],
+        theme.0,
+    )
+}
 
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "text/css")
-        .body(Body::from(theme.0.clone()))?)
+pub fn router(color: &str) -> Router {
+    Router::new()
+        .route("/theme.css", get(handler))
+        .layer(Extension(Theme::new(color)))
 }

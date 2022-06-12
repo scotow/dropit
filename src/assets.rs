@@ -1,4 +1,7 @@
-use hyper::{header, Body, Request, Response, StatusCode};
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::Router;
+use hyper::{header, Body, Response, StatusCode, Uri};
 use rust_embed::RustEmbed;
 
 use crate::AssetsError;
@@ -9,8 +12,8 @@ use crate::Error;
 #[prefix = "/"]
 struct Assets;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let path = req.uri().path();
+pub async fn handler(uri: Uri) -> Result<impl IntoResponse, Error> {
+    let path = uri.path();
     let path = if path.ends_with('/') {
         format!("{}index.html", path)
     } else {
@@ -30,4 +33,17 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, mime_type)
         .body(Body::from(asset.data))?)
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(handler))
+        .route("/index.html", get(handler))
+        .route("/style.css", get(handler))
+        .route("/app.js", get(handler))
+        .route("/icon.png", get(handler))
+        .route("/login/", get(handler))
+        .route("/login/index.html", get(handler))
+        .route("/login/style.css", get(handler))
+        .route("/login/app.js", get(handler))
 }

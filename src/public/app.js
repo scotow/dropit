@@ -485,7 +485,7 @@ function documentReady() {
             remove.classList.add('remove', 'clickable');
             remove.addEventListener('click', () => {
                 FILES.remove(this);
-            })
+            });
 
             const error = document.createElement('div');
             error.classList.add('error-message');

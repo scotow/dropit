@@ -1,13 +1,13 @@
 [package]
 name = "dropit"
-version = "0.20.2"
+version = "0.21.0"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"
 
 [dependencies]
 tokio = { version = "1.19.2", features = ["io-util", "macros", "sync", "fs", "rt-multi-thread"] }
 hyper = { version = "0.14.19", features = ["stream"] }
-routerify = "2.2"
+axum = { version = "0.5.7", features = ["headers"] }
 futures = "0.3.21"
 sqlx = { version = "0.5.13", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
 tokio-util = { version = "0.7.3", default-features = false, features = ["io", "compat"] }
