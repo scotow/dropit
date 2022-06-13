@@ -13,11 +13,18 @@ struct RequiresAuth {
 
 pub(super) async fn handler(
     Extension(auth): Extension<Arc<Authenticator>>,
-    TypedHeader(cookies): TypedHeader<Cookie>,
+    cookies: Option<TypedHeader<Cookie>>,
 ) -> impl IntoResponse {
     if !auth.protects(Features::UPLOAD) {
         return (StatusCode::OK, Json(RequiresAuth { required: false }));
     }
+
+    let cookies = match cookies {
+        Some(cookies) => cookies.0,
+        None => {
+            return (StatusCode::OK, Json(RequiresAuth { required: true }));
+        }
+    };
 
     (
         StatusCode::OK,
