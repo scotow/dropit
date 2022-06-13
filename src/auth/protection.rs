@@ -1,4 +1,4 @@
-use crate::auth::{Authenticator, Features};
+use crate::auth::{AuthStatus, Authenticator, Features};
 use axum::headers::Cookie;
 use axum::response::IntoResponse;
 use axum::{Extension, Json, TypedHeader};
@@ -13,23 +13,15 @@ struct RequiresAuth {
 
 pub(super) async fn handler(
     Extension(auth): Extension<Arc<Authenticator>>,
-    cookies: Option<TypedHeader<Cookie>>,
+    cookie: Option<TypedHeader<Cookie>>,
 ) -> impl IntoResponse {
-    if !auth.protects(Features::UPLOAD) {
-        return (StatusCode::OK, Json(RequiresAuth { required: false }));
-    }
-
-    let cookies = match cookies {
-        Some(cookies) => cookies.0,
-        None => {
-            return (StatusCode::OK, Json(RequiresAuth { required: true }));
-        }
+    let required = match auth
+        .allows(None, cookie.map(|c| c.0), Features::UPLOAD)
+        .await
+    {
+        AuthStatus::NotNeeded | AuthStatus::Valid(_) => false,
+        AuthStatus::Prompt | AuthStatus::Error(_) => true,
     };
 
-    (
-        StatusCode::OK,
-        Json(RequiresAuth {
-            required: auth.verify_cookie(cookies).await.is_none(),
-        }),
-    )
+    (StatusCode::OK, Json(RequiresAuth { required }))
 }

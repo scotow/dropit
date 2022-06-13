@@ -1,23 +1,25 @@
-use axum::headers::Cookie;
+use axum::headers::authorization::Basic;
+use axum::headers::{Authorization, Cookie};
 use std::collections::HashMap;
 
-use hyper::http::HeaderValue;
-use hyper::{header, Body, Request, Response};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::auth::Credential;
-use crate::error::auth as AuthError;
-use crate::misc::header_str;
-// use crate::response::adaptive_error;
-// use crate::response::generic_500;
 use crate::auth::{Features, LdapAuthenticator};
-use crate::Error;
+use crate::error::{auth as AuthError, Error};
 
 pub enum AuthStatus {
     NotNeeded,
+    Prompt,
     Valid(String),
-    Error(Response<Body>),
+    Error(Error),
+}
+
+enum AuthProcess {
+    Valid(String),
+    Continue,
+    Stop,
 }
 
 pub struct Authenticator {
@@ -48,92 +50,86 @@ impl Authenticator {
         self.protected.contains(feature)
     }
 
-    // pub async fn allows(&self, req: &Request<Body>, feature: Features) -> AuthStatus {
-    //     if !self.protected.contains(feature) {
-    //         return AuthStatus::NotNeeded;
-    //     }
-    //
-    //     match self.verify_authorization_header(req).await {
-    //         Ok(Some(username)) => return AuthStatus::Valid(username),
-    //         Err(err) => return AuthStatus::Error(err),
-    //         Ok(None) => (),
-    //     };
-    //
-    //     if let Some(username) = self.verify_cookie(req).await {
-    //         return AuthStatus::Valid(username);
-    //     }
-    //
-    //     AuthStatus::Error(
-    //         Response::builder()
-    //             .status(AuthError::InvalidAuthorizationHeader.status_code())
-    //             .header(header::CONTENT_TYPE, "text/plain")
-    //             .header(header::WWW_AUTHENTICATE, "Basic")
-    //             .body(Body::from(
-    //                 AuthError::InvalidAuthorizationHeader.to_string(),
-    //             ))
-    //             .unwrap_or_else(|_| generic_500()),
-    //     )
-    // }
-    //
-    // async fn verify_authorization_header(
-    //     &self,
-    //     req: &Request<Body>,
-    // ) -> Result<Option<String>, Response<Body>> {
-    //     let header = match header_str(req, header::AUTHORIZATION) {
-    //         Some(header) => header,
-    //         None => return Ok(None),
-    //     };
-    //
-    //     let response_type = req.headers().get(header::ACCEPT).cloned();
-    //     let content = header.trim_start_matches("Basic ");
-    //     let decoded = match base64::decode(content)
-    //         .map(|b| String::from_utf8(b).ok())
-    //         .ok()
-    //         .flatten()
-    //     {
-    //         Some(decoded) => decoded,
-    //         None => return Err(forbidden_error_response(response_type)),
-    //     };
-    //     let (username, password) = match decoded.split_once(':') {
-    //         Some(parts) => parts,
-    //         None => return Err(forbidden_error_response(response_type)),
-    //     };
-    //
-    //     Ok(self.verify_credentials(username, password).await)
-    // }
-    //
-    pub async fn verify_cookie(&self, cookies: Cookie) -> Option<String> {
-        let session = cookies.get("session")?;
-        self.sessions.read().await.get(session).cloned()
+    pub async fn allows(
+        &self,
+        authorization: Option<Authorization<Basic>>,
+        cookie: Option<Cookie>,
+        feature: Features,
+    ) -> AuthStatus {
+        if !self.protected.contains(feature) {
+            return AuthStatus::NotNeeded;
+        }
+
+        match self.verify_authorization_header(authorization).await {
+            AuthProcess::Valid(username) => return AuthStatus::Valid(username),
+            AuthProcess::Continue => (),
+            AuthProcess::Stop => return AuthStatus::Error(AuthError::AccessForbidden),
+        }
+
+        match self.verify_cookie(cookie).await {
+            AuthProcess::Valid(username) => return AuthStatus::Valid(username),
+            AuthProcess::Continue => (),
+            AuthProcess::Stop => return AuthStatus::Error(AuthError::AccessForbidden),
+        }
+
+        AuthStatus::Prompt
     }
 
-    async fn verify_credentials(&self, username: &str, password: &str) -> Option<String> {
+    async fn verify_authorization_header(
+        &self,
+        header: Option<Authorization<Basic>>,
+    ) -> AuthProcess {
+        let header = match header {
+            Some(header) => header,
+            None => return AuthProcess::Continue,
+        };
+        self.verify_credentials(header.username(), header.password())
+            .await
+    }
+
+    async fn verify_cookie(&self, cookie: Option<Cookie>) -> AuthProcess {
+        let cookie = match cookie {
+            Some(cookie) => cookie,
+            None => return AuthProcess::Continue,
+        };
+        let session = match cookie.get("session") {
+            Some(session) => session,
+            None => return AuthProcess::Continue,
+        };
+        match self.sessions.read().await.get(session).cloned() {
+            Some(username) => AuthProcess::Valid(username),
+            None => AuthProcess::Stop,
+        }
+    }
+
+    async fn verify_credentials(&self, username: &str, password: &str) -> AuthProcess {
         if let Some(p) = self.static_credentials.get(username) {
-            return (password == p).then(|| username.to_owned());
+            return if password == p {
+                AuthProcess::Valid(username.to_owned())
+            } else {
+                AuthProcess::Continue // Continue, so we don't leak the fact that this user exists.
+            };
         }
 
         if let Some(ldap) = &self.ldap {
             return match ldap.is_authorized(username, password).await {
-                Ok(success) => success.then(|| username.to_owned()),
+                Ok(true) => AuthProcess::Valid(username.to_owned()),
+                Ok(false) => AuthProcess::Stop,
                 Err(err) => {
                     log::error!("Cannot authenticate user using LDAP: {:?}", err);
-                    None
+                    AuthProcess::Continue
                 }
             };
         }
 
-        None
+        AuthProcess::Continue
     }
 
-    pub async fn create_session(
-        &self,
-        username: &str,
-        password: &str,
-        // response_type: Option<HeaderValue>,
-    ) -> Result<String, Error> {
-        if self.verify_credentials(username, password).await.is_none() {
-            return Err(AuthError::AccessForbidden);
-        }
+    pub async fn create_session(&self, username: &str, password: &str) -> Result<String, Error> {
+        match self.verify_credentials(username, password).await {
+            AuthProcess::Valid(_) => (),
+            AuthProcess::Continue | AuthProcess::Stop => return Err(AuthError::AccessForbidden),
+        };
 
         let token = Uuid::new_v4().to_hyphenated_ref().to_string();
         self.sessions
@@ -143,7 +139,3 @@ impl Authenticator {
         Ok(token)
     }
 }
-
-// fn forbidden_error_response(response_type: Option<HeaderValue>) -> Response<Body> {
-//     adaptive_error(response_type, AuthError::AccessForbidden).unwrap_or_else(|_| generic_500())
-// }

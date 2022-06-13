@@ -48,7 +48,6 @@ pub(super) async fn handler(
         .create_session(
             &req.username,
             &req.password,
-            // response_type,
         )
         .await?;
 
