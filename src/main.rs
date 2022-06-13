@@ -15,33 +15,33 @@ use tokio::io::ErrorKind;
 
 // use crate::auth::{Authenticator, Features, LdapAuthenticator, Origin};
 use crate::error::{assets as AssetsError, Error};
-// use crate::limit::global::Global;
-// use crate::limit::origin::Origin as OriginLimiter;
-// use crate::limit::Chain as LimiterChain;
+use crate::limit::global::Global;
+use crate::limit::origin::Origin as OriginLimiter;
+use crate::limit::Chain as LimiterChain;
 use crate::options::Options;
+use crate::upload::origin::RealIp;
 // use crate::response::adaptive_error;
 // use crate::response::generic_500;
-// use crate::storage::clean::Cleaner;
-// use crate::storage::dir::Dir;
+use crate::storage::clean::Cleaner;
+use crate::storage::dir::Dir;
 // use crate::theme::Theme;
-// use crate::upload::expiration::Determiner;
-// use crate::upload::origin::RealIp;
+use crate::upload::expiration::Determiner;
 
-// mod alias;
+mod alias;
 mod assets;
 mod auth;
 // mod download;
 mod error;
 // mod info;
-// mod limit;
+mod limit;
 mod misc;
 mod options;
 mod query;
 mod response;
-// mod storage;
+mod storage;
 mod theme;
 // mod update;
-// mod upload;
+mod upload;
 
 // #[allow(clippy::too_many_arguments)]
 // fn router(
@@ -133,17 +133,17 @@ async fn main() {
     env_logger::Builder::new()
         .filter_level(options.log_level)
         .init();
-    // options.validate();
+    options.validate();
 
-    // let limiters = LimiterChain::new(vec![
-    //     Box::new(OriginLimiter::new(
-    //         options.origin_size_sum,
-    //         options.origin_file_count,
-    //     )),
-    //     Box::new(Global::new(options.global_size_sum)),
-    // ]);
-    // let determiner = Determiner::new(options.thresholds.clone())
-    //     .unwrap_or_else(|| exit_error!("Invalid thresholds"));
+    let limiters = LimiterChain::new(vec![
+        Box::new(OriginLimiter::new(
+            options.origin_size_sum,
+            options.origin_file_count,
+        )),
+        Box::new(Global::new(options.global_size_sum)),
+    ]);
+    let determiner = Determiner::new(options.thresholds.clone())
+        .unwrap_or_else(|| exit_error!("Invalid thresholds"));
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -160,11 +160,11 @@ async fn main() {
         .await
         .unwrap_or_else(|e| exit_error!("Cannot run migration query: {}", e));
 
-    // create_uploads_dir(&options.uploads_dir, !options.no_uploads_dir_creation).await;
-    // let cleaner = Cleaner::new(&options.uploads_dir, pool.clone());
-    // tokio::task::spawn(async move {
-    //     cleaner.start().await;
-    // });
+    create_uploads_dir(&options.uploads_dir, !options.no_uploads_dir_creation).await;
+    let cleaner = Cleaner::new(&options.uploads_dir, pool.clone());
+    tokio::task::spawn(async move {
+        cleaner.start().await;
+    });
 
     let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) =
         (options.ldap_address.as_ref(), options.ldap_base_dn.as_ref())
@@ -197,14 +197,27 @@ async fn main() {
     //     Theme::new(&options.theme),
     // );
 
+    let authenticator = Arc::new(Authenticator::new(
+        options.access(),
+        options.credentials.clone(),
+        ldap,
+    ));
+
     let router = Router::new()
         .merge(assets::router())
         .merge(theme::router(&options.theme))
-        .merge(auth::router(Authenticator::new(
-            options.access(),
-            options.credentials.clone(),
-            ldap,
-        )));
+        .merge(auth::router(Arc::clone(&authenticator)))
+        .merge(upload::router(
+            pool,
+            Arc::clone(&authenticator),
+            RealIp::new(options.behind_proxy),
+            options
+                .origin()
+                .unwrap_or_else(|| exit_error!("Invalid origin method")),
+            limiters,
+            determiner,
+            Dir::new(options.uploads_dir.clone()),
+        ));
 
     let address = SocketAddr::new(options.address, options.port);
     // let service = RouterService::new(router)
@@ -212,7 +225,7 @@ async fn main() {
 
     log::info!("App is running on: {}", address);
     Server::bind(&address)
-        .serve(router.into_make_service())
+        .serve(router.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .unwrap_or_else(|e| exit_error!("Server stopped: {}", e))
 }

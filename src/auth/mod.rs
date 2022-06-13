@@ -16,8 +16,8 @@ mod login;
 mod origin;
 mod protection;
 
-pub fn router(authenticator: Authenticator) -> Router {
+pub fn router(authenticator: Arc<Authenticator>) -> Router {
     Router::new()
         .route("/auth", get(protection::handler).post(login::handler))
-        .layer(Extension(Arc::new(authenticator)))
+        .route_layer(Extension(authenticator))
 }

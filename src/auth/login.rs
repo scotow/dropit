@@ -44,12 +44,7 @@ pub(super) async fn handler(
     //     return Ok(json_error(AuthError::AuthProcess)?);
     // }
 
-    let token = auth
-        .create_session(
-            &req.username,
-            &req.password,
-        )
-        .await?;
+    let token = auth.create_session(&req.username, &req.password).await?;
 
     Ok((
         StatusCode::CREATED,

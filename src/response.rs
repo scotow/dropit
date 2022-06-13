@@ -11,6 +11,12 @@ use std::convert::Infallible;
 
 use crate::error::Error;
 
+pub trait Status {
+    fn status(&self) -> bool {
+        true
+    }
+}
+
 pub trait SingleLine {
     fn single_lined(&self) -> String;
 }
@@ -30,12 +36,6 @@ impl ResponseType {
 impl Default for ResponseType {
     fn default() -> Self {
         Self::JSON
-    }
-}
-
-pub trait Status {
-    fn status(&self) -> bool {
-        true
     }
 }
 

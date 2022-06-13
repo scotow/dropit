@@ -8,7 +8,7 @@ use serde::Serialize;
 use crate::error::upload as UploadError;
 use crate::error::Error;
 use crate::misc::format_duration;
-use crate::response::SingleLine;
+use crate::response::{SingleLine, Status};
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -45,6 +45,8 @@ impl UploadInfo {
         }
     }
 }
+
+impl Status for UploadInfo {}
 
 impl SingleLine for UploadInfo {
     fn single_lined(&self) -> String {
