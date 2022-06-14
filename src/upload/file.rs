@@ -112,6 +112,14 @@ impl TryFrom<Duration> for Expiration {
     }
 }
 
+impl SingleLine for Expiration {
+    fn single_lined(&self) -> String {
+        self.date.readable.clone()
+    }
+}
+
+impl ApiHeader for Expiration {}
+
 #[derive(Serialize)]
 pub struct ExpirationDuration {
     pub seconds: u64,

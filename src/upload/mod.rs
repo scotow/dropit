@@ -290,7 +290,7 @@ pub fn router(
     real_ip: RealIp,
     origin: Origin,
     limiters: ChainLimiter,
-    determiner: Determiner,
+    determiner: Arc<Determiner>,
     dir: Dir,
 ) -> Router {
     Router::new()
@@ -301,6 +301,6 @@ pub fn router(
         .route_layer(Extension(real_ip))
         .route_layer(Extension(origin))
         .route_layer(Extension(Arc::new(limiters)))
-        .route_layer(Extension(Arc::new(determiner)))
+        .route_layer(Extension(determiner))
         .route_layer(Extension(dir))
 }

@@ -142,8 +142,10 @@ async fn main() {
         )),
         Box::new(Global::new(options.global_size_sum)),
     ]);
-    let determiner = Determiner::new(options.thresholds.clone())
-        .unwrap_or_else(|| exit_error!("Invalid thresholds"));
+    let determiner = Arc::new(
+        Determiner::new(options.thresholds.clone())
+            .unwrap_or_else(|| exit_error!("Invalid thresholds")),
+    );
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -216,10 +218,14 @@ async fn main() {
                 .origin()
                 .unwrap_or_else(|| exit_error!("Invalid origin method")),
             limiters,
-            determiner,
+            Arc::clone(&determiner),
             dir.clone(),
         ))
-        .merge(update::router(pool.clone(), dir.clone()))
+        .merge(update::router(
+            pool.clone(),
+            dir.clone(),
+            Arc::clone(&determiner),
+        ))
         .merge(info::router(pool.clone()));
 
     let address = SocketAddr::new(options.address, options.port);
