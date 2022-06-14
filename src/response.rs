@@ -78,14 +78,19 @@ where
     fn into_response(self) -> Response {
         match self.format {
             ResponseType::JSON => {
-                let mut json = serde_json::to_value(&self.data).unwrap();
-                json.as_object_mut()
-                    .unwrap()
-                    .insert("success".to_owned(), Value::from(self.data.success()));
+                #[derive(Serialize)]
+                struct JsonResponse<T> {
+                    success: bool,
+                    #[serde(flatten)]
+                    data: T,
+                }
                 (
                     self.data.status_code(),
                     self.data.additional_headers(),
-                    Json(json),
+                    Json(JsonResponse {
+                        success: self.data.success(),
+                        data: self.data,
+                    }),
                 )
                     .into_response()
             }
