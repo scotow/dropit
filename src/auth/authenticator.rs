@@ -107,7 +107,7 @@ impl Authenticator {
             return if password == p {
                 AuthProcess::Valid(username.to_owned())
             } else {
-                AuthProcess::Continue // Continue, so we don't leak the fact that this user exists.
+                AuthProcess::Stop
             };
         }
 
@@ -117,12 +117,12 @@ impl Authenticator {
                 Ok(false) => AuthProcess::Stop,
                 Err(err) => {
                     log::error!("Cannot authenticate user using LDAP: {:?}", err);
-                    AuthProcess::Continue
+                    AuthProcess::Stop
                 }
             };
         }
 
-        AuthProcess::Continue
+        AuthProcess::Stop
     }
 
     pub async fn create_session(&self, username: &str, password: &str) -> Result<String, Error> {

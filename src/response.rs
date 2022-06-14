@@ -3,7 +3,7 @@ use axum::extract::{FromRequest, RequestParts};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use hyper::http::HeaderValue;
-use hyper::{header, http::Result as HttpResult, Body, StatusCode};
+use hyper::{header, http::Result as HttpResult, Body, HeaderMap, StatusCode};
 use serde::Serialize;
 use serde_json::json;
 use serde_json::Value;
@@ -11,8 +11,16 @@ use std::convert::Infallible;
 
 use crate::error::Error;
 
-pub trait Status {
-    fn status(&self) -> bool {
+pub trait ApiHeader {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
+    }
+
+    fn additional_headers(&self) -> HeaderMap {
+        HeaderMap::default()
+    }
+
+    fn success(&self) -> bool {
         true
     }
 }
@@ -65,7 +73,7 @@ pub struct ApiResponse<T> {
 
 impl<T> IntoResponse for ApiResponse<T>
 where
-    T: Status + Serialize + SingleLine,
+    T: ApiHeader + Serialize + SingleLine,
 {
     fn into_response(self) -> Response {
         match self.format {
@@ -73,8 +81,13 @@ where
                 let mut json = serde_json::to_value(&self.data).unwrap();
                 json.as_object_mut()
                     .unwrap()
-                    .insert("success".to_owned(), Value::from(true));
-                Json(json).into_response()
+                    .insert("success".to_owned(), Value::from(self.data.success()));
+                (
+                    self.data.status_code(),
+                    self.data.additional_headers(),
+                    Json(json),
+                )
+                    .into_response()
             }
             ResponseType::Text => self.data.single_lined().into_response(),
         }

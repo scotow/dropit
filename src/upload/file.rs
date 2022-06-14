@@ -1,3 +1,4 @@
+use axum::http::StatusCode;
 use std::convert::TryFrom;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -7,8 +8,9 @@ use serde::Serialize;
 
 use crate::error::upload as UploadError;
 use crate::error::Error;
+use crate::header::HeaderMap;
 use crate::misc::format_duration;
-use crate::response::{SingleLine, Status};
+use crate::response::{ApiHeader, SingleLine};
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -46,7 +48,11 @@ impl UploadInfo {
     }
 }
 
-impl Status for UploadInfo {}
+impl ApiHeader for UploadInfo {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::CREATED
+    }
+}
 
 impl SingleLine for UploadInfo {
     fn single_lined(&self) -> String {

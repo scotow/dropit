@@ -43,8 +43,6 @@ pub mod file;
 pub mod filename;
 pub mod origin;
 
-pub type UploadResult<T> = Result<T, Error>;
-
 pub struct UploadRequest {
     pub filename: Option<String>,
     pub size: u64,
@@ -68,7 +66,7 @@ pub async fn handler(
     TypedHeader(ContentLength(size)): TypedHeader<ContentLength>,
     Filename(filename): Filename,
     body: BodyStream,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<ApiResponse<UploadInfo>, ApiResponse<Error>> {
     let username = match authenticator
         .allows(
             auth_header.map(|h| h.0),
@@ -79,28 +77,28 @@ pub async fn handler(
     {
         AuthStatus::NotNeeded => None,
         AuthStatus::Valid(username) => Some(username),
-        AuthStatus::Error(err) => return Err(err),
+        AuthStatus::Error(err) => return Err(response_type.to_api_response(err)),
         AuthStatus::Prompt => {
-            todo!();
+            return Err(response_type.to_api_response(AuthError::MissingAuthorization));
         }
     };
 
     let origin = match origin {
         Origin::IpAddress => real_ip
             .resolve(addr.ip(), forwarded_address.map(|fa| fa.0))
-            .ok_or(UploadError::Origin)?
+            .ok_or_else(|| response_type.to_api_response(UploadError::Origin))?
             .to_string(),
-        Origin::Username => username.ok_or(UploadError::Origin)?,
+        Origin::Username => {
+            username.ok_or_else(|| response_type.to_api_response(UploadError::Origin))?
+        }
     };
 
     let upload_res = process_upload(
         pool, limiter, origin, determiner, domain_uri, dir, size, filename, body,
     )
-    .await?;
-    Ok((
-        StatusCode::CREATED,
-        response_type.to_api_response(upload_res),
-    ))
+    .await
+    .map_err(|err| response_type.to_api_response(err))?;
+    Ok(response_type.to_api_response(upload_res))
     // Ok(adaptive_response(
     //     response_type,
     //     StatusCode::CREATED,
@@ -203,12 +201,9 @@ async fn process_upload(
     let file = File::create(&path)
         .await
         .map_err(|_| UploadError::CreateFile)?;
-    match write_file(&upload_req, body, file).await {
-        Ok(_) => (),
-        Err(err) => {
-            clean_failed_upload(path.as_path(), &id, &pool).await;
-            return Err(err);
-        }
+    if let Err(err) = write_file(&upload_req, body, file).await {
+        clean_failed_upload(path.as_path(), &id, &pool).await;
+        return Err(err);
     }
 
     Ok(UploadInfo::new(
@@ -245,7 +240,11 @@ async fn process_upload(
 //         .map_err(|_| UploadError::ContentLength)
 // }
 
-async fn write_file(req: &UploadRequest, mut body: BodyStream, mut file: File) -> UploadResult<()> {
+async fn write_file(
+    req: &UploadRequest,
+    mut body: BodyStream,
+    mut file: File,
+) -> Result<(), Error> {
     let mut written = 0;
     while let Some(chunk) = body.next().await {
         let data = chunk.map_err(|_| UploadError::CopyFile)?;

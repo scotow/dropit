@@ -1,4 +1,4 @@
-use crate::response::{ApiResponse, ResponseType, SingleLine, Status};
+use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
 use crate::{Authenticator, Error};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
@@ -9,8 +9,10 @@ use std::sync::Arc;
 //
 // use hyper::body::HttpBody;
 // use hyper::{header, Body, Request, Response, StatusCode};
+use crate::header::HeaderMap;
 use serde::Deserialize;
 use serde::Serialize;
+
 //
 // // use crate::response::{json_error, json_response};
 // // use crate::{Authenticator, Error as AuthError, Error};
@@ -32,7 +34,11 @@ impl SingleLine for LoginResponse {
     }
 }
 
-impl Status for LoginResponse {}
+impl ApiHeader for LoginResponse {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::CREATED
+    }
+}
 
 pub(super) async fn handler(
     Extension(auth): Extension<Arc<Authenticator>>,
@@ -46,8 +52,5 @@ pub(super) async fn handler(
 
     let token = auth.create_session(&req.username, &req.password).await?;
 
-    Ok((
-        StatusCode::CREATED,
-        response_type.to_api_response(LoginResponse { token }),
-    ))
+    Ok(response_type.to_api_response(LoginResponse { token }))
 }
