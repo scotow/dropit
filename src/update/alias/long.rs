@@ -2,6 +2,7 @@ use crate::alias;
 use crate::alias::Alias;
 use crate::error::alias as AliasError;
 use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
+use crate::update::alias::AliasChange;
 use crate::update::AdminToken;
 use crate::upload::origin::DomainUri;
 use crate::{include_query, Error};
@@ -11,52 +12,17 @@ use serde::{Serialize, Serializer};
 use serde_json::json;
 use sqlx::SqlitePool;
 
-pub struct LongAliasChange {
-    alias: String,
-    link: String,
-}
-
-impl ApiHeader for LongAliasChange {}
-
-impl Serialize for LongAliasChange {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("LongAliasChange", 2)?;
-        state.serialize_field(
-            "alias",
-            &json!({
-                "long": self.alias,
-            }),
-        )?;
-        state.serialize_field(
-            "link",
-            &json!({
-                "long": self.link,
-            }),
-        )?;
-        state.end()
-    }
-}
-
-impl SingleLine for LongAliasChange {
-    fn single_lined(&self) -> String {
-        self.link.clone()
-    }
-}
-
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
     alias: Alias,
     AdminToken(admin_token): AdminToken,
     DomainUri(domain_uri): DomainUri,
     response_type: ResponseType,
-) -> Result<ApiResponse<LongAliasChange>, Error> {
+) -> Result<ApiResponse<AliasChange>, Error> {
     let new_alias = process_change(pool, alias, admin_token).await?;
-    Ok(response_type.to_api_response(LongAliasChange {
-        alias: new_alias.clone(),
-        link: format!("{}/{}", domain_uri, new_alias),
+    Ok(response_type.to_api_response(AliasChange {
+        short: None,
+        long: Some((new_alias.clone(), format!("{}/{}", domain_uri, new_alias))),
     }))
     // Ok(json_response(
     //     StatusCode::OK,

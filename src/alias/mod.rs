@@ -102,27 +102,8 @@ pub async fn random_unused_long(conn: &mut SqliteConnection) -> Option<String> {
 }
 
 pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(String, String)> {
-    let mut aliases = (None, None);
-    for _ in 0..GENERATION_MAX_TENTATIVES {
-        // Short alias.
-        if aliases.0.is_none() {
-            let alias = short::random()?;
-            if !is_alias_used(&alias, include_query!("exist_alias_short"), conn).await? {
-                aliases.0 = Some(alias);
-            }
-        }
-
-        // Long alias.
-        if aliases.1.is_none() {
-            let alias = long::random()?;
-            if !is_alias_used(&alias, include_query!("exist_alias_long"), conn).await? {
-                aliases.1 = Some(alias);
-            }
-        }
-
-        if let (Some(short), Some(long)) = aliases {
-            return Some((short, long));
-        }
-    }
-    None
+    Some((
+        random_unused_short(conn).await?,
+        random_unused_long(conn).await?,
+    ))
 }
