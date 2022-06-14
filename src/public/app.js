@@ -335,7 +335,7 @@ function documentReady() {
                 type.addEventListener('click', () => {
                     if (confirm(`Generating ${t === 'both' ? 'new aliases' : 'a new alias'} will make all people with a current link unable to access it. Confirm?`)) {
                         const req = new XMLHttpRequest();
-                        let path = `/${this.info.alias.short}/aliases`;
+                        let path = `/${this.info.alias.short}/alias`;
                         if (t !== 'both') {
                             path = path.concat(`/${t}`);
                         }

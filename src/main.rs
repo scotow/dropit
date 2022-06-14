@@ -40,7 +40,7 @@ mod query;
 mod response;
 mod storage;
 mod theme;
-// mod update;
+mod update;
 mod upload;
 
 // #[allow(clippy::too_many_arguments)]
@@ -218,6 +218,7 @@ async fn main() {
             determiner,
             Dir::new(options.uploads_dir.clone()),
         ))
+        .merge(update::router(pool.clone()))
         .merge(info::router(pool.clone()));
 
     let address = SocketAddr::new(options.address, options.port);

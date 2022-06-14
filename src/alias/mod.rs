@@ -1,3 +1,7 @@
+use async_trait::async_trait;
+use axum::extract::{FromRequest, Path, RequestParts};
+use hyper::Body;
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use sqlx::SqliteConnection;
@@ -44,6 +48,21 @@ impl FromStr for Alias {
         } else {
             Err(Error::InvalidAlias)
         }
+    }
+}
+
+#[async_trait]
+impl FromRequest<Body> for Alias {
+    type Rejection = Error;
+
+    async fn from_request(req: &mut RequestParts<Body>) -> Result<Self, Self::Rejection> {
+        Ok(Path::<HashMap<String, String>>::from_request(req)
+            .await
+            .map_err(|_| Error::InvalidAlias)?
+            .0
+            .get("alias")
+            .ok_or_else(|| Error::AliasExtract)?
+            .parse()?)
     }
 }
 
