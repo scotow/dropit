@@ -313,6 +313,7 @@ dependencies = [
  "futures",
  "humantime",
  "hyper",
+ "itertools",
  "lazy_static",
  "ldap3",
  "log",

@@ -3,8 +3,9 @@ use std::str::FromStr;
 use sqlx::SqliteConnection;
 
 use crate::alias::Alias::{Long, Short};
-use crate::include_query;
+use crate::{include_query, Error};
 
+pub mod group;
 pub mod long;
 pub mod short;
 
@@ -33,7 +34,7 @@ impl Alias {
 }
 
 impl FromStr for Alias {
-    type Err = ();
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if short::is_match(s) {
@@ -41,7 +42,7 @@ impl FromStr for Alias {
         } else if long::is_match(s) {
             Ok(Long(s.to_owned()))
         } else {
-            Err(())
+            Err(Error::InvalidAlias)
         }
     }
 }

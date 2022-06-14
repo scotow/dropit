@@ -32,7 +32,7 @@ mod assets;
 mod auth;
 // mod download;
 mod error;
-// mod info;
+mod info;
 mod limit;
 mod misc;
 mod options;
@@ -208,7 +208,7 @@ async fn main() {
         .merge(theme::router(&options.theme))
         .merge(auth::router(Arc::clone(&authenticator)))
         .merge(upload::router(
-            pool,
+            pool.clone(),
             Arc::clone(&authenticator),
             RealIp::new(options.behind_proxy),
             options
@@ -217,7 +217,8 @@ async fn main() {
             limiters,
             determiner,
             Dir::new(options.uploads_dir.clone()),
-        ));
+        ))
+        .merge(info::router(pool.clone()));
 
     let address = SocketAddr::new(options.address, options.port);
     // let service = RouterService::new(router)

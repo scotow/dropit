@@ -89,12 +89,12 @@ function documentReady() {
 
             if (checkRemote.length > 0 && document.visibilityState === 'visible') {
                 const req = new XMLHttpRequest();
-                req.open('GET', `/valids/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
+                req.open('GET', `/valid/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
                 req.responseType = 'json';
                 req.onload = (event) => {
                     if (req.status === 200) {
                         for (let i = 0; i < checkRemote.length; i++) {
-                            if (!req.response.valids[i]) {
+                            if (!req.response.valid[i]) {
                                 checkRemote[i].buildExpired(true);
                             }
                         }
