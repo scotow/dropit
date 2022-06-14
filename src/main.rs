@@ -30,7 +30,7 @@ use crate::upload::expiration::Determiner;
 mod alias;
 mod assets;
 mod auth;
-// mod download;
+mod download;
 mod error;
 mod info;
 mod limit;
@@ -219,6 +219,11 @@ async fn main() {
                 .unwrap_or_else(|| exit_error!("Invalid origin method")),
             limiters,
             Arc::clone(&determiner),
+            dir.clone(),
+        ))
+        .merge(download::router(
+            pool.clone(),
+            Arc::clone(&authenticator),
             dir.clone(),
         ))
         .merge(update::router(

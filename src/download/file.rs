@@ -1,12 +1,16 @@
+use axum::body::StreamBody;
+use axum::response::{IntoResponse, Response};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::Stream;
+use hyper::header::HeaderName;
+use hyper::http::HeaderValue;
 use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
-    Body, Request, Response, StatusCode,
+    Body, Request, StatusCode,
 };
-use routerify::ext::RequestExt;
+// use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
@@ -17,25 +21,44 @@ use crate::error::Error;
 use crate::storage::dir::Dir;
 
 pub(super) async fn handler(
-    req: Request<Body>,
-    info: &FileInfo,
+    // req: Request<Body>,
     pool: SqlitePool,
-) -> Result<Response<Body>, Error> {
-    let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
+    info: &FileInfo,
+    dir: Dir,
+) -> Result<Response, Error> {
+    // let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
     let fd = File::open(dir.file_path(&info.id))
         .await
         .map_err(|_| DownloadError::OpenFile)?;
     let streamer = FileStreamer::new(fd, info, dir, pool);
 
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_LENGTH, info.size as u64)
-        .header(CONTENT_TYPE, "application/octet-stream")
-        .header(
-            CONTENT_DISPOSITION,
-            format!(r#"attachment; filename="{}""#, info.name),
-        )
-        .body(Body::wrap_stream(streamer))?)
+    Ok((
+        StatusCode::OK,
+        [
+            (CONTENT_LENGTH, HeaderValue::from(info.size as u64)),
+            (
+                CONTENT_TYPE,
+                HeaderValue::from_static("application/octet-stream"),
+            ),
+            (
+                CONTENT_DISPOSITION,
+                HeaderValue::try_from(format!(r#"attachment; filename="{}""#, info.name))
+                    .map_err(|_| DownloadError::FilenameHeader)?,
+            ),
+        ],
+        StreamBody::new(streamer),
+    )
+        .into_response())
+
+    // Ok(Response::builder()
+    //     .status(StatusCode::OK)
+    //     .header(CONTENT_LENGTH, info.size as u64)
+    //     .header(CONTENT_TYPE, "application/octet-stream")
+    //     .header(
+    //         CONTENT_DISPOSITION,
+    //         format!(r#"attachment; filename="{}""#, info.name),
+    //     )
+    //     .body(Body::wrap_stream(streamer))?)
 }
 
 struct FileStreamer {

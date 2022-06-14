@@ -1,10 +1,13 @@
+use axum::body::StreamBody;
+use axum::response::{IntoResponse, Response};
 use std::collections::HashMap;
 
+use hyper::header::HeaderValue;
 use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
-    Body, Request, Response, StatusCode,
+    Body, Request, StatusCode,
 };
-use routerify::ext::RequestExt;
+// use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio::io::duplex;
@@ -17,11 +20,11 @@ use crate::error::Error;
 use crate::storage::dir::Dir;
 
 pub(super) async fn handler(
-    req: Request<Body>,
-    mut files_info: Vec<FileInfo>,
     pool: SqlitePool,
-) -> Result<Response<Body>, Error> {
-    let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
+    mut files_info: Vec<FileInfo>,
+    dir: Dir,
+) -> Result<Response, Error> {
+    // let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
 
     let mut name_occurrences = HashMap::new();
     for mut info in &mut files_info {
@@ -76,10 +79,23 @@ pub(super) async fn handler(
         }
     });
 
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_LENGTH, archive_size)
-        .header(CONTENT_TYPE, "application/zip")
-        .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
-        .body(Body::wrap_stream(ReaderStream::new(r)))?)
+    Ok((
+        StatusCode::OK,
+        [
+            (CONTENT_LENGTH, HeaderValue::from(archive_size)),
+            (CONTENT_TYPE, HeaderValue::from_static("application/zip")),
+            (
+                CONTENT_DISPOSITION,
+                HeaderValue::from_static(r#"attachment; filename="archive.zip""#),
+            ),
+        ],
+        StreamBody::new(ReaderStream::new(r)),
+    )
+        .into_response())
+    // Ok(Response::builder()
+    //     .status(StatusCode::OK)
+    //     .header(CONTENT_LENGTH, archive_size)
+    //     .header(CONTENT_TYPE, "application/zip")
+    //     .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
+    //     .body(Body::wrap_stream(ReaderStream::new(r)))?)
 }

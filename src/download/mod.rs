@@ -1,13 +1,22 @@
+use axum::extract::Query;
+use axum::headers::authorization::Basic;
+use axum::headers::{Authorization, Cookie, UserAgent};
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::{Extension, Router, TypedHeader};
+use serde::Deserialize;
 use std::sync::Arc;
 
 use hyper::{Body, Request, Response};
-use routerify::ext::RequestExt;
+// use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
+use crate::alias::group::AliasGroup;
 use crate::alias::Alias;
 use crate::auth::{AuthStatus, Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
+use crate::response::{ApiResponse, ResponseType};
 use crate::storage::dir::Dir;
 use crate::{include_query, Error};
 
@@ -22,24 +31,55 @@ struct FileInfo {
     size: i64,
 }
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    let auth = req
-        .data::<Arc<Authenticator>>()
-        .ok_or(AuthError::AuthProcess)?;
-    if let AuthStatus::Error(resp) = auth.allows(&req, Features::DOWNLOAD).await {
-        return Ok(resp);
-    }
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ForceDownload {
+    #[serde(default)]
+    force_download: bool,
+}
 
-    let alias = req.param("alias").ok_or(DownloadError::AliasExtract)?;
-    let aliases = alias
-        .split('+')
-        .map(|a| a.parse::<Alias>().map_err(|_| DownloadError::InvalidAlias))
-        .collect::<Result<Vec<_>, _>>()?;
+pub async fn handler(
+    Extension(pool): Extension<SqlitePool>,
+    // response_type: ResponseType,
+    authenticator: Extension<Arc<Authenticator>>,
+    auth_header: Option<TypedHeader<Authorization<Basic>>>,
+    cookie: Option<TypedHeader<Cookie>>,
+    AliasGroup(aliases): AliasGroup,
+    force_download: Query<ForceDownload>,
+    user_agent: Option<TypedHeader<UserAgent>>,
+    Extension(dir): Extension<Dir>,
+) -> Result<impl IntoResponse, Error> {
+    // let auth = req
+    //     .data::<Arc<Authenticator>>()
+    //     .ok_or(AuthError::AuthProcess)?;
+    // if let AuthStatus::Error(resp) = auth.allows(&req, Features::DOWNLOAD).await {
+    //     return Ok(resp);
+    // }
+    match authenticator
+        .allows(
+            auth_header.map(|h| h.0),
+            cookie.map(|h| h.0),
+            Features::DOWNLOAD,
+        )
+        .await
+    {
+        AuthStatus::NotNeeded | AuthStatus::Valid(_) => (),
+        AuthStatus::Error(err) => return Err(err),
+        AuthStatus::Prompt => {
+            return Err(AuthError::MissingAuthorization);
+        }
+    };
 
-    let pool = req
-        .data::<SqlitePool>()
-        .ok_or(DownloadError::Database)?
-        .clone();
+    // let alias = req.param("alias").ok_or(DownloadError::AliasExtract)?;
+    // let aliases = alias
+    //     .split('+')
+    //     .map(|a| a.parse::<Alias>().map_err(|_| DownloadError::InvalidAlias))
+    //     .collect::<Result<Vec<_>, _>>()?;
+
+    // let pool = req
+    //     .data::<SqlitePool>()
+    //     .ok_or(DownloadError::Database)?
+    //     .clone();
     let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
 
     let mut files_info = Vec::with_capacity(aliases.len());
@@ -55,14 +95,20 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
         );
     }
 
-    if let Some(og_resp) = open_graph::proxy_request(&req, &files_info) {
-        return Ok(og_resp);
+    if !force_download.force_download {
+        if let Some(user_agent) = user_agent {
+            if let Some(og_resp) =
+                open_graph::proxy_request(user_agent.as_str().to_lowercase(), &files_info)
+            {
+                return Ok(og_resp);
+            }
+        }
     }
 
     match files_info.len() {
         0 => Err(DownloadError::AliasExtract),
-        1 => file::handler(req, &files_info[0], pool).await,
-        _ => archive::handler(req, files_info, pool).await,
+        1 => file::handler(pool, &files_info[0], dir).await,
+        _ => archive::handler(pool, files_info, dir).await,
     }
 }
 
@@ -112,4 +158,12 @@ async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) -> Result<(), S
         }
     };
     Ok(())
+}
+
+pub fn router(pool: SqlitePool, authenticator: Arc<Authenticator>, dir: Dir) -> Router {
+    Router::new()
+        .route("/:alias", get(handler))
+        .route_layer(Extension(pool))
+        .route_layer(Extension(authenticator))
+        .route_layer(Extension(dir))
 }

@@ -184,7 +184,7 @@ pub mod upload {
 
 pub mod download {
     pub use super::Error::{
-        AliasExtract, Database, FileNotFound, InvalidAlias, OpenFile, PathResolve,
+        AliasExtract, Database, FileNotFound, FilenameHeader, InvalidAlias, OpenFile, PathResolve,
     };
 }
 
