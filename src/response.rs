@@ -25,8 +25,16 @@ pub trait ApiHeader {
     }
 }
 
+impl ApiHeader for () {}
+
 pub trait SingleLine {
     fn single_lined(&self) -> String;
+}
+
+impl SingleLine for () {
+    fn single_lined(&self) -> String {
+        String::new()
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

@@ -203,6 +203,7 @@ async fn main() {
         ldap,
     ));
 
+    let dir = Dir::new(options.uploads_dir.clone());
     let router = Router::new()
         .merge(assets::router())
         .merge(theme::router(&options.theme))
@@ -216,9 +217,9 @@ async fn main() {
                 .unwrap_or_else(|| exit_error!("Invalid origin method")),
             limiters,
             determiner,
-            Dir::new(options.uploads_dir.clone()),
+            dir.clone(),
         ))
-        .merge(update::router(pool.clone()))
+        .merge(update::router(pool.clone(), dir.clone()))
         .merge(info::router(pool.clone()));
 
     let address = SocketAddr::new(options.address, options.port);

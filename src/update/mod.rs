@@ -3,19 +3,19 @@ use axum::{Extension, Router};
 use hyper::{header, Body, Request};
 // use routerify::ext::RequestExt;
 use async_trait::async_trait;
-use axum::routing::patch;
+use axum::routing::{delete, patch};
 use sqlx::pool::PoolConnection;
 use sqlx::{Sqlite, SqlitePool};
 
 use crate::alias::Alias;
 use crate::error::admin as AdminError;
 use crate::error::Error;
-use crate::include_query;
+use crate::{include_query, Dir};
 
 pub mod alias;
-// pub mod downloads;
+pub mod downloads;
 // pub mod expiration;
-// pub mod revoke;
+pub mod revoke;
 
 async fn authorize(
     pool: SqlitePool,
@@ -77,10 +77,13 @@ impl FromRequest<Body> for AdminToken {
     }
 }
 
-pub fn router(pool: SqlitePool) -> Router {
+pub fn router(pool: SqlitePool, dir: Dir) -> Router {
     Router::new()
         .route("/:alias/alias/short", patch(alias::short::handler))
         .route("/:alias/alias/long", patch(alias::long::handler))
         .route("/:alias/alias", patch(alias::both::handler))
+        .route("/:alias/downloads/:count", patch(downloads::handler))
+        .route("/:alias", delete(revoke::handler))
         .route_layer(Extension(pool))
+        .route_layer(Extension(dir))
 }
