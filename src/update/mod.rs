@@ -1,17 +1,19 @@
-use axum::extract::{FromRequest, RequestParts};
-use axum::{Extension, Router};
-use hyper::{header, Body, Request};
 use std::sync::Arc;
-// use routerify::ext::RequestExt;
+
 use async_trait::async_trait;
+use axum::extract::{FromRequest, RequestParts};
 use axum::routing::{delete, patch};
+use axum::{Extension, Router};
+use hyper::{header, Body};
 use sqlx::pool::PoolConnection;
 use sqlx::{Sqlite, SqlitePool};
 
 use crate::alias::Alias;
 use crate::error::admin as AdminError;
 use crate::error::Error;
-use crate::{include_query, Determiner, Dir};
+use crate::include_query;
+use crate::storage::dir::Dir;
+use crate::upload::expiration::Determiner;
 
 pub mod alias;
 pub mod downloads;
@@ -23,27 +25,8 @@ async fn authorize(
     alias: &Alias,
     admin_token: &str,
 ) -> Result<(String, u64, PoolConnection<Sqlite>), Error> {
-    // let alias = req
-    //     .param("alias")
-    //     .ok_or(AdminError::AliasExtract)?
-    //     .parse::<Alias>()
-    //     .map_err(|_| AdminError::InvalidAlias)?;
-
-    // let headers = req.headers();
-    // let auth = headers
-    //     .get("X-Authorization") // Prioritize X-Authorization because Safari doesn't overwrite XMLHttpRequest's Authorization header.
-    //     .or_else(|| headers.get(header::AUTHORIZATION))
-    //     .ok_or(AdminError::InvalidAuthorizationHeader)?
-    //     .to_str()
-    //     .map_err(|_| AdminError::InvalidAuthorizationHeader)?;
-
     let mut conn = pool.acquire().await.map_err(|_| AdminError::Database)?;
-    // let mut conn = req
-    //     .data::<SqlitePool>()
-    //     .ok_or(AdminError::Database)?
-    //     .acquire()
-    //     .await
-    //     .map_err(|_| AdminError::Database)?;
+
     let (id, size, admin) =
         sqlx::query_as::<_, (String, i64, String)>(include_query!("get_file_admin"))
             .bind(alias.inner())

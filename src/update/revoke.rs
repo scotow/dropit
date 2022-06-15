@@ -1,15 +1,11 @@
 use axum::Extension;
-use hyper::{Body, Request, Response, StatusCode};
-// use routerify::ext::RequestExt;
-use crate::alias::Alias;
-use serde_json::{Map, Value};
 use sqlx::SqlitePool;
 
+use crate::alias::Alias;
 use crate::error::revoke as RevokeError;
 use crate::error::Error;
 use crate::include_query;
 use crate::response::{ApiResponse, ResponseType};
-// use crate::response::json_response;
 use crate::storage::dir::Dir;
 use crate::update::AdminToken;
 
@@ -24,12 +20,6 @@ pub async fn handler(
         .await
         .map_err(|err| response_type.to_api_response(err))?;
     Ok(response_type.to_api_response(()))
-    // Ok(json_response(
-    //     StatusCode::OK,
-    //     process_revoke(pool, alias, admin_token, dir)
-    //         .await
-    //         .map(|_| Value::Object(Map::new()))?,
-    // )?)
 }
 
 async fn process_revoke(

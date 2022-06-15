@@ -1,7 +1,7 @@
-use axum::headers::authorization::Basic;
-use axum::headers::{Authorization, Cookie};
 use std::collections::HashMap;
 
+use axum::headers::authorization::Basic;
+use axum::headers::{Authorization, Cookie};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -44,10 +44,6 @@ impl Authenticator {
             ldap,
             sessions: Default::default(),
         }
-    }
-
-    pub fn protects(&self, feature: Features) -> bool {
-        self.protected.contains(feature)
     }
 
     pub async fn allows(

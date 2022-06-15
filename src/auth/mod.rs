@@ -1,12 +1,14 @@
-pub use authenticator::AuthStatus;
-pub use authenticator::Authenticator;
+use std::sync::Arc;
+
 use axum::routing::get;
 use axum::{Extension, Router};
+
+pub use authenticator::AuthStatus;
+pub use authenticator::Authenticator;
 pub use credential::Credential;
 pub use features::Features;
 pub use ldap::LdapAuthenticator;
 pub use origin::Origin;
-use std::sync::Arc;
 
 mod authenticator;
 mod credential;

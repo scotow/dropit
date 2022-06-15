@@ -1,9 +1,7 @@
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Router};
-use hyper::{header, Body, Request, Response, StatusCode};
-
-use crate::Error;
+use hyper::{header, StatusCode};
 
 #[derive(Clone, Debug)]
 pub struct Theme(String);

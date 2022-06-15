@@ -1,16 +1,14 @@
+use axum::Extension;
+use sqlx::SqlitePool;
+
 use crate::alias;
 use crate::alias::Alias;
 use crate::error::alias as AliasError;
-use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
+use crate::response::{ApiResponse, ResponseType};
 use crate::update::alias::AliasChange;
 use crate::update::AdminToken;
 use crate::upload::origin::DomainUri;
-use crate::{include_query, Error};
-use axum::Extension;
-use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
-use serde_json::json;
-use sqlx::SqlitePool;
+use crate::{error::Error, include_query};
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
@@ -24,15 +22,6 @@ pub async fn handler(
         short: Some((new_short.clone(), format!("{}/{}", domain_uri, new_short))),
         long: Some((new_long.clone(), format!("{}/{}", domain_uri, new_long))),
     }))
-    // Ok(json_response(
-    //     StatusCode::OK,
-    //     process_short(req).await.map(|(base, alias)| {
-    //         json!({
-    //             "alias": { "short": &alias },
-    //             "link": { "short": format!("{}/{}", base, &alias) }
-    //         })
-    //     })?,
-    // )?)
 }
 
 async fn process_change(

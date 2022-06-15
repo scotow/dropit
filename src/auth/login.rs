@@ -1,22 +1,15 @@
-use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
-use crate::{Authenticator, Error};
+use std::sync::Arc;
+
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use hyper::StatusCode;
-use std::sync::Arc;
-
-// use std::sync::Arc;
-//
-// use hyper::body::HttpBody;
-// use hyper::{header, Body, Request, Response, StatusCode};
-use crate::header::HeaderMap;
 use serde::Deserialize;
 use serde::Serialize;
 
-//
-// // use crate::response::{json_error, json_response};
-// // use crate::{Authenticator, Error as AuthError, Error};
-//
+use crate::auth::Authenticator;
+use crate::error::Error;
+use crate::response::{ApiHeader, ResponseType, SingleLine};
+
 #[derive(Deserialize)]
 pub(super) struct LoginRequest {
     pub username: String,

@@ -1,9 +1,12 @@
-use super::Alias;
-use crate::error::Error;
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use axum::extract::{FromRequest, Path, RequestParts};
 use hyper::Body;
-use std::collections::HashMap;
+
+use crate::error::Error;
+
+use super::Alias;
 
 pub struct AliasGroup(pub Vec<Alias>);
 

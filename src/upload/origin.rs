@@ -1,9 +1,10 @@
-use async_trait::async_trait;
-use axum::extract::{FromRequest, RequestParts};
 use std::net::IpAddr;
 
-use crate::error::Error;
+use async_trait::async_trait;
+use axum::extract::{FromRequest, RequestParts};
 use hyper::Body;
+
+use crate::error::Error;
 
 #[derive(Copy, Clone, Debug)]
 pub struct RealIp(bool);

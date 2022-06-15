@@ -1,13 +1,12 @@
-use axum::body::StreamBody;
-use axum::response::{IntoResponse, Response};
 use std::collections::HashMap;
 
+use axum::body::StreamBody;
+use axum::response::{IntoResponse, Response};
 use hyper::header::HeaderValue;
 use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
-    Body, Request, StatusCode,
+    StatusCode,
 };
-// use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio::io::duplex;
@@ -15,7 +14,6 @@ use tokio_util::io::ReaderStream;
 use zipit::{archive_size, Archive, FileDateTime};
 
 use crate::download::FileInfo;
-use crate::error::download as DownloadError;
 use crate::error::Error;
 use crate::storage::dir::Dir;
 
@@ -24,8 +22,6 @@ pub(super) async fn handler(
     mut files_info: Vec<FileInfo>,
     dir: Dir,
 ) -> Result<Response, Error> {
-    // let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
-
     let mut name_occurrences = HashMap::new();
     for mut info in &mut files_info {
         let occurrence = name_occurrences.entry(info.name.clone()).or_insert(0u16);
@@ -92,10 +88,4 @@ pub(super) async fn handler(
         StreamBody::new(ReaderStream::new(r)),
     )
         .into_response())
-    // Ok(Response::builder()
-    //     .status(StatusCode::OK)
-    //     .header(CONTENT_LENGTH, archive_size)
-    //     .header(CONTENT_TYPE, "application/zip")
-    //     .header(CONTENT_DISPOSITION, r#"attachment; filename="archive.zip""#)
-    //     .body(Body::wrap_stream(ReaderStream::new(r)))?)
 }

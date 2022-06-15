@@ -1,18 +1,15 @@
-use axum::Extension;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use crate::alias::Alias;
-use hyper::{Body, Request, Response, StatusCode};
+use axum::Extension;
 use sqlx::SqlitePool;
-// use routerify::ext::RequestExt;
 
+use crate::alias::Alias;
 use crate::error::expiration as ExpirationError;
 use crate::error::Error;
 use crate::include_query;
 use crate::response::{ApiResponse, ResponseType};
 use crate::update::AdminToken;
-// use crate::response::json_response;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::Expiration;
 
@@ -28,7 +25,6 @@ pub async fn handler(
             .await
             .map_err(|err| response_type.to_api_response(err))?,
     ))
-    // Ok(json_response(StatusCode::OK, process_extend(req).await?)?)
 }
 
 async fn process_extend(

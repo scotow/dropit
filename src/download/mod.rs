@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::extract::Query;
 use axum::headers::authorization::Basic;
 use axum::headers::{Authorization, Cookie, UserAgent};
@@ -5,20 +7,14 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Router, TypedHeader};
 use serde::Deserialize;
-use std::sync::Arc;
-
-use hyper::{Body, Request, Response};
-// use routerify::ext::RequestExt;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::alias::group::AliasGroup;
-use crate::alias::Alias;
 use crate::auth::{AuthStatus, Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
-use crate::response::{ApiResponse, ResponseType};
 use crate::storage::dir::Dir;
-use crate::{include_query, Error};
+use crate::{error::Error, include_query};
 
 mod archive;
 mod file;
@@ -40,7 +36,6 @@ pub struct ForceDownload {
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
-    // response_type: ResponseType,
     authenticator: Extension<Arc<Authenticator>>,
     auth_header: Option<TypedHeader<Authorization<Basic>>>,
     cookie: Option<TypedHeader<Cookie>>,
@@ -49,12 +44,6 @@ pub async fn handler(
     user_agent: Option<TypedHeader<UserAgent>>,
     Extension(dir): Extension<Dir>,
 ) -> Result<impl IntoResponse, Error> {
-    // let auth = req
-    //     .data::<Arc<Authenticator>>()
-    //     .ok_or(AuthError::AuthProcess)?;
-    // if let AuthStatus::Error(resp) = auth.allows(&req, Features::DOWNLOAD).await {
-    //     return Ok(resp);
-    // }
     match authenticator
         .allows(
             auth_header.map(|h| h.0),
@@ -69,17 +58,6 @@ pub async fn handler(
             return Err(AuthError::MissingAuthorization);
         }
     };
-
-    // let alias = req.param("alias").ok_or(DownloadError::AliasExtract)?;
-    // let aliases = alias
-    //     .split('+')
-    //     .map(|a| a.parse::<Alias>().map_err(|_| DownloadError::InvalidAlias))
-    //     .collect::<Result<Vec<_>, _>>()?;
-
-    // let pool = req
-    //     .data::<SqlitePool>()
-    //     .ok_or(DownloadError::Database)?
-    //     .clone();
     let mut conn = pool.acquire().await.map_err(|_| DownloadError::Database)?;
 
     let mut files_info = Vec::with_capacity(aliases.len());

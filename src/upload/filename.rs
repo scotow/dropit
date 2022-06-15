@@ -1,9 +1,10 @@
-use crate::error::Error as UploadError;
 use async_trait::async_trait;
 use axum::extract::{FromRequest, RequestParts};
 use hyper::Body;
 use percent_encoding::percent_decode_str;
 use sanitize_filename::sanitize;
+
+use crate::error::Error as UploadError;
 
 pub struct Filename(pub Option<String>);
 

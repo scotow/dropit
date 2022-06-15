@@ -1,10 +1,12 @@
-use crate::auth::{AuthStatus, Authenticator, Features};
+use std::sync::Arc;
+
 use axum::headers::Cookie;
 use axum::response::IntoResponse;
 use axum::{Extension, Json, TypedHeader};
 use hyper::StatusCode;
 use serde::Serialize;
-use std::sync::Arc;
+
+use crate::auth::{AuthStatus, Authenticator, Features};
 
 #[derive(Serialize)]
 struct RequiresAuth {

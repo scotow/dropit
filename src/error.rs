@@ -15,8 +15,6 @@ pub enum Error {
     Generic,
     #[error("invalid filename header")]
     FilenameHeader,
-    #[error("invalid content length")]
-    ContentLength,
     #[error("file too large")]
     TooLarge,
     #[error("cannot calculate expiration")]
@@ -43,8 +41,6 @@ pub enum Error {
     AliasExtract,
     #[error("invalid alias format")]
     InvalidAlias,
-    #[error("cannot resolve file path")]
-    PathResolve,
     #[error("cannot find file")]
     FileNotFound,
     #[error("cannot open file")]
@@ -63,12 +59,6 @@ pub enum Error {
     AccessForbidden,
     #[error("an unexpected error happen while updating file metadata")]
     UnexpectedFileModification,
-    #[error("invalid downloads count")]
-    InvalidDownloadsCount,
-    #[error("authorization process failure")]
-    AuthProcess,
-    #[error("assets catalogue connection failure")]
-    AssetsCatalogue,
     #[error("asset not found")]
     AssetNotFound,
 }
@@ -79,7 +69,6 @@ impl Error {
         match self {
             Generic => StatusCode::INTERNAL_SERVER_ERROR,
             FilenameHeader => StatusCode::BAD_REQUEST,
-            ContentLength => StatusCode::BAD_REQUEST,
             TooLarge => StatusCode::BAD_REQUEST,
             TimeCalculation => StatusCode::INTERNAL_SERVER_ERROR,
             AliasGeneration => StatusCode::INTERNAL_SERVER_ERROR,
@@ -94,7 +83,6 @@ impl Error {
             AliasExtract => StatusCode::INTERNAL_SERVER_ERROR,
             InvalidAlias => StatusCode::BAD_REQUEST,
             FileNotFound => StatusCode::NOT_FOUND,
-            PathResolve => StatusCode::INTERNAL_SERVER_ERROR,
             OpenFile => StatusCode::INTERNAL_SERVER_ERROR,
             RemoveFile => StatusCode::INTERNAL_SERVER_ERROR,
             PartialRemove => StatusCode::INTERNAL_SERVER_ERROR,
@@ -103,9 +91,6 @@ impl Error {
             InvalidAdminToken => StatusCode::FORBIDDEN,
             AccessForbidden => StatusCode::FORBIDDEN,
             UnexpectedFileModification => StatusCode::INTERNAL_SERVER_ERROR,
-            InvalidDownloadsCount => StatusCode::BAD_REQUEST,
-            AuthProcess => StatusCode::INTERNAL_SERVER_ERROR,
-            AssetsCatalogue => StatusCode::INTERNAL_SERVER_ERROR,
             AssetNotFound => StatusCode::NOT_FOUND,
         }
     }
@@ -177,14 +162,14 @@ impl From<hyper::Error> for Error {
 
 pub mod upload {
     pub use super::Error::{
-        AliasGeneration, ContentLength, CopyFile, CreateFile, Database, FilenameHeader, Origin,
-        PathResolve, QuotaAccess, QuotaExceeded, SizeMismatch, Target, TimeCalculation, TooLarge,
+        AliasGeneration, CopyFile, CreateFile, Database, FilenameHeader, Origin, QuotaAccess,
+        QuotaExceeded, SizeMismatch, Target, TimeCalculation, TooLarge,
     };
 }
 
 pub mod download {
     pub use super::Error::{
-        AliasExtract, Database, FileNotFound, FilenameHeader, InvalidAlias, OpenFile, PathResolve,
+        AliasExtract, Database, FileNotFound, FilenameHeader, InvalidAlias, OpenFile,
     };
 }
 
@@ -196,7 +181,7 @@ pub mod admin {
 }
 
 pub mod revoke {
-    pub use super::Error::{PartialRemove, PathResolve, RemoveFile};
+    pub use super::Error::{PartialRemove, RemoveFile};
 }
 
 pub mod alias {
@@ -208,7 +193,7 @@ pub mod expiration {
 }
 
 pub mod downloads {
-    pub use super::Error::{InvalidDownloadsCount, UnexpectedFileModification};
+    pub use super::Error::UnexpectedFileModification;
 }
 
 pub mod valid {
@@ -216,11 +201,9 @@ pub mod valid {
 }
 
 pub mod assets {
-    pub use super::Error::{AssetNotFound, AssetsCatalogue};
+    pub use super::Error::AssetNotFound;
 }
 
 pub mod auth {
-    pub use super::Error::{
-        AccessForbidden, AuthProcess, InvalidAuthorizationHeader, MissingAuthorization,
-    };
+    pub use super::Error::{AccessForbidden, InvalidAuthorizationHeader, MissingAuthorization};
 }

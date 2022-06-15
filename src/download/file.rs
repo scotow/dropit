@@ -1,16 +1,14 @@
-use axum::body::StreamBody;
-use axum::response::{IntoResponse, Response};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use axum::body::StreamBody;
+use axum::response::{IntoResponse, Response};
 use futures::Stream;
-use hyper::header::HeaderName;
 use hyper::http::HeaderValue;
 use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
-    Body, Request, StatusCode,
+    StatusCode,
 };
-// use routerify::ext::RequestExt;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
@@ -21,12 +19,10 @@ use crate::error::Error;
 use crate::storage::dir::Dir;
 
 pub(super) async fn handler(
-    // req: Request<Body>,
     pool: SqlitePool,
     info: &FileInfo,
     dir: Dir,
 ) -> Result<Response, Error> {
-    // let dir = req.data::<Dir>().ok_or(DownloadError::PathResolve)?.clone();
     let fd = File::open(dir.file_path(&info.id))
         .await
         .map_err(|_| DownloadError::OpenFile)?;
@@ -49,16 +45,6 @@ pub(super) async fn handler(
         StreamBody::new(streamer),
     )
         .into_response())
-
-    // Ok(Response::builder()
-    //     .status(StatusCode::OK)
-    //     .header(CONTENT_LENGTH, info.size as u64)
-    //     .header(CONTENT_TYPE, "application/octet-stream")
-    //     .header(
-    //         CONTENT_DISPOSITION,
-    //         format!(r#"attachment; filename="{}""#, info.name),
-    //     )
-    //     .body(Body::wrap_stream(streamer))?)
 }
 
 struct FileStreamer {
