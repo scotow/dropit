@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use axum::http::StatusCode;
 use byte_unit::Byte;
 use humantime::format_rfc3339_seconds;
 use serde::Serialize;
@@ -8,7 +9,7 @@ use serde::Serialize;
 use crate::error::upload as UploadError;
 use crate::error::Error;
 use crate::misc::format_duration;
-use crate::response::SingleLine;
+use crate::response::{ApiHeader, SingleLine};
 
 #[derive(Serialize)]
 pub struct UploadInfo {
@@ -43,6 +44,12 @@ impl UploadInfo {
             },
             expiration,
         }
+    }
+}
+
+impl ApiHeader for UploadInfo {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::CREATED
     }
 }
 
@@ -103,6 +110,14 @@ impl TryFrom<Duration> for Expiration {
         })
     }
 }
+
+impl SingleLine for Expiration {
+    fn single_lined(&self) -> String {
+        self.date.readable.clone()
+    }
+}
+
+impl ApiHeader for Expiration {}
 
 #[derive(Serialize)]
 pub struct ExpirationDuration {

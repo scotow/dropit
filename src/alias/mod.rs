@@ -1,10 +1,16 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
+use async_trait::async_trait;
+use axum::extract::{FromRequest, Path, RequestParts};
+use hyper::Body;
 use sqlx::SqliteConnection;
 
 use crate::alias::Alias::{Long, Short};
+use crate::error::Error;
 use crate::include_query;
 
+pub mod group;
 pub mod long;
 pub mod short;
 
@@ -33,7 +39,7 @@ impl Alias {
 }
 
 impl FromStr for Alias {
-    type Err = ();
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if short::is_match(s) {
@@ -41,8 +47,23 @@ impl FromStr for Alias {
         } else if long::is_match(s) {
             Ok(Long(s.to_owned()))
         } else {
-            Err(())
+            Err(Error::InvalidAlias)
         }
+    }
+}
+
+#[async_trait]
+impl FromRequest<Body> for Alias {
+    type Rejection = Error;
+
+    async fn from_request(req: &mut RequestParts<Body>) -> Result<Self, Self::Rejection> {
+        Ok(Path::<HashMap<String, String>>::from_request(req)
+            .await
+            .map_err(|_| Error::InvalidAlias)?
+            .0
+            .get("alias")
+            .ok_or_else(|| Error::AliasExtract)?
+            .parse()?)
     }
 }
 
@@ -82,27 +103,8 @@ pub async fn random_unused_long(conn: &mut SqliteConnection) -> Option<String> {
 }
 
 pub async fn random_unused_aliases(conn: &mut SqliteConnection) -> Option<(String, String)> {
-    let mut aliases = (None, None);
-    for _ in 0..GENERATION_MAX_TENTATIVES {
-        // Short alias.
-        if aliases.0.is_none() {
-            let alias = short::random()?;
-            if !is_alias_used(&alias, include_query!("exist_alias_short"), conn).await? {
-                aliases.0 = Some(alias);
-            }
-        }
-
-        // Long alias.
-        if aliases.1.is_none() {
-            let alias = long::random()?;
-            if !is_alias_used(&alias, include_query!("exist_alias_long"), conn).await? {
-                aliases.1 = Some(alias);
-            }
-        }
-
-        if let (Some(short), Some(long)) = aliases {
-            return Some((short, long));
-        }
-    }
-    None
+    Some((
+        random_unused_short(conn).await?,
+        random_unused_long(conn).await?,
+    ))
 }

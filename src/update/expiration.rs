@@ -1,25 +1,40 @@
 use std::convert::TryFrom;
+use std::sync::Arc;
 
-use hyper::{Body, Request, Response, StatusCode};
-use routerify::ext::RequestExt;
+use axum::Extension;
+use sqlx::SqlitePool;
 
+use crate::alias::Alias;
 use crate::error::expiration as ExpirationError;
 use crate::error::Error;
 use crate::include_query;
-use crate::response::json_response;
+use crate::response::{ApiResponse, ResponseType};
+use crate::update::AdminToken;
 use crate::upload::expiration::Determiner;
 use crate::upload::file::Expiration;
 
-pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Error> {
-    Ok(json_response(StatusCode::OK, process_extend(req).await?)?)
+pub async fn handler(
+    Extension(pool): Extension<SqlitePool>,
+    response_type: ResponseType,
+    Extension(determiner): Extension<Arc<Determiner>>,
+    AdminToken(admin_token): AdminToken,
+    alias: Alias,
+) -> Result<ApiResponse<Expiration>, ApiResponse<Error>> {
+    Ok(response_type.to_api_response(
+        process_extend(pool, determiner, alias, admin_token)
+            .await
+            .map_err(|err| response_type.to_api_response(err))?,
+    ))
 }
 
-async fn process_extend(req: Request<Body>) -> Result<Expiration, Error> {
-    let (id, size, mut conn) = super::authorize(&req).await?;
+async fn process_extend(
+    pool: SqlitePool,
+    determiner: Arc<Determiner>,
+    alias: Alias,
+    admin_token: String,
+) -> Result<Expiration, Error> {
+    let (id, size, mut conn) = super::authorize(pool, &alias, &admin_token).await?;
 
-    let determiner = req
-        .data::<Determiner>()
-        .ok_or(ExpirationError::TimeCalculation)?;
     let expiration = Expiration::try_from(
         determiner
             .determine(size)

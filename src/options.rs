@@ -5,9 +5,9 @@ use byte_unit::{Byte, ByteError};
 use clap::Parser;
 use log::LevelFilter;
 
-use crate::auth::{Credential, Origin};
+use crate::auth::{Credential, Features, Origin};
+use crate::exit_error;
 use crate::upload::expiration::Threshold;
-use crate::{exit_error, Features};
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]

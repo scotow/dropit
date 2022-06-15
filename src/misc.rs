@@ -1,8 +1,5 @@
 use std::time::Duration;
 
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::{HeaderMap, Request};
-
 #[macro_export]
 macro_rules! exit_error {
     ($($arg:tt)+) => {
@@ -11,33 +8,6 @@ macro_rules! exit_error {
             std::process::exit(1)
         }
     }
-}
-
-fn protocol(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    if let Some(header) = headers.get("X-Forwarded-Proto") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else {
-        Some("http".to_owned())
-    }
-}
-
-fn host(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    if let Some(header) = headers.get("X-Forwarded-Host") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else if let Some(header) = headers.get("Host") {
-        header.to_str().map(|s| s.to_owned()).ok()
-    } else {
-        None
-    }
-}
-
-// Return the origin target of the request, e.g. https://example.com
-pub fn request_target(headers: &HeaderMap<HeaderValue>) -> Option<String> {
-    Some(format!("{}://{}", protocol(headers)?, host(headers)?))
-}
-
-pub fn header_str<B>(req: &Request<B>, header: HeaderName) -> Option<&str> {
-    req.headers().get(header).and_then(|h| h.to_str().ok())
 }
 
 pub fn format_duration(duration: Duration) -> String {

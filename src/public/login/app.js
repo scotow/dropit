@@ -1,8 +1,11 @@
+document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
 document.getElementById('login-form').addEventListener('submit', (event) => {
     event.preventDefault();
 
     const req = new XMLHttpRequest();
     req.open('POST', '/auth', true);
+    req.setRequestHeader('Content-type', 'application/json');
     req.responseType = 'json';
     req.onload = (_event) => {
         if (req.status === 201) {

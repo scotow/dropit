@@ -89,12 +89,12 @@ function documentReady() {
 
             if (checkRemote.length > 0 && document.visibilityState === 'visible') {
                 const req = new XMLHttpRequest();
-                req.open('GET', `/valids/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
+                req.open('GET', `/valid/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
                 req.responseType = 'json';
                 req.onload = (event) => {
                     if (req.status === 200) {
                         for (let i = 0; i < checkRemote.length; i++) {
-                            if (!req.response.valids[i]) {
+                            if (!req.response.valid[i]) {
                                 checkRemote[i].buildExpired(true);
                             }
                         }
@@ -335,7 +335,7 @@ function documentReady() {
                 type.addEventListener('click', () => {
                     if (confirm(`Generating ${t === 'both' ? 'new aliases' : 'a new alias'} will make all people with a current link unable to access it. Confirm?`)) {
                         const req = new XMLHttpRequest();
-                        let path = `/${this.info.alias.short}/aliases`;
+                        let path = `/${this.info.alias.short}/alias`;
                         if (t !== 'both') {
                             path = path.concat(`/${t}`);
                         }
@@ -485,7 +485,7 @@ function documentReady() {
             remove.classList.add('remove', 'clickable');
             remove.addEventListener('click', () => {
                 FILES.remove(this);
-            })
+            });
 
             const error = document.createElement('div');
             error.classList.add('error-message');
