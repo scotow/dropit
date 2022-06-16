@@ -1,2 +1,5 @@
-pub mod clean;
-pub mod dir;
+mod clean;
+mod dir;
+
+pub use clean::Cleaner;
+pub use dir::Dir;

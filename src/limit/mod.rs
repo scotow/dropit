@@ -3,8 +3,11 @@ use sqlx::SqliteConnection;
 
 use crate::upload::UploadRequest;
 
-pub mod global;
-pub mod origin;
+mod global;
+mod origin;
+
+pub use global::Global;
+pub use origin::Origin;
 
 #[async_trait]
 pub trait Limiter {

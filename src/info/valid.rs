@@ -3,8 +3,8 @@ use itertools::Itertools;
 use serde::Serialize;
 use sqlx::SqlitePool;
 
-use crate::alias::group::AliasGroup;
 use crate::alias::Alias;
+use crate::alias::AliasGroup;
 use crate::error::valid as ValidError;
 use crate::error::Error;
 use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};

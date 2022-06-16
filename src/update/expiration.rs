@@ -10,8 +10,8 @@ use crate::error::Error;
 use crate::include_query;
 use crate::response::{ApiResponse, ResponseType};
 use crate::update::AdminToken;
-use crate::upload::expiration::Determiner;
-use crate::upload::file::Expiration;
+use crate::upload::Determiner;
+use crate::upload::Expiration;
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,

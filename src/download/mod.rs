@@ -9,11 +9,11 @@ use axum::{Extension, Router, TypedHeader};
 use serde::Deserialize;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::alias::group::AliasGroup;
+use crate::alias::AliasGroup;
 use crate::auth::{AuthStatus, Authenticator, Features};
 use crate::error::auth as AuthError;
 use crate::error::download as DownloadError;
-use crate::storage::dir::Dir;
+use crate::storage::Dir;
 use crate::{error::Error, include_query};
 
 mod archive;

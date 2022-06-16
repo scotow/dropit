@@ -25,14 +25,14 @@ mod main {
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
     use crate::auth::{Authenticator, LdapAuthenticator};
-    use crate::limit::global::Global;
-    use crate::limit::origin::Origin as OriginLimiter;
     use crate::limit::Chain as LimiterChain;
+    use crate::limit::Global as GlobalLimiter;
+    use crate::limit::Origin as OriginLimiter;
     use crate::options::Options;
-    use crate::storage::clean::Cleaner;
-    use crate::storage::dir::Dir;
-    use crate::upload::expiration::Determiner;
-    use crate::upload::origin::RealIp;
+    use crate::storage::Cleaner;
+    use crate::storage::Dir;
+    use crate::upload::Determiner;
+    use crate::upload::RealIp;
     use crate::{exit_error, include_query};
 
     pub(super) async fn run() {
@@ -47,7 +47,7 @@ mod main {
                 options.origin_size_sum,
                 options.origin_file_count,
             )),
-            Box::new(Global::new(options.global_size_sum)),
+            Box::new(GlobalLimiter::new(options.global_size_sum)),
         ]);
         let determiner = Arc::new(
             Determiner::new(options.thresholds.clone())

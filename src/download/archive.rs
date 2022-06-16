@@ -15,7 +15,7 @@ use zipit::{archive_size, Archive, FileDateTime};
 
 use crate::download::FileInfo;
 use crate::error::Error;
-use crate::storage::dir::Dir;
+use crate::storage::Dir;
 
 pub(super) async fn handler(
     pool: SqlitePool,

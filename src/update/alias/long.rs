@@ -7,7 +7,7 @@ use crate::error::alias as AliasError;
 use crate::response::{ApiResponse, ResponseType};
 use crate::update::alias::AliasChange;
 use crate::update::AdminToken;
-use crate::upload::origin::DomainUri;
+use crate::upload::DomainUri;
 use crate::{error::Error, include_query};
 
 pub async fn handler(

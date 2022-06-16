@@ -7,7 +7,7 @@ use log::LevelFilter;
 
 use crate::auth::{Credential, Features, Origin};
 use crate::exit_error;
-use crate::upload::expiration::Threshold;
+use crate::upload::Threshold;
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]

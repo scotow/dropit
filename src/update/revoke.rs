@@ -6,7 +6,7 @@ use crate::error::revoke as RevokeError;
 use crate::error::Error;
 use crate::include_query;
 use crate::response::{ApiResponse, ResponseType};
-use crate::storage::dir::Dir;
+use crate::storage::Dir;
 use crate::update::AdminToken;
 
 pub async fn handler(

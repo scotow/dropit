@@ -5,9 +5,9 @@ use serde_json::Map;
 
 use crate::response::{ApiHeader, SingleLine};
 
-pub mod both;
-pub mod long;
-pub mod short;
+pub(super) mod both;
+pub(super) mod long;
+pub(super) mod short;
 
 pub struct AliasChange {
     pub(crate) short: Option<(String, String)>,

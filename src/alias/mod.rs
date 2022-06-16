@@ -10,9 +10,11 @@ use crate::alias::Alias::{Long, Short};
 use crate::error::Error;
 use crate::include_query;
 
-pub mod group;
-pub mod long;
-pub mod short;
+pub use group::AliasGroup;
+
+mod group;
+mod long;
+mod short;
 
 const GENERATION_MAX_TENTATIVES: u8 = 20;
 

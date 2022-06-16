@@ -16,7 +16,7 @@ use tokio_util::io::ReaderStream;
 use crate::download::FileInfo;
 use crate::error::download as DownloadError;
 use crate::error::Error;
-use crate::storage::dir::Dir;
+use crate::storage::Dir;
 
 pub(super) async fn handler(
     pool: SqlitePool,

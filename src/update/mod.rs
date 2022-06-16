@@ -12,13 +12,13 @@ use crate::alias::Alias;
 use crate::error::admin as AdminError;
 use crate::error::Error;
 use crate::include_query;
-use crate::storage::dir::Dir;
-use crate::upload::expiration::Determiner;
+use crate::storage::Dir;
+use crate::upload::Determiner;
 
-pub mod alias;
-pub mod downloads;
-pub mod expiration;
-pub mod revoke;
+mod alias;
+mod downloads;
+mod expiration;
+mod revoke;
 
 async fn authorize(
     pool: SqlitePool,
