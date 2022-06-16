@@ -1,21 +1,18 @@
-use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use sqlx::SqlitePool;
 
 use crate::include_query;
+use crate::storage::dir::Dir;
 
 pub struct Cleaner {
-    dir: PathBuf,
+    dir: Dir,
     pool: SqlitePool,
 }
 
 impl Cleaner {
-    pub fn new<P: Into<PathBuf>>(path: P, pool: SqlitePool) -> Self {
-        Self {
-            dir: path.into(),
-            pool,
-        }
+    pub fn new(dir: Dir, pool: SqlitePool) -> Self {
+        Self { dir, pool }
     }
 
     pub async fn start(&self) {
@@ -56,9 +53,9 @@ impl Cleaner {
 
         if !files.is_empty() {
             for (id,) in files {
-                if let Err(err) = tokio::fs::remove_file(self.dir.join(&id)).await {
+                if let Err(err) = tokio::fs::remove_file(self.dir.file_path(&id)).await {
                     log::error!(
-                        "Cannot remove file with id from file system {}: {}",
+                        "Cannot remove file with id {} from file system: {}",
                         id,
                         err
                     );
@@ -69,7 +66,7 @@ impl Cleaner {
                     .execute(&mut conn)
                     .await
                 {
-                    log::error!("Cannot remove file with id {} from database: {:?}", id, err);
+                    log::error!("Cannot remove file with id {} from database: {}", id, err);
                 }
             }
         }

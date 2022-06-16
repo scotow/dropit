@@ -16,7 +16,6 @@ mod upload;
 
 mod main {
     use std::net::SocketAddr;
-    use std::path::Path;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -24,8 +23,6 @@ mod main {
     use clap::Parser;
     use hyper::Server;
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-    use tokio::fs::File;
-    use tokio::io::ErrorKind;
 
     use crate::auth::{Authenticator, LdapAuthenticator};
     use crate::limit::global::Global;
@@ -66,14 +63,18 @@ mod main {
                     .busy_timeout(Duration::from_secs(30)),
             )
             .await
-            .unwrap_or_else(|e| exit_error!("Cannot create database pool: {}", e));
+            .unwrap_or_else(|err| exit_error!("Cannot create database pool: {}", err));
         sqlx::query(include_query!("migration"))
             .execute(&pool)
             .await
-            .unwrap_or_else(|e| exit_error!("Cannot run migration query: {}", e));
+            .unwrap_or_else(|err| exit_error!("Cannot run migration query: {}", err));
 
-        create_uploads_dir(&options.uploads_dir, !options.no_uploads_dir_creation).await;
-        let cleaner = Cleaner::new(&options.uploads_dir, pool.clone());
+        let dir = Dir::new(options.uploads_dir.clone());
+        dir.create(!options.no_uploads_dir_creation)
+            .await
+            .unwrap_or_else(|err| exit_error!("{}", err));
+
+        let cleaner = Cleaner::new(dir.clone(), pool.clone());
         tokio::task::spawn(async move {
             cleaner.start().await;
         });
@@ -102,7 +103,6 @@ mod main {
             ldap,
         ));
 
-        let dir = Dir::new(options.uploads_dir.clone());
         let router = Router::new()
             .merge(super::assets::router())
             .merge(super::theme::router(&options.theme))
@@ -135,35 +135,7 @@ mod main {
         Server::bind(&address)
             .serve(router.into_make_service_with_connect_info::<SocketAddr>())
             .await
-            .unwrap_or_else(|e| exit_error!("Server stopped: {}", e))
-    }
-
-    async fn create_uploads_dir(path: &Path, should_create: bool) {
-        match File::open(&path).await {
-            Ok(fd) => match fd.metadata().await {
-                Ok(md) => {
-                    if !md.is_dir() {
-                        exit_error!("Uploads path is not a directory");
-                    }
-                }
-                Err(_) => {
-                    exit_error!("Cannot fetch uploads dir metadata");
-                }
-            },
-            Err(err) => {
-                if err.kind() == ErrorKind::NotFound {
-                    if should_create {
-                        if let Err(err) = tokio::fs::create_dir_all(&path).await {
-                            exit_error!("Cannot create uploads directory: {}", err);
-                        }
-                    } else {
-                        exit_error!("Uploads directory not found");
-                    }
-                } else {
-                    exit_error!("Cannot open uploads directory");
-                }
-            }
-        }
+            .unwrap_or_else(|err| exit_error!("Server stopped: {}", err))
     }
 }
 
