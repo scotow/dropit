@@ -122,9 +122,8 @@ function ready() {
                     this.updateButtons();
                 };
                 req.send();
-            } else {
-                this.updateButtons();
             }
+            this.updateButtons();
         }
 
         updateButtons() {
