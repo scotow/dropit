@@ -6,10 +6,28 @@ String.prototype.plural = function (n) {
     return n >= 2 ? `${this}s` : this;
 };
 
-shouldLogin();
-document.addEventListener('DOMContentLoaded', documentReady, false);
+document.addEventListener('DOMContentLoaded', shouldLogin, false);
 
-function documentReady() {
+function shouldLogin() {
+    const req = new XMLHttpRequest();
+    req.open('GET', '/auth', true);
+    req.responseType = 'json';
+    req.onload = () => {
+        if (req.status === 200) {
+            if (req.response.required) {
+                window.location = '/login/';
+            } else {
+                ready();
+            }
+        } else {
+            alert(`An error occurred while checking for session token: ${req.response.error}.`);
+            console.error(`An error occurred while checking for session token: ${req.response.error}.`);
+        }
+    };
+    req.send();
+}
+
+function ready() {
     class Files {
         constructor() {
             this.files = [];
@@ -91,7 +109,7 @@ function documentReady() {
                 const req = new XMLHttpRequest();
                 req.open('GET', `/valid/${checkRemote.map(f => f.info.alias.short).join('+')}`, true);
                 req.responseType = 'json';
-                req.onload = (event) => {
+                req.onload = () => {
                     if (req.status === 200) {
                         for (let i = 0; i < checkRemote.length; i++) {
                             if (!req.response.valid[i]) {
@@ -163,7 +181,7 @@ function documentReady() {
                     this.percent.innerText = `${Math.floor(this.progress * 100)}%`;
                 }
             };
-            req.onload = (event) => {
+            req.onload = () => {
                 clearTimeout(showProgressTimeout);
                 if (req.status === 201) {
                     const resp = req.response;
@@ -283,7 +301,7 @@ function documentReady() {
             }
             [expirationLabel, expirationContent].forEach((elem) => {
                 elem.title = 'Click to toggle between formats';
-                elem.addEventListener('click', (event) => {
+                elem.addEventListener('click', () => {
                     expirationFormat = expirationFormat === 'date' ? 'duration' : 'date';
                     updateExpirationLabel();
                 })
@@ -343,7 +361,7 @@ function documentReady() {
                         req.setRequestHeader('Authorization', this.info.admin);
                         req.setRequestHeader('X-Authorization', this.info.admin);
                         req.responseType = 'json';
-                        req.onload = (event) => {
+                        req.onload = () => {
                             if (req.status === 200) {
                                 if (t === 'short' || t === 'both') {
                                     this.info.alias.short = req.response.alias.short;
@@ -389,7 +407,7 @@ function documentReady() {
                     req.setRequestHeader('Authorization', this.info.admin);
                     req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
-                    req.onload = (event) => {
+                    req.onload = () => {
                         if (req.status === 200) {
                             delete req.response.success;
                             this.info.expiration = req.response;
@@ -420,7 +438,7 @@ function documentReady() {
                     req.setRequestHeader('Authorization', this.info.admin);
                     req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
-                    req.onload = (event) => {
+                    req.onload = () => {
                         if (req.status === 200) {
                         } else {
                             alert(`An error occurred while trying to set downloads limit: ${req.response.error}.`);
@@ -434,7 +452,7 @@ function documentReady() {
             const forget = document.createElement('div');
             forget.classList.add('item', 'warning');
             forget.innerText = 'Forget';
-            forget.addEventListener('click', (event) => {
+            forget.addEventListener('click', () => {
                 if (confirm('Forgetting this file will still count toward your quota. Confirm?')) {
                     FILES.remove(this);
                 }
@@ -450,7 +468,7 @@ function documentReady() {
                     req.setRequestHeader('Authorization', this.info.admin);
                     req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
-                    req.onload = (event) => {
+                    req.onload = () => {
                         if (req.status === 200) {
                             FILES.remove(this);
                         } else {
@@ -502,7 +520,7 @@ function documentReady() {
 
             const expired = document.createElement('div');
             expired.classList.add('expired');
-            expired.addEventListener('click', (event) => {
+            expired.addEventListener('click', () => {
                 FILES.remove(this);
             });
 
@@ -540,12 +558,12 @@ function documentReady() {
         })
     });
     ['dragover', 'dragenter'].forEach((name) => {
-        document.body.addEventListener(name, event => {
+        document.body.addEventListener(name, () => {
             document.body.classList.add('dragging');
         })
     });
     ['dragleave', 'dragend', 'drop'].forEach((name) => {
-        document.body.addEventListener(name, event => {
+        document.body.addEventListener(name, () => {
             document.body.classList.remove('dragging');
         })
     });
@@ -559,13 +577,13 @@ function documentReady() {
         uploadFiles(files);
     });
 
-    document.querySelector('.clear > .session').addEventListener('click', (event) => {
+    document.querySelector('.clear > .session').addEventListener('click', () => {
         if (confirm('You are about to clear all your files, but they will still count toward your quota. Confirm?')) {
             FILES.clear();
         }
     });
 
-    document.querySelector('.clear > .expired').addEventListener('click', (event) => {
+    document.querySelector('.clear > .expired').addEventListener('click', () => {
         FILES.clearExpired();
     });
 
@@ -589,7 +607,7 @@ function documentReady() {
         }
     });
 
-    document.querySelector('.files').addEventListener('mouseover', (event) => {
+    document.querySelector('.files').addEventListener('mouseover', () => {
         for (const opened of document.querySelectorAll('.sub-menu > .menu.opened')) {
             opened.classList.remove('opened');
         }
@@ -599,21 +617,4 @@ function documentReady() {
     FILES.loadCache();
 
     new ClipboardJS('.copy');
-}
-
-function shouldLogin() {
-    const req = new XMLHttpRequest();
-    req.open('GET', '/auth', true);
-    req.responseType = 'json';
-    req.onload = (_event) => {
-        if (req.status === 200) {
-            if (req.response.required) {
-                window.location = '/login/';
-            }
-        } else {
-            alert(`An error occurred while checking for session token: ${req.response.error}.`);
-            console.error(`An error occurred while checking for session token: ${req.response.error}.`);
-        }
-    };
-    req.send();
 }
