@@ -108,7 +108,7 @@ By default, Dropit will only listen on the loopback interface, aka. 127.0.0.1. I
 
 ## Libraries
 
-- `hyper` as an HTTP backend and `routerify` to help with the routing
+- `hyper` as an HTTP backend and `axum` for routing
 - `SQLite` and `sqlx` as a metadata storage
 - `tokio` as an async runtime
-- `structopt` for options parsing and usage generation
+- `clap` for options parsing and usage generation
