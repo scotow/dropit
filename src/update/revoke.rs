@@ -30,7 +30,7 @@ async fn process_revoke(
 ) -> Result<(), Error> {
     let (id, _size, mut conn) = super::authorize(pool, &alias, &admin_token).await?;
 
-    tokio::fs::remove_file(dir.file_path(&id))
+    dir.delete_file(&id)
         .await
         .map_err(|_| RevokeError::RemoveFile)?;
 

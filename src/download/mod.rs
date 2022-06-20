@@ -105,14 +105,12 @@ async fn file_downloaded(pool: &SqlitePool, dir: &Dir, id: &str) -> Result<(), S
         None => (),
         Some(0) => return Err(format!("Found a zero downloads counter file: {}", id)),
         Some(1) => {
-            tokio::fs::remove_file(dir.file_path(id))
-                .await
-                .map_err(|err| {
-                    format!(
-                        "Failed to delete decremented to zero file from fs {}: {:?}",
-                        id, err
-                    )
-                })?;
+            dir.delete_file(id).await.map_err(|err| {
+                format!(
+                    "Failed to delete decremented to zero file from fs {}: {:?}",
+                    id, err
+                )
+            })?;
             sqlx::query(include_query!("delete_file"))
                 .bind(id)
                 .execute(&mut conn)

@@ -1,6 +1,5 @@
 use std::convert::TryFrom;
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::Arc;
 
 use axum::extract::{BodyStream, ConnectInfo};
@@ -154,12 +153,12 @@ async fn process_upload(
     drop(conn);
 
     // Copy body to file system.
-    let path = dir.file_path(&id);
-    let file = File::create(&path)
+    let file = dir
+        .create_file(&id)
         .await
         .map_err(|_| UploadError::CreateFile)?;
     if let Err(err) = write_file(&upload_req, body, file).await {
-        clean_failed_upload(path.as_path(), &id, &pool).await;
+        clean_failed_upload(&dir, &id, &pool).await;
         return Err(err);
     }
 
@@ -199,8 +198,8 @@ async fn write_file(
     Ok(())
 }
 
-async fn clean_failed_upload(file_path: &Path, id: &str, pool: &SqlitePool) {
-    if let Err(err) = tokio::fs::remove_file(file_path).await {
+async fn clean_failed_upload(dir: &Dir, id: &str, pool: &SqlitePool) {
+    if let Err(err) = dir.delete_file(id).await {
         log::error!(
             "Cannot remove file with id {} from file system, file will retain quota: {}",
             id,

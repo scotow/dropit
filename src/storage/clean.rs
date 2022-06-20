@@ -18,7 +18,7 @@ impl Cleaner {
     pub async fn start(&self) {
         loop {
             self.clean_expires().await;
-            tokio::time::sleep(Duration::from_secs(10)).await;
+            tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }
 
@@ -53,7 +53,7 @@ impl Cleaner {
 
         if !files.is_empty() {
             for (id,) in files {
-                if let Err(err) = tokio::fs::remove_file(self.dir.file_path(&id)).await {
+                if let Err(err) = self.dir.delete_file(&id).await {
                     log::error!(
                         "Cannot remove file with id {} from file system: {}",
                         id,

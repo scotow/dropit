@@ -1,5 +1,7 @@
+use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use tokio::fs;
 use tokio::fs::File;
 
 #[derive(Clone, Debug)]
@@ -8,10 +10,6 @@ pub struct Dir(PathBuf);
 impl Dir {
     pub fn new<P: Into<PathBuf>>(path: P) -> Self {
         Self(path.into())
-    }
-
-    pub fn file_path(&self, id: &str) -> PathBuf {
-        self.0.join(id)
     }
 
     pub async fn create(&self, should_create: bool) -> Result<(), &'static str> {
@@ -41,5 +39,21 @@ impl Dir {
             }
         }
         Ok(())
+    }
+
+    fn file_path(&self, id: &str) -> PathBuf {
+        self.0.join(id)
+    }
+
+    pub async fn create_file(&self, id: &str) -> Result<File, IoError> {
+        File::create(self.file_path(id)).await
+    }
+
+    pub async fn open_file(&self, id: &str) -> Result<File, IoError> {
+        File::open(self.file_path(id)).await
+    }
+
+    pub async fn delete_file(&self, id: &str) -> Result<(), IoError> {
+        fs::remove_file(self.file_path(id)).await
     }
 }

@@ -8,7 +8,6 @@ use hyper::{
     StatusCode,
 };
 use sqlx::SqlitePool;
-use tokio::fs::File;
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use zipit::{archive_size, Archive, FileDateTime};
@@ -44,7 +43,7 @@ pub(super) async fn handler(
     tokio::spawn(async move {
         let mut archive = Archive::new(w);
         for info in files_info {
-            let mut fd = match File::open(dir.file_path(&info.id)).await {
+            let mut fd = match dir.open_file(&info.id).await {
                 Ok(fd) => fd,
                 Err(err) => {
                     log::error!("Failed to open file for archive streaming: {}", err);

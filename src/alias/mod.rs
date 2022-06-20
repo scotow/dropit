@@ -4,6 +4,8 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use axum::extract::{FromRequest, Path, RequestParts};
 use hyper::Body;
+use serde::de::Error as SerdeError;
+use serde::{Deserialize, Deserializer};
 use sqlx::SqliteConnection;
 
 use crate::alias::Alias::{Long, Short};
@@ -66,6 +68,16 @@ impl FromRequest<Body> for Alias {
             .get("alias")
             .ok_or_else(|| Error::AliasExtract)?
             .parse()?)
+    }
+}
+
+impl<'de> Deserialize<'de> for Alias {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = Deserialize::deserialize(deserializer)?;
+        Self::from_str(s).map_err(|_| SerdeError::unknown_variant(s, &["short", "long"]))
     }
 }
 
