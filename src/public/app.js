@@ -104,6 +104,9 @@ function ready() {
                     checkRemote.push(file);
                 }
             }
+            if (this.files.length > 0) {
+                this.updateButtons();
+            }
 
             if (checkRemote.length > 0 && document.visibilityState === 'visible') {
                 const req = new XMLHttpRequest();
@@ -123,7 +126,6 @@ function ready() {
                 };
                 req.send();
             }
-            this.updateButtons();
         }
 
         updateButtons() {

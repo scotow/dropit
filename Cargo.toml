@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.21.3"
+version = "0.21.5"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"
 
