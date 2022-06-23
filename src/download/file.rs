@@ -9,6 +9,7 @@ use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
     StatusCode,
 };
+use percent_encoding::utf8_percent_encode;
 use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
@@ -39,8 +40,12 @@ pub(super) async fn handler(
             ),
             (
                 CONTENT_DISPOSITION,
-                HeaderValue::try_from(format!(r#"attachment; filename="{}""#, info.name))
-                    .map_err(|_| DownloadError::FilenameHeader)?,
+                HeaderValue::try_from(format!(
+                    r#"attachment; filename*=UTF-8''{}; filename="{}""#,
+                    utf8_percent_encode(&info.name, percent_encoding::NON_ALPHANUMERIC),
+                    &info.name
+                ))
+                .map_err(|_| DownloadError::FilenameHeader)?,
             ),
         ],
         StreamBody::new(streamer),

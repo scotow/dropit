@@ -301,7 +301,7 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dropit"
-version = "0.21.5"
+version = "0.21.6"
 dependencies = [
  "async-trait",
  "axum",
