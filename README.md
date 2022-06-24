@@ -14,7 +14,7 @@
 - Archive download
 - Downloads limit
 - JSON or plain text response (helpful for scripting)
-- Authenticate upload, download and/or Web UI using Basic HTTP Auth or LDAP
+- Authenticate upload and/or download using Basic HTTP Auth or LDAP (direct bind or dn search)
 - Upload files from a minimalist web interface:
   - Drag & drop
   - QRCode generation
@@ -59,10 +59,13 @@ OPTIONS:
         --ldap-address <LDAP_ADDRESS>
             URI of the LDAP used to authenticate users
 
-        --ldap-attribute <LDAP_ATTRIBUTE>
-            LDAP attribute used to filter queries [default: uid]
+        --ldap-dn-pattern <LDAP_DN_PATTERN>
+            LDAP DN pattern used when using single bind process
 
-        --ldap-base-dn <LDAP_BASE_DN>
+        --ldap-search-attribute-pattern <LDAP_SEARCH_ATTRIBUTE_PATTERN>
+            LDAP attribute(s) pattern used to match usernames during searches [default: (uid=%u)]
+
+        --ldap-search-base-dn <LDAP_SEARCH_BASE_DN>
             LDAP base DN used during username searches
 
         --ldap-search-dn <LDAP_SEARCH_DN>
