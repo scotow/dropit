@@ -24,7 +24,7 @@ mod main {
     use hyper::Server;
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
-    use crate::auth::{Authenticator, LdapAuthenticator};
+    use crate::auth::Authenticator;
     use crate::limit::Chain as LimiterChain;
     use crate::limit::Global as GlobalLimiter;
     use crate::limit::Origin as OriginLimiter;
@@ -79,28 +79,10 @@ mod main {
             cleaner.start().await;
         });
 
-        let ldap = if let (Some(ldap_address), Some(ldap_base_dn)) =
-            (options.ldap_address.as_ref(), options.ldap_base_dn.as_ref())
-        {
-            Some(LdapAuthenticator::new(
-                ldap_address.clone(),
-                options.ldap_search_dn.as_ref().and_then(|lsd| {
-                    options
-                        .ldap_search_password
-                        .as_ref()
-                        .map(|lsp| (lsd.clone(), lsp.clone()))
-                }),
-                ldap_base_dn.clone(),
-                options.ldap_attribute.clone(),
-            ))
-        } else {
-            None
-        };
-
         let authenticator = Arc::new(Authenticator::new(
             options.access(),
             options.credentials.clone(),
-            ldap,
+            options.ldap_authenticator(),
         ));
 
         let router = Router::new()

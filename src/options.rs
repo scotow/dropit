@@ -5,7 +5,7 @@ use byte_unit::{Byte, ByteError};
 use clap::Parser;
 use log::LevelFilter;
 
-use crate::auth::{Credential, Features, Origin};
+use crate::auth::{Credential, Features, LdapAuthProcess, LdapAuthenticator, Origin};
 use crate::exit_error;
 use crate::upload::Threshold;
 
@@ -76,18 +76,25 @@ pub struct Options {
     /// URI of the LDAP used to authenticate users.
     #[clap(long)]
     pub ldap_address: Option<String>,
+    /// LDAP DN pattern used when using single bind process.
+    #[clap(
+        long,
+        requires = "ldap-address",
+        conflicts_with = "ldap-search-base-dn"
+    )]
+    pub ldap_dn_pattern: Option<String>,
     /// LDAP DN used to bind during username searches.
-    #[clap(long, requires = "ldap-address")]
+    #[clap(long, requires_all = &["ldap-address", "ldap-search-password", "ldap-search-base-dn", "ldap-search-attribute-pattern"])]
     pub ldap_search_dn: Option<String>,
     /// LDAP password used to bind during username searches.
-    #[clap(long, requires_all = &["ldap-search-dn", "ldap-address"])]
+    #[clap(long, requires_all = &["ldap-address", "ldap-search-dn"])]
     pub ldap_search_password: Option<String>,
     /// LDAP base DN used during username searches.
-    #[clap(long, requires = "ldap-address")]
-    pub ldap_base_dn: Option<String>,
-    /// LDAP attribute used to filter queries.
-    #[clap(long, default_value = "uid", requires = "ldap-address")]
-    pub ldap_attribute: String,
+    #[clap(long, requires = "ldap-address", conflicts_with = "ldap-dn-pattern")]
+    pub ldap_search_base_dn: Option<String>,
+    /// LDAP attribute(s) pattern used to match usernames during searches.
+    #[clap(long, default_value = "(uid=%u)", requires_all = &["ldap-address", "ldap-search-base-dn"], conflicts_with = "ldap-dn-pattern")]
+    pub ldap_search_attribute_pattern: String,
     /// CSS color used in the web UI.
     #[clap(short = 'T', long, default_value = "#15b154")]
     pub theme: String,
@@ -104,6 +111,14 @@ impl Options {
         }
         if self.username_origin && self.credentials.is_empty() && self.ldap_address.is_none() {
             exit_error!("At least one authentication method is required if you calculate quota using usernames")
+        }
+        if self.ldap_address.is_some()
+            && self.ldap_dn_pattern.is_none()
+            && self.ldap_search_base_dn.is_none()
+        {
+            exit_error!(
+                "LDAP address is useless if ldap-dn-pattern and ldap-search-base-dn are empty"
+            )
         }
     }
 
@@ -126,6 +141,28 @@ impl Options {
             access.insert(Features::DOWNLOAD);
         }
         access
+    }
+
+    pub fn ldap_authenticator(&self) -> Option<LdapAuthenticator> {
+        let process = match (&self.ldap_dn_pattern, &self.ldap_search_base_dn) {
+            (Some(dn_pattern), _) => LdapAuthProcess::SingleBind {
+                dn_pattern: dn_pattern.clone(),
+            },
+            (_, Some(base_dn)) => LdapAuthProcess::SearchThenBind {
+                search_credentials: self.ldap_search_dn.as_ref().and_then(|lsd| {
+                    self.ldap_search_password
+                        .as_ref()
+                        .map(|lsp| (lsd.clone(), lsp.clone()))
+                }),
+                base_dn: base_dn.clone(),
+                filter_pattern: self.ldap_search_attribute_pattern.clone(),
+            },
+            _ => return None,
+        };
+        Some(LdapAuthenticator::new(
+            self.ldap_address.as_ref()?.clone(),
+            process,
+        ))
     }
 }
 

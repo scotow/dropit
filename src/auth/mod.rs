@@ -7,7 +7,7 @@ pub use authenticator::AuthStatus;
 pub use authenticator::Authenticator;
 pub use credential::Credential;
 pub use features::Features;
-pub use ldap::LdapAuthenticator;
+pub use ldap::{LdapAuthProcess, LdapAuthenticator};
 pub use origin::Origin;
 
 mod authenticator;
