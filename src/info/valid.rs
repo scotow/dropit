@@ -26,9 +26,12 @@ pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
     AliasGroup(aliases): AliasGroup,
 ) -> Result<ApiResponse<ValidityCheck>, Error> {
-    Ok(ResponseType::JSON.to_api_response(ValidityCheck {
-        valid: process_check_validity(pool, aliases).await?,
-    }))
+    Ok(ApiResponse(
+        ResponseType::Json,
+        ValidityCheck {
+            valid: process_check_validity(pool, aliases).await?,
+        },
+    ))
 }
 
 async fn process_check_validity(pool: SqlitePool, aliases: Vec<Alias>) -> Result<Vec<bool>, Error> {

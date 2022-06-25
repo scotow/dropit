@@ -20,10 +20,11 @@ pub async fn handler(
     AdminToken(admin_token): AdminToken,
     alias: Alias,
 ) -> Result<ApiResponse<Expiration>, ApiResponse<Error>> {
-    Ok(response_type.to_api_response(
+    Ok(ApiResponse(
+        response_type,
         process_extend(pool, determiner, alias, admin_token)
             .await
-            .map_err(|err| response_type.to_api_response(err))?,
+            .map_err(|err| ApiResponse(response_type, err))?,
     ))
 }
 

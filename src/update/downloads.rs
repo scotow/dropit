@@ -18,8 +18,8 @@ pub async fn handler(
 ) -> Result<ApiResponse<()>, ApiResponse<Error>> {
     process_downloads(pool, alias, admin_token, count)
         .await
-        .map_err(|err| response_type.to_api_response(err))?;
-    Ok(response_type.to_api_response(()))
+        .map_err(|err| ApiResponse(response_type, err))?;
+    Ok(ApiResponse(response_type, ()))
 }
 
 async fn process_downloads(

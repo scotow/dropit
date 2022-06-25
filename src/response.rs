@@ -35,19 +35,13 @@ impl SingleLine for () {
 
 #[derive(Copy, Clone, Debug)]
 pub enum ResponseType {
-    JSON,
+    Json,
     Text,
-}
-
-impl ResponseType {
-    pub fn to_api_response<T>(self, data: T) -> ApiResponse<T> {
-        ApiResponse { data, format: self }
-    }
 }
 
 impl Default for ResponseType {
     fn default() -> Self {
-        Self::JSON
+        Self::Json
     }
 }
 
@@ -62,43 +56,41 @@ impl FromRequest<Body> for ResponseType {
                 .get(header::ACCEPT)
                 .and_then(|h| h.to_str().ok())
             {
-                Some("application/json") => Self::JSON,
+                Some("application/json") => Self::Json,
                 Some("text/plain") => Self::Text,
-                _ => Default::default(),
+                _ => Self::default(),
             },
         )
     }
 }
 
-pub struct ApiResponse<T> {
-    data: T,
-    format: ResponseType,
-}
+pub struct ApiResponse<T>(pub ResponseType, pub T);
 
 impl<T> IntoResponse for ApiResponse<T>
 where
     T: ApiHeader + Serialize + SingleLine,
 {
     fn into_response(self) -> Response {
-        match self.format {
-            ResponseType::JSON => {
-                #[derive(Serialize)]
-                struct JsonResponse<T> {
-                    success: bool,
-                    #[serde(flatten)]
-                    data: T,
-                }
-                (
-                    self.data.status_code(),
-                    self.data.additional_headers(),
+        (
+            self.1.status_code(),
+            self.1.additional_headers(),
+            match self.0 {
+                ResponseType::Json => {
+                    #[derive(Serialize)]
+                    struct JsonResponse<T> {
+                        success: bool,
+                        #[serde(flatten)]
+                        data: T,
+                    }
                     Json(JsonResponse {
-                        success: self.data.success(),
-                        data: self.data,
-                    }),
-                )
+                        success: self.1.success(),
+                        data: self.1,
+                    })
                     .into_response()
-            }
-            ResponseType::Text => self.data.single_lined().into_response(),
-        }
+                }
+                ResponseType::Text => self.1.single_lined().into_response(),
+            },
+        )
+            .into_response()
     }
 }

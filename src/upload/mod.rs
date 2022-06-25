@@ -72,19 +72,19 @@ pub async fn handler(
     {
         AuthStatus::NotNeeded => None,
         AuthStatus::Valid(username) => Some(username),
-        AuthStatus::Error(err) => return Err(response_type.to_api_response(err)),
+        AuthStatus::Error(err) => return Err(ApiResponse(response_type, err)),
         AuthStatus::Prompt => {
-            return Err(response_type.to_api_response(AuthError::MissingAuthorization));
+            return Err(ApiResponse(response_type, AuthError::MissingAuthorization));
         }
     };
 
     let origin = match origin {
         Origin::IpAddress => real_ip
             .resolve(addr.ip(), forwarded_address.map(|fa| fa.0))
-            .ok_or_else(|| response_type.to_api_response(UploadError::Origin))?
+            .ok_or_else(|| ApiResponse(response_type, UploadError::Origin))?
             .to_string(),
         Origin::Username => {
-            username.ok_or_else(|| response_type.to_api_response(UploadError::Origin))?
+            username.ok_or_else(|| ApiResponse(response_type, UploadError::Origin))?
         }
     };
 
@@ -92,8 +92,8 @@ pub async fn handler(
         pool, limiter, origin, determiner, domain_uri, dir, size, filename, body,
     )
     .await
-    .map_err(|err| response_type.to_api_response(err))?;
-    Ok(response_type.to_api_response(info))
+    .map_err(|err| ApiResponse(response_type, err))?;
+    Ok(ApiResponse(response_type, info))
 }
 
 async fn process_upload(

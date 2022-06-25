@@ -9,7 +9,7 @@ use serde::Serialize;
 
 use crate::auth::Authenticator;
 use crate::error::Error;
-use crate::response::{ApiHeader, ResponseType, SingleLine};
+use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
 
 #[derive(Deserialize)]
 pub(super) struct LoginRequest {
@@ -39,7 +39,10 @@ pub(super) async fn handler(
     response_type: ResponseType,
     ContentLengthLimit(Json(req)): ContentLengthLimit<Json<LoginRequest>, 2048>,
 ) -> Result<impl IntoResponse, Error> {
-    Ok(response_type.to_api_response(LoginResponse {
-        token: auth.create_session(&req.username, &req.password).await?,
-    }))
+    Ok(ApiResponse(
+        response_type,
+        LoginResponse {
+            token: auth.create_session(&req.username, &req.password).await?,
+        },
+    ))
 }

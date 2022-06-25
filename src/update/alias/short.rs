@@ -18,10 +18,13 @@ pub async fn handler(
     response_type: ResponseType,
 ) -> Result<ApiResponse<AliasChange>, Error> {
     let new_alias = process_change(pool, alias, admin_token).await?;
-    Ok(response_type.to_api_response(AliasChange {
-        short: Some((new_alias.clone(), format!("{}/{}", domain_uri, new_alias))),
-        long: None,
-    }))
+    Ok(ApiResponse(
+        response_type,
+        AliasChange {
+            short: Some((new_alias.clone(), format!("{}/{}", domain_uri, new_alias))),
+            long: None,
+        },
+    ))
 }
 
 async fn process_change(
