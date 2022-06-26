@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use byte_unit::{Byte, ByteError};
 use clap::Parser;
+use clap::AppSettings::DeriveDisplayOrder;
 use log::LevelFilter;
 
 use crate::auth::{Credential, Features, LdapAuthProcess, LdapAuthenticator, Origin};
@@ -10,7 +11,7 @@ use crate::exit_error;
 use crate::upload::Threshold;
 
 #[derive(Parser, Debug)]
-#[clap(version, about)]
+#[clap(version, about, setting = DeriveDisplayOrder)]
 pub struct Options {
     /// Increase logs verbosity (Error (default), Warn, Info, Debug, Trace).
     #[clap(short = 'v', long = "verbose", parse(from_occurrences = parse_log_level))]

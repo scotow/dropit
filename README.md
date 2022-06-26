@@ -32,84 +32,32 @@ USAGE:
     dropit [OPTIONS] --threshold <THRESHOLDS> --origin-size-sum <ORIGIN_SIZE_SUM> --origin-file-count <ORIGIN_FILE_COUNT> --global-size-sum <GLOBAL_SIZE_SUM>
 
 OPTIONS:
-    -a, --address <ADDRESS>
-            HTTP listening address [default: 127.0.0.1]
-
-        --auth-download
-            Protect download endpoint with authentication
-
-        --auth-upload
-            Protect upload endpoint with authentication
-
-    -c, --origin-file-count <ORIGIN_FILE_COUNT>
-            Number of files limit from the same uploader
-
-    -C, --credential <CREDENTIALS>
-            Static list of credentials
-
-    -d, --database <DATABASE>
-            Metadata database path (relative) [default: dropit.db]
-
-    -D, --no-database-creation
-            Disable metadata database automatic creation (if missing)
-
-    -h, --help
-            Print help information
-
-        --ldap-address <LDAP_ADDRESS>
-            URI of the LDAP used to authenticate users
-
-        --ldap-dn-pattern <LDAP_DN_PATTERN>
-            LDAP DN pattern used when using single bind process
-
-        --ldap-search-attribute-pattern <LDAP_SEARCH_ATTRIBUTE_PATTERN>
-            LDAP attribute(s) pattern used to match usernames during searches [default: (uid=%u)]
-
-        --ldap-search-base-dn <LDAP_SEARCH_BASE_DN>
-            LDAP base DN used during username searches
-
-        --ldap-search-dn <LDAP_SEARCH_DN>
-            LDAP DN used to bind during username searches
-
-        --ldap-search-password <LDAP_SEARCH_PASSWORD>
-            LDAP password used to bind during username searches
-
-    -o, --ip-origin
-            Use usernames as uploaders' identities
-
-    -O, --username-origin
-            Use IP addresses as uploaders' identities
-
-    -p, --port <PORT>
-            HTTP listening port [default: 8080]
-
-    -R, --behind-reverse-proxy
-            Use X-Forwarded-For, X-Forwarded-Proto and X-Forwarded-Host to determine uploads' origin
-
-    -s, --origin-size-sum <ORIGIN_SIZE_SUM>
-            Cumulative size limit from the same uploader
-
-    -S, --global-size-sum <GLOBAL_SIZE_SUM>
-            Cumulative size limit from all users
-
-    -t, --threshold <THRESHOLDS>
-            Relations between files' sizes and their durations. Must be ordered by increasing size
-            and decreasing duration
-
-    -T, --theme <THEME>
-            CSS color used in the web UI [default: #15b154]
-
-    -u, --uploads-dir <UPLOADS_DIR>
-            Upload files directory path (relative) [default: uploads]
-
-    -U, --no-uploads-dir-creation
-            Disable upload files directory automatic creation (if missing)
-
-    -v, --verbose
-            Increase logs verbosity (Error (default), Warn, Info, Debug, Trace)
-
-    -V, --version
-            Print version information
+    -v, --verbose                                                          Increase logs verbosity (Error (default), Warn, Info, Debug, Trace)
+    -u, --uploads-dir <UPLOADS_DIR>                                        Upload files directory path (relative) [default: uploads]
+    -U, --no-uploads-dir-creation                                          Disable upload files directory automatic creation (if missing)
+    -d, --database <DATABASE>                                              Metadata database path (relative) [default: dropit.db]
+    -D, --no-database-creation                                             Disable metadata database automatic creation (if missing)
+    -a, --address <ADDRESS>                                                HTTP listening address [default: 127.0.0.1]
+    -p, --port <PORT>                                                      HTTP listening port [default: 8080]
+    -R, --behind-reverse-proxy                                             Use X-Forwarded-For, X-Forwarded-Proto and X-Forwarded-Host to determine uploads' origin
+    -t, --threshold <THRESHOLDS>                                           Relations between files' sizes and their durations. Must be ordered by increasing size and decreasing duration
+    -o, --ip-origin                                                        Use usernames as uploaders' identities
+    -O, --username-origin                                                  Use IP addresses as uploaders' identities
+    -s, --origin-size-sum <ORIGIN_SIZE_SUM>                                Cumulative size limit from the same uploader
+    -c, --origin-file-count <ORIGIN_FILE_COUNT>                            Number of files limit from the same uploader
+    -S, --global-size-sum <GLOBAL_SIZE_SUM>                                Cumulative size limit from all users
+        --auth-upload                                                      Protect upload endpoint with authentication
+        --auth-download                                                    Protect download endpoint with authentication
+    -C, --credential <CREDENTIALS>                                         Static list of credentials
+        --ldap-address <LDAP_ADDRESS>                                      URI of the LDAP used to authenticate users
+        --ldap-dn-pattern <LDAP_DN_PATTERN>                                LDAP DN pattern used when using single bind process
+        --ldap-search-dn <LDAP_SEARCH_DN>                                  LDAP DN used to bind during username searches
+        --ldap-search-password <LDAP_SEARCH_PASSWORD>                      LDAP password used to bind during username searches
+        --ldap-search-base-dn <LDAP_SEARCH_BASE_DN>                        LDAP base DN used during username searches
+        --ldap-search-attribute-pattern <LDAP_SEARCH_ATTRIBUTE_PATTERN>    LDAP attribute(s) pattern used to match usernames during searches [default: (uid=%u)]
+    -T, --theme <THEME>                                                    CSS color used in the web UI [default: #15b154]
+    -h, --help                                                             Print help information
+    -V, --version                                                          Print version information
 ```
 
 Here is an example of a Dropit instance:
