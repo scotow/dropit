@@ -40,7 +40,6 @@ mod main {
         env_logger::Builder::new()
             .filter_level(options.log_level)
             .init();
-        options.validate();
 
         let limiters = LimiterChain::new(vec![
             Box::new(OriginLimiter::new(

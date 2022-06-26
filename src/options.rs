@@ -2,16 +2,21 @@ use std::net::IpAddr;
 use std::path::PathBuf;
 
 use byte_unit::{Byte, ByteError};
-use clap::Parser;
 use clap::AppSettings::DeriveDisplayOrder;
+use clap::ArgGroup;
+use clap::Parser;
 use log::LevelFilter;
 
 use crate::auth::{Credential, Features, LdapAuthProcess, LdapAuthenticator, Origin};
-use crate::exit_error;
 use crate::upload::Threshold;
 
 #[derive(Parser, Debug)]
 #[clap(version, about, setting = DeriveDisplayOrder)]
+#[clap(
+    group(ArgGroup::new("origin").required(true).args(&["ip-origin", "username-origin"])),
+    group(ArgGroup::new("auth").multiple(true).args(&["credentials", "ldap-address"])),
+    group(ArgGroup::new("ldap-process").args(&["ldap-dn-pattern", "ldap-search-base-dn"])),
+)]
 pub struct Options {
     /// Increase logs verbosity (Error (default), Warn, Info, Debug, Trace).
     #[clap(short = 'v', long = "verbose", parse(from_occurrences = parse_log_level))]
@@ -41,20 +46,10 @@ pub struct Options {
     #[clap(short = 't', long = "threshold", required = true)]
     pub thresholds: Vec<Threshold>,
     /// Use usernames as uploaders' identities.
-    #[clap(
-        short = 'o',
-        long,
-        conflicts_with = "username-origin",
-        required_unless_present = "username-origin"
-    )]
+    #[clap(short = 'o', long)]
     pub ip_origin: bool,
     /// Use IP addresses as uploaders' identities.
-    #[clap(
-        short = 'O',
-        long,
-        conflicts_with = "ip-origin",
-        required_unless_present = "ip-origin"
-    )] // requires_any = "credentials" | "ldap..."
+    #[clap(short = 'O', long, requires = "auth")]
     pub username_origin: bool,
     /// Cumulative size limit from the same uploader.
     #[clap(short = 's', long, required = true, parse(try_from_str = parse_size))]
@@ -66,63 +61,38 @@ pub struct Options {
     #[clap(short = 'S', long, required = true, parse(try_from_str = parse_size))]
     pub global_size_sum: u64,
     /// Protect upload endpoint with authentication.
-    #[clap(long)] // requires_any = "credentials" | "ldap..."
+    #[clap(long, requires = "auth")]
     pub auth_upload: bool,
     /// Protect download endpoint with authentication.
-    #[clap(long)] // requires_any = "credentials" | "ldap..."
+    #[clap(long, requires = "auth")]
     pub auth_download: bool,
     /// Static list of credentials.
     #[clap(short = 'C', long = "credential")]
     pub credentials: Vec<Credential>,
     /// URI of the LDAP used to authenticate users.
-    #[clap(long)]
+    #[clap(long, requires = "ldap-process")]
     pub ldap_address: Option<String>,
     /// LDAP DN pattern used when using single bind process.
-    #[clap(
-        long,
-        requires = "ldap-address",
-        conflicts_with = "ldap-search-base-dn"
-    )]
+    #[clap(long, requires = "ldap-address")]
     pub ldap_dn_pattern: Option<String>,
-    /// LDAP DN used to bind during username searches.
-    #[clap(long, requires_all = &["ldap-address", "ldap-search-password", "ldap-search-base-dn", "ldap-search-attribute-pattern"])]
-    pub ldap_search_dn: Option<String>,
-    /// LDAP password used to bind during username searches.
-    #[clap(long, requires_all = &["ldap-address", "ldap-search-dn"])]
-    pub ldap_search_password: Option<String>,
     /// LDAP base DN used during username searches.
-    #[clap(long, requires = "ldap-address", conflicts_with = "ldap-dn-pattern")]
+    #[clap(long, requires = "ldap-address")]
     pub ldap_search_base_dn: Option<String>,
     /// LDAP attribute(s) pattern used to match usernames during searches.
-    #[clap(long, default_value = "(uid=%u)", requires_all = &["ldap-address", "ldap-search-base-dn"], conflicts_with = "ldap-dn-pattern")]
+    #[clap(long, default_value = "(uid=%u)", requires = "ldap-search-base-dn")]
     pub ldap_search_attribute_pattern: String,
+    /// LDAP DN used to bind during username searches.
+    #[clap(long, requires_all = &["ldap-search-base-dn", "ldap-search-password"])]
+    pub ldap_search_dn: Option<String>,
+    /// LDAP password used to bind during username searches.
+    #[clap(long, requires = "ldap-search-dn")]
+    pub ldap_search_password: Option<String>,
     /// CSS color used in the web UI.
     #[clap(short = 'T', long, default_value = "#15b154")]
     pub theme: String,
 }
 
 impl Options {
-    pub fn validate(&self) {
-        if (self.auth_upload || self.auth_download)
-            && (self.credentials.is_empty() && self.ldap_address.is_none())
-        {
-            exit_error!(
-                "At least one authentication method is required if you protect parts of the API"
-            );
-        }
-        if self.username_origin && self.credentials.is_empty() && self.ldap_address.is_none() {
-            exit_error!("At least one authentication method is required if you calculate quota using usernames")
-        }
-        if self.ldap_address.is_some()
-            && self.ldap_dn_pattern.is_none()
-            && self.ldap_search_base_dn.is_none()
-        {
-            exit_error!(
-                "LDAP address is useless if ldap-dn-pattern and ldap-search-base-dn are empty"
-            )
-        }
-    }
-
     pub fn origin(&self) -> Option<Origin> {
         if self.ip_origin {
             Some(Origin::IpAddress)
@@ -179,5 +149,246 @@ fn parse_log_level(n: u64) -> LevelFilter {
         2 => Info,
         3 => Debug,
         _ => Trace,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Options;
+    use clap::error::{ContextKind, ContextValue};
+    use clap::{Error, ErrorKind, Parser};
+    use itertools::Itertools;
+
+    macro_rules! cmd {
+        ($($arg:tt)*) => {
+            {
+                Options::try_parse_from([
+                    "dropit",
+                    "--threshold",
+                    "100kb:5m",
+                    "--origin-size-sum",
+                    "1mb",
+                    "--origin-file-count",
+                    "1",
+                    "--global-size-sum",
+                    "10mb",
+                    $($arg)*
+                ])
+            }
+        }
+    }
+
+    fn missing_args<const N: usize>(err: Error, names: [&str; N]) {
+        assert!(
+            err.kind() == ErrorKind::MissingRequiredArgument
+                && names.into_iter().all(|name| err
+                    .context()
+                    .find(|(k, v)| {
+                        matches!(k, ContextKind::InvalidArg)
+                            && match v {
+                                ContextValue::Strings(ss) => ss.iter().any(|s| s.contains(name)),
+                                _ => false,
+                            }
+                    })
+                    .is_some())
+        )
+    }
+
+    fn conflict(err: Error, rhs: &str, lhs: &str) {
+        assert!(
+            err.kind() == ErrorKind::ArgumentConflict && {
+                let (a1, a2) = err
+                    .context()
+                    .filter(|(k, _)| matches!(k, ContextKind::InvalidArg | ContextKind::PriorArg))
+                    .filter_map(|(_, v)| match v {
+                        ContextValue::String(s) => Some(s),
+                        _ => None,
+                    })
+                    .collect_tuple()
+                    .unwrap();
+                a1.contains(rhs) && a2.contains(lhs) || a1.contains(lhs) && a2.contains(rhs)
+            }
+        )
+    }
+
+    #[test]
+    fn basic() {
+        // Missing all base options.
+        missing_args(
+            Options::try_parse_from(["dropit"]).unwrap_err(),
+            [
+                "threshold",
+                "origin-size-sum",
+                "origin-file-count",
+                "global-size-sum",
+            ],
+        );
+
+        // All base options provided.
+        assert!(cmd!["--ip-origin"].is_ok());
+    }
+
+    #[test]
+    fn origin() {
+        // Missing origin.
+        missing_args(cmd![].unwrap_err(), ["ip-origin", "username-origin"]);
+
+        // Duplicated origins.
+        conflict(
+            cmd!["--ip-origin", "--username-origin"].unwrap_err(),
+            "ip-origin",
+            "username-origin",
+        );
+
+        // Missing auth method while using username origin.
+        missing_args(
+            cmd!["--username-origin"].unwrap_err(),
+            ["credential", "ldap-address"],
+        );
+
+        // Username origin with static credentials.
+        assert!(cmd!["--username-origin", "--credential", "username:password",].is_ok());
+
+        // Username origin with LDAP.
+        assert!(cmd![
+            "--username-origin",
+            "--ldap-address",
+            "ldap://10.0.0.1",
+            "--ldap-search-base-dn",
+            "ou=Identities,dc=myOrg",
+        ]
+        .is_ok());
+    }
+
+    #[test]
+    fn auth() {
+        // Protect upload and missing auth method.
+        missing_args(
+            cmd!["--auth-upload"].unwrap_err(),
+            ["credential", "ldap-address"],
+        );
+
+        // Protect download and missing auth method.
+        missing_args(
+            cmd!["--auth-download"].unwrap_err(),
+            ["credential", "ldap-address"],
+        );
+
+        // Protect with static credentials.
+        assert!(cmd![
+            "--ip-origin",
+            "--auth-upload",
+            "--credential",
+            "username:password",
+        ]
+        .is_ok());
+
+        // Protect with LDAP.
+        assert!(cmd![
+            "--ip-origin",
+            "--auth-upload",
+            "--ldap-address",
+            "ldap://10.0.0.1",
+            "--ldap-dn-pattern",
+            "org=MyOrg,uid=%u"
+        ]
+        .is_ok());
+
+        // Both static credentials and LDAP.
+        assert!(cmd![
+            "--ip-origin",
+            "--auth-upload",
+            "--credential",
+            "username:password",
+            "--ldap-address",
+            "ldap://10.0.0.1",
+            "--ldap-dn-pattern",
+            "org=MyOrg,uid=%u"
+        ]
+        .is_ok());
+    }
+
+    #[test]
+    fn ldap() {
+        // LDAP with missing auth process.
+        missing_args(
+            cmd!["--ldap-address", "ldap://10.0.0.1"].unwrap_err(),
+            ["ldap-dn-pattern", "ldap-search-base-dn"],
+        );
+
+        // LDAP with direct bind.
+        assert!(cmd![
+            "--ip-origin",
+            "--ldap-address",
+            "ldap://10.0.0.1",
+            "--ldap-dn-pattern",
+            "org=MyOrg,uid=%u"
+        ]
+        .is_ok());
+
+        // LDAP with search process.
+        assert!(cmd![
+            "--ip-origin",
+            "--ldap-address",
+            "ldap://10.0.0.1",
+            "--ldap-search-base-dn",
+            "ou=Identities,dc=myOrg",
+        ]
+        .is_ok());
+
+        // LDAP with search process and missing username.
+        missing_args(
+            cmd![
+                "--ldap-address",
+                "ldap://10.0.0.1",
+                "--ldap-search-base-dn",
+                "ou=Identities,dc=myOrg",
+                "--ldap-search-password",
+                "password1234",
+            ]
+            .unwrap_err(),
+            ["ldap-search-dn"],
+        );
+
+        // LDAP with search process and missing password.
+        missing_args(
+            cmd![
+                "--ldap-address",
+                "ldap://10.0.0.1",
+                "--ldap-search-base-dn",
+                "ou=Identities,dc=myOrg",
+                "--ldap-search-dn",
+                "uid=user1234",
+            ]
+            .unwrap_err(),
+            ["ldap-search-password"],
+        );
+
+        // LDAP with search process, specified attributes but missing search base dn.
+        missing_args(
+            cmd![
+                "--ldap-address",
+                "ldap://10.0.0.1",
+                "--ldap-search-attribute-pattern",
+                "(email=%u)",
+            ]
+            .unwrap_err(),
+            ["ldap-search-base-dn"],
+        );
+
+        // LDAP with both process.
+        conflict(
+            cmd![
+                "--ldap-address",
+                "ldap://10.0.0.1",
+                "--ldap-dn-pattern",
+                "org=MyOrg,uid=%u",
+                "--ldap-search-base-dn",
+                "ou=Identities,dc=myOrg",
+            ]
+            .unwrap_err(),
+            "ldap-dn-pattern",
+            "ldap-search-base-dn",
+        )
     }
 }
