@@ -1,3 +1,4 @@
+use std::io::ErrorKind;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use sqlx::SqlitePool;
@@ -54,12 +55,19 @@ impl Cleaner {
         if !files.is_empty() {
             for (id,) in files {
                 if let Err(err) = self.dir.delete_file(&id).await {
-                    log::error!(
-                        "Cannot remove file with id {} from file system: {}",
-                        id,
-                        err
-                    );
-                    continue;
+                    if err.kind() == ErrorKind::NotFound {
+                        log::warn!(
+                            "File with id {} already deleted of absent from storage directory",
+                            id
+                        );
+                    } else {
+                        log::error!(
+                            "Cannot remove file with id {} from file system: {}",
+                            id,
+                            err
+                        );
+                        continue;
+                    }
                 }
                 if let Err(err) = sqlx::query(include_query!("delete_file"))
                     .bind(&id)
