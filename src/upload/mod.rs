@@ -44,6 +44,7 @@ pub struct UploadRequest {
     pub origin: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
     response_type: ResponseType,
@@ -81,11 +82,9 @@ pub async fn handler(
     let origin = match origin {
         Origin::IpAddress => real_ip
             .resolve(addr.ip(), forwarded_address.map(|fa| fa.0))
-            .ok_or_else(|| ApiResponse(response_type, UploadError::Origin))?
+            .ok_or(ApiResponse(response_type, UploadError::Origin))?
             .to_string(),
-        Origin::Username => {
-            username.ok_or_else(|| ApiResponse(response_type, UploadError::Origin))?
-        }
+        Origin::Username => username.ok_or(ApiResponse(response_type, UploadError::Origin))?,
     };
 
     let info = process_upload(
@@ -96,6 +95,7 @@ pub async fn handler(
     Ok(ApiResponse(response_type, info))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_upload(
     pool: SqlitePool,
     limiter: Arc<ChainLimiter>,

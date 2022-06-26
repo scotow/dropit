@@ -247,7 +247,7 @@ mod tests {
         );
 
         // Username origin with static credentials.
-        assert!(cmd!["--username-origin", "--credential", "username:password",].is_ok());
+        assert!(cmd!["--username-origin", "--credential", "username:password"].is_ok());
 
         // Username origin with LDAP.
         assert!(cmd![

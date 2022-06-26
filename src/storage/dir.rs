@@ -27,7 +27,7 @@ impl Dir {
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
                     if should_create {
-                        if let Err(_) = tokio::fs::create_dir_all(&self.0).await {
+                        if tokio::fs::create_dir_all(&self.0).await.is_err() {
                             return Err("Cannot create uploads directory");
                         }
                     } else {

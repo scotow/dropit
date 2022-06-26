@@ -34,6 +34,7 @@ pub struct ForceDownload {
     force_download: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
     authenticator: Extension<Arc<Authenticator>>,

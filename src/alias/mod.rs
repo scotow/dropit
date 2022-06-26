@@ -66,7 +66,7 @@ impl FromRequest<Body> for Alias {
             .map_err(|_| Error::InvalidAlias)?
             .0
             .get("alias")
-            .ok_or_else(|| Error::AliasExtract)?
+            .ok_or(Error::AliasExtract)?
             .parse()?)
     }
 }

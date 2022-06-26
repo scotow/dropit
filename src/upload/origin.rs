@@ -33,7 +33,7 @@ impl FromRequest<Body> for ForwardedForHeader {
         Ok(Self(
             req.headers()
                 .get("X-Forwarded-For")
-                .ok_or_else(|| Error::Origin)?
+                .ok_or(Error::Origin)?
                 .to_str()
                 .map_err(|_| Error::Origin)?
                 .parse::<IpAddr>()
