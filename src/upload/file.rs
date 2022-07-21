@@ -1,15 +1,18 @@
-use std::convert::TryFrom;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    convert::TryFrom,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use axum::http::StatusCode;
 use byte_unit::Byte;
 use humantime::format_rfc3339_seconds;
 use serde::Serialize;
 
-use crate::error::upload as UploadError;
-use crate::error::Error;
-use crate::misc::format_duration;
-use crate::response::{ApiHeader, SingleLine};
+use crate::{
+    error::{upload as UploadError, Error},
+    misc::format_duration,
+    response::{ApiHeader, SingleLine},
+};
 
 #[derive(Serialize)]
 pub struct UploadInfo {

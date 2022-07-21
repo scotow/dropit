@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use async_trait::async_trait;
 use axum::extract::{FromRequest, Path, RequestParts};
 use hyper::Body;
 
-use crate::error::Error;
-
 use super::Alias;
+use crate::error::Error;
 
 pub struct AliasGroup(pub Vec<Alias>);
 

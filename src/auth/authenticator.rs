@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use axum::headers::authorization::Basic;
-use axum::headers::{Authorization, Cookie};
+use axum::headers::{authorization::Basic, Authorization, Cookie};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::auth::Credential;
-use crate::auth::{Features, LdapAuthenticator};
-use crate::error::{auth as AuthError, Error};
+use crate::{
+    auth::{Credential, Features, LdapAuthenticator},
+    error::{auth as AuthError, Error},
+};
 
 pub enum AuthStatus {
     NotNeeded,

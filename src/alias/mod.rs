@@ -1,18 +1,17 @@
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use async_trait::async_trait;
 use axum::extract::{FromRequest, Path, RequestParts};
+pub use group::AliasGroup;
 use hyper::Body;
-use serde::de::Error as SerdeError;
-use serde::{Deserialize, Deserializer};
+use serde::{de::Error as SerdeError, Deserialize, Deserializer};
 use sqlx::SqliteConnection;
 
-use crate::alias::Alias::{Long, Short};
-use crate::error::Error;
-use crate::include_query;
-
-pub use group::AliasGroup;
+use crate::{
+    alias::Alias::{Long, Short},
+    error::Error,
+    include_query,
+};
 
 mod group;
 mod long;

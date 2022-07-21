@@ -1,19 +1,21 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use axum::extract::{FromRequest, RequestParts};
-use axum::routing::{delete, patch};
-use axum::{Extension, Router};
+use axum::{
+    extract::{FromRequest, RequestParts},
+    routing::{delete, patch},
+    Extension, Router,
+};
 use hyper::{header, Body};
-use sqlx::pool::PoolConnection;
-use sqlx::{Sqlite, SqlitePool};
+use sqlx::{pool::PoolConnection, Sqlite, SqlitePool};
 
-use crate::alias::Alias;
-use crate::error::admin as AdminError;
-use crate::error::Error;
-use crate::include_query;
-use crate::storage::Dir;
-use crate::upload::Determiner;
+use crate::{
+    alias::Alias,
+    error::{admin as AdminError, Error},
+    include_query,
+    storage::Dir,
+    upload::Determiner,
+};
 
 mod alias;
 mod downloads;

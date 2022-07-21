@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
-use axum::routing::get;
-use axum::{Extension, Router};
-
-pub use authenticator::AuthStatus;
-pub use authenticator::Authenticator;
+pub use authenticator::{AuthStatus, Authenticator};
+use axum::{routing::get, Extension, Router};
 pub use credential::Credential;
 pub use features::Features;
 pub use ldap::{LdapAuthProcess, LdapAuthenticator};

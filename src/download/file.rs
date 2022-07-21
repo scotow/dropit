@@ -1,12 +1,16 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
-use axum::body::StreamBody;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    body::StreamBody,
+    response::{IntoResponse, Response},
+};
 use futures::Stream;
-use hyper::http::HeaderValue;
 use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    http::HeaderValue,
     StatusCode,
 };
 use percent_encoding::utf8_percent_encode;
@@ -14,10 +18,11 @@ use sqlx::SqlitePool;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::download::FileInfo;
-use crate::error::download as DownloadError;
-use crate::error::Error;
-use crate::storage::Dir;
+use crate::{
+    download::FileInfo,
+    error::{download as DownloadError, Error},
+    storage::Dir,
+};
 
 pub(super) async fn handler(
     pool: SqlitePool,

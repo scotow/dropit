@@ -1,6 +1,4 @@
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::{Extension, Router};
+use axum::{response::IntoResponse, routing::get, Extension, Router};
 use hyper::{header, StatusCode};
 
 #[derive(Clone, Debug)]

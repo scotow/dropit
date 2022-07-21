@@ -1,32 +1,28 @@
-use std::convert::TryFrom;
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{convert::TryFrom, net::SocketAddr, sync::Arc};
 
-use axum::extract::{BodyStream, ConnectInfo};
-use axum::headers::authorization::Basic;
-use axum::headers::{Authorization, ContentLength, Cookie};
-use axum::routing::post;
-use axum::{Extension, Router, TypedHeader};
-use futures::StreamExt;
-use sqlx::SqlitePool;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use uuid::Uuid;
-
-use crate::alias;
-use crate::auth::{AuthStatus, Authenticator, Features, Origin};
-use crate::error::auth as AuthError;
-use crate::error::upload as UploadError;
-use crate::error::Error;
-use crate::include_query;
-use crate::limit::Chain as ChainLimiter;
-use crate::limit::Limiter;
-use crate::response::{ApiResponse, ResponseType};
-use crate::storage::Dir;
-use crate::upload::origin::ForwardedForHeader;
-
+use axum::{
+    extract::{BodyStream, ConnectInfo},
+    headers::{authorization::Basic, Authorization, ContentLength, Cookie},
+    routing::post,
+    Extension, Router, TypedHeader,
+};
 use file::UploadInfo;
 use filename::Filename;
+use futures::StreamExt;
+use sqlx::SqlitePool;
+use tokio::{fs::File, io::AsyncWriteExt};
+use uuid::Uuid;
+
+use crate::{
+    alias,
+    auth::{AuthStatus, Authenticator, Features, Origin},
+    error::{auth as AuthError, upload as UploadError, Error},
+    include_query,
+    limit::{Chain as ChainLimiter, Limiter},
+    response::{ApiResponse, ResponseType},
+    storage::Dir,
+    upload::origin::ForwardedForHeader,
+};
 
 mod expiration;
 mod file;
@@ -35,8 +31,7 @@ mod origin;
 
 pub use expiration::{Determiner, Threshold};
 pub use file::Expiration;
-pub use origin::DomainUri;
-pub use origin::RealIp;
+pub use origin::{DomainUri, RealIp};
 
 pub struct UploadRequest {
     pub filename: Option<String>,

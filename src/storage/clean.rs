@@ -1,10 +1,11 @@
-use std::io::ErrorKind;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    io::ErrorKind,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use sqlx::SqlitePool;
 
-use crate::include_query;
-use crate::storage::dir::Dir;
+use crate::{include_query, storage::dir::Dir};
 
 pub struct Cleaner {
     dir: Dir,

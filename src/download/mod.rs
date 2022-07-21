@@ -1,20 +1,22 @@
 use std::sync::Arc;
 
-use axum::extract::Query;
-use axum::headers::authorization::Basic;
-use axum::headers::{Authorization, Cookie, UserAgent};
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::{Extension, Router, TypedHeader};
+use axum::{
+    extract::Query,
+    headers::{authorization::Basic, Authorization, Cookie, UserAgent},
+    response::IntoResponse,
+    routing::get,
+    Extension, Router, TypedHeader,
+};
 use serde::Deserialize;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::alias::AliasGroup;
-use crate::auth::{AuthStatus, Authenticator, Features};
-use crate::error::auth as AuthError;
-use crate::error::download as DownloadError;
-use crate::storage::Dir;
-use crate::{error::Error, include_query};
+use crate::{
+    alias::AliasGroup,
+    auth::{AuthStatus, Authenticator, Features},
+    error::{auth as AuthError, download as DownloadError, Error},
+    include_query,
+    storage::Dir,
+};
 
 mod archive;
 mod file;

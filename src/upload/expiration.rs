@@ -1,6 +1,4 @@
-use std::convert::TryInto;
-use std::str::FromStr;
-use std::time::Duration;
+use std::{convert::TryInto, str::FromStr, time::Duration};
 
 use byte_unit::Byte;
 

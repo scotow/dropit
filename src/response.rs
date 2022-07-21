@@ -1,9 +1,11 @@
 use std::convert::Infallible;
 
 use async_trait::async_trait;
-use axum::extract::{FromRequest, RequestParts};
-use axum::response::{IntoResponse, Response};
-use axum::Json;
+use axum::{
+    extract::{FromRequest, RequestParts},
+    response::{IntoResponse, Response},
+    Json,
+};
 use hyper::{header, Body, HeaderMap, StatusCode};
 use serde::Serialize;
 

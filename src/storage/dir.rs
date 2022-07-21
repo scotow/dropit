@@ -1,8 +1,9 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-use std::path::PathBuf;
-use tokio::fs;
-use tokio::fs::File;
+use std::{
+    io::{Error as IoError, ErrorKind},
+    path::PathBuf,
+};
+
+use tokio::{fs, fs::File};
 
 #[derive(Clone, Debug)]
 pub struct Dir(PathBuf);

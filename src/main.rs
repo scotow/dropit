@@ -15,25 +15,21 @@ mod update;
 mod upload;
 
 mod main {
-    use std::net::SocketAddr;
-    use std::sync::Arc;
-    use std::time::Duration;
+    use std::{net::SocketAddr, sync::Arc, time::Duration};
 
     use axum::Router;
     use clap::Parser;
     use hyper::Server;
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
-    use crate::auth::Authenticator;
-    use crate::limit::Chain as LimiterChain;
-    use crate::limit::Global as GlobalLimiter;
-    use crate::limit::Origin as OriginLimiter;
-    use crate::options::Options;
-    use crate::storage::Cleaner;
-    use crate::storage::Dir;
-    use crate::upload::Determiner;
-    use crate::upload::RealIp;
-    use crate::{exit_error, include_query};
+    use crate::{
+        auth::Authenticator,
+        exit_error, include_query,
+        limit::{Chain as LimiterChain, Global as GlobalLimiter, Origin as OriginLimiter},
+        options::Options,
+        storage::{Cleaner, Dir},
+        upload::{Determiner, RealIp},
+    };
 
     pub(super) async fn run() {
         let options = Options::parse();

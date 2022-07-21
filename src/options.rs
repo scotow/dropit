@@ -1,14 +1,13 @@
-use std::net::IpAddr;
-use std::path::PathBuf;
+use std::{net::IpAddr, path::PathBuf};
 
 use byte_unit::{Byte, ByteError};
-use clap::AppSettings::DeriveDisplayOrder;
-use clap::ArgGroup;
-use clap::Parser;
+use clap::{AppSettings::DeriveDisplayOrder, ArgGroup, Parser};
 use log::LevelFilter;
 
-use crate::auth::{Credential, Features, LdapAuthProcess, LdapAuthenticator, Origin};
-use crate::upload::Threshold;
+use crate::{
+    auth::{Credential, Features, LdapAuthProcess, LdapAuthenticator, Origin},
+    upload::Threshold,
+};
 
 #[derive(Parser, Debug)]
 #[clap(version, about, setting = DeriveDisplayOrder)]
@@ -154,10 +153,13 @@ fn parse_log_level(n: u64) -> LevelFilter {
 
 #[cfg(test)]
 mod tests {
-    use super::Options;
-    use clap::error::{ContextKind, ContextValue};
-    use clap::{Error, ErrorKind, Parser};
+    use clap::{
+        error::{ContextKind, ContextValue},
+        Error, ErrorKind, Parser,
+    };
     use itertools::Itertools;
+
+    use super::Options;
 
     macro_rules! cmd {
         ($($arg:tt)*) => {

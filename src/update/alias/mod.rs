@@ -1,6 +1,5 @@
 use itertools::Itertools;
-use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 use serde_json::Map;
 
 use crate::response::{ApiHeader, SingleLine};

@@ -1,13 +1,13 @@
-use axum::extract::Path;
-use axum::Extension;
+use axum::{extract::Path, Extension};
 use sqlx::SqlitePool;
 
-use crate::alias::Alias;
-use crate::error::downloads as DownloadsError;
-use crate::error::Error;
-use crate::include_query;
-use crate::response::{ApiResponse, ResponseType};
-use crate::update::AdminToken;
+use crate::{
+    alias::Alias,
+    error::{downloads as DownloadsError, Error},
+    include_query,
+    response::{ApiResponse, ResponseType},
+    update::AdminToken,
+};
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,

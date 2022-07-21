@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use axum::body::StreamBody;
-use axum::response::{IntoResponse, Response};
-use hyper::header::HeaderValue;
+use axum::{
+    body::StreamBody,
+    response::{IntoResponse, Response},
+};
 use hyper::{
-    header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
+    header::{HeaderValue, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE},
     StatusCode,
 };
 use sqlx::SqlitePool;
@@ -12,9 +13,7 @@ use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use zipit::{archive_size, Archive, FileDateTime};
 
-use crate::download::FileInfo;
-use crate::error::Error;
-use crate::storage::Dir;
+use crate::{download::FileInfo, error::Error, storage::Dir};
 
 pub(super) async fn handler(
     pool: SqlitePool,

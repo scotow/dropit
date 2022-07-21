@@ -1,8 +1,7 @@
 use std::convert::TryInto;
 
 use lazy_static::lazy_static;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{seq::SliceRandom, thread_rng};
 use regex::Regex;
 
 lazy_static! {

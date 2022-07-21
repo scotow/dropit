@@ -1,9 +1,9 @@
-use axum::response::{IntoResponse, Response};
-use axum::Json;
-use hyper::http::HeaderValue;
-use hyper::{header, HeaderMap, StatusCode};
-use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
+use axum::{
+    response::{IntoResponse, Response},
+    Json,
+};
+use hyper::{header, http::HeaderValue, HeaderMap, StatusCode};
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 use serde_json::json;
 use thiserror::Error;
 

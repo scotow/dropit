@@ -1,17 +1,16 @@
-use std::convert::TryFrom;
-use std::sync::Arc;
+use std::{convert::TryFrom, sync::Arc};
 
 use axum::Extension;
 use sqlx::SqlitePool;
 
-use crate::alias::Alias;
-use crate::error::expiration as ExpirationError;
-use crate::error::Error;
-use crate::include_query;
-use crate::response::{ApiResponse, ResponseType};
-use crate::update::AdminToken;
-use crate::upload::Determiner;
-use crate::upload::Expiration;
+use crate::{
+    alias::Alias,
+    error::{expiration as ExpirationError, Error},
+    include_query,
+    response::{ApiResponse, ResponseType},
+    update::AdminToken,
+    upload::{Determiner, Expiration},
+};
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,

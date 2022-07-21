@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use axum::extract::ContentLengthLimit;
-use axum::response::IntoResponse;
-use axum::{Extension, Json};
+use axum::{extract::ContentLengthLimit, response::IntoResponse, Extension, Json};
 use hyper::StatusCode;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-use crate::auth::Authenticator;
-use crate::error::Error;
-use crate::response::{ApiHeader, ApiResponse, ResponseType, SingleLine};
+use crate::{
+    auth::Authenticator,
+    error::Error,
+    response::{ApiHeader, ApiResponse, ResponseType, SingleLine},
+};
 
 #[derive(Deserialize)]
 pub(super) struct LoginRequest {

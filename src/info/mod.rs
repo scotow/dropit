@@ -1,5 +1,4 @@
-use axum::routing::get;
-use axum::{Extension, Router};
+use axum::{routing::get, Extension, Router};
 use sqlx::SqlitePool;
 
 mod valid;

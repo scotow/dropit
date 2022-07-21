@@ -1,14 +1,15 @@
 use axum::Extension;
 use sqlx::SqlitePool;
 
-use crate::alias;
-use crate::alias::Alias;
-use crate::error::alias as AliasError;
-use crate::response::{ApiResponse, ResponseType};
-use crate::update::alias::AliasChange;
-use crate::update::AdminToken;
-use crate::upload::DomainUri;
-use crate::{error::Error, include_query};
+use crate::{
+    alias,
+    alias::Alias,
+    error::{alias as AliasError, Error},
+    include_query,
+    response::{ApiResponse, ResponseType},
+    update::{alias::AliasChange, AdminToken},
+    upload::DomainUri,
+};
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,

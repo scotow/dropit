@@ -1,11 +1,8 @@
-use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
+use axum::{response::IntoResponse, routing::get, Router};
 use hyper::{header, Body, Response, StatusCode, Uri};
 use rust_embed::RustEmbed;
 
-use crate::error::assets as AssetsError;
-use crate::error::Error;
+use crate::error::{assets as AssetsError, Error};
 
 #[derive(RustEmbed)]
 #[folder = "src/public/"]
