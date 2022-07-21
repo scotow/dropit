@@ -181,16 +181,13 @@ mod tests {
     fn missing_args<const N: usize>(err: Error, names: [&str; N]) {
         assert!(
             err.kind() == ErrorKind::MissingRequiredArgument
-                && names.into_iter().all(|name| err
-                    .context()
-                    .find(|(k, v)| {
-                        matches!(k, ContextKind::InvalidArg)
-                            && match v {
-                                ContextValue::Strings(ss) => ss.iter().any(|s| s.contains(name)),
-                                _ => false,
-                            }
-                    })
-                    .is_some())
+                && names.into_iter().all(|name| err.context().any(|(k, v)| {
+                    matches!(k, ContextKind::InvalidArg)
+                        && match v {
+                            ContextValue::Strings(ss) => ss.iter().any(|s| s.contains(name)),
+                            _ => false,
+                        }
+                }))
         )
     }
 
