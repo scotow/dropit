@@ -64,7 +64,7 @@ Here is an example of a Dropit instance:
 
 ```
 dropit \
-  --ip-origin
+  --ip-origin \
   --origin-size-sum 512MB \
   --origin-file-count 64 \
   --global-size-sum 10GB \
