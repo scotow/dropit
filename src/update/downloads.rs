@@ -1,4 +1,5 @@
 use axum::{extract::Path, Extension};
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -11,15 +12,15 @@ use crate::{
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     AdminToken(admin_token): AdminToken,
     alias: Alias,
     Path((_, count)): Path<(String, u16)>,
 ) -> Result<ApiResponse<()>, ApiResponse<Error>> {
     process_downloads(pool, alias, admin_token, count)
         .await
-        .map_err(|err| ApiResponse(response_type, err))?;
-    Ok(ApiResponse(response_type, ()))
+        .map_err(|err| ApiResponse(*response_type, err))?;
+    Ok(ApiResponse(*response_type, ()))
 }
 
 async fn process_downloads(

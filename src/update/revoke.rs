@@ -1,4 +1,5 @@
 use axum::Extension;
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -12,15 +13,15 @@ use crate::{
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     AdminToken(admin_token): AdminToken,
     alias: Alias,
     Extension(dir): Extension<Dir>,
 ) -> Result<ApiResponse<()>, ApiResponse<Error>> {
     process_revoke(pool, alias, admin_token, dir)
         .await
-        .map_err(|err| ApiResponse(response_type, err))?;
-    Ok(ApiResponse(response_type, ()))
+        .map_err(|err| ApiResponse(*response_type, err))?;
+    Ok(ApiResponse(*response_type, ()))
 }
 
 async fn process_revoke(

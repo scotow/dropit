@@ -1,6 +1,7 @@
 use std::{convert::TryFrom, sync::Arc};
 
 use axum::Extension;
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -14,16 +15,16 @@ use crate::{
 
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     Extension(determiner): Extension<Arc<Determiner>>,
     AdminToken(admin_token): AdminToken,
     alias: Alias,
 ) -> Result<ApiResponse<Expiration>, ApiResponse<Error>> {
     Ok(ApiResponse(
-        response_type,
+        *response_type,
         process_extend(pool, determiner, alias, admin_token)
             .await
-            .map_err(|err| ApiResponse(response_type, err))?,
+            .map_err(|err| ApiResponse(*response_type, err))?,
     ))
 }
 

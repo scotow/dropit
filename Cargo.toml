@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.22.3"
+version = "0.22.4"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"
 description = "Temporary file hosting and sharing"
@@ -9,7 +9,7 @@ license = "MIT"
 [dependencies]
 tokio = { version = "1.19.2", features = ["io-util", "macros", "sync", "fs", "rt-multi-thread"] }
 hyper = { version = "0.14.19", features = ["stream"] }
-axum = { version = "0.5.7", features = ["headers", "query"] }
+axum = { version = "0.5.13", features = ["headers", "query"] }
 futures = "0.3.21"
 sqlx = { version = "0.5.13", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
 tokio-util = { version = "0.7.3", default-features = false, features = ["io", "compat"] }
@@ -34,3 +34,4 @@ zipit = { version = "0.2.1", features = ["chrono-datetime"] }
 ldap3 = { version = "0.9.3", default-features = false, features = ["tls-rustls"] }
 rust-embed = "6.3.0"
 itertools = "0.10.3"
+http-negotiator = { git = "https://github.com/scotow/http-negotiator", rev = "ea8aefd", features = ["axum"] }

@@ -1,12 +1,9 @@
-use std::convert::Infallible;
-
-use async_trait::async_trait;
 use axum::{
-    extract::{FromRequest, RequestParts},
     response::{IntoResponse, Response},
     Json,
 };
-use hyper::{header, Body, HeaderMap, StatusCode};
+use http_negotiator::AsNegotiationStr;
+use hyper::{HeaderMap, StatusCode};
 use serde::Serialize;
 
 pub trait ApiHeader {
@@ -47,22 +44,12 @@ impl Default for ResponseType {
     }
 }
 
-#[async_trait]
-impl FromRequest<Body> for ResponseType {
-    type Rejection = Infallible;
-
-    async fn from_request(req: &mut RequestParts<Body>) -> Result<Self, Self::Rejection> {
-        Ok(
-            match req
-                .headers()
-                .get(header::ACCEPT)
-                .and_then(|h| h.to_str().ok())
-            {
-                Some("application/json") => Self::Json,
-                Some("text/plain") => Self::Text,
-                _ => Self::default(),
-            },
-        )
+impl AsNegotiationStr for ResponseType {
+    fn as_str(&self) -> &str {
+        match self {
+            ResponseType::Json => "application/json",
+            ResponseType::Text => "text/plain",
+        }
     }
 }
 
