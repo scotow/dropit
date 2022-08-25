@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.22.5"
+version = "0.22.6"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"
 description = "Temporary file hosting and sharing"
