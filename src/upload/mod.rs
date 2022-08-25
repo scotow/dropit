@@ -9,6 +9,7 @@ use axum::{
 use file::UploadInfo;
 use filename::Filename;
 use futures::StreamExt;
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use sqlx::SqlitePool;
 use tokio::{fs::File, io::AsyncWriteExt};
 use uuid::Uuid;
@@ -42,7 +43,7 @@ pub struct UploadRequest {
 #[allow(clippy::too_many_arguments)]
 pub async fn handler(
     Extension(pool): Extension<SqlitePool>,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     authenticator: Extension<Arc<Authenticator>>,
     auth_header: Option<TypedHeader<Authorization<Basic>>>,
     cookie: Option<TypedHeader<Cookie>>,
@@ -68,26 +69,26 @@ pub async fn handler(
     {
         AuthStatus::NotNeeded => None,
         AuthStatus::Valid(username) => Some(username),
-        AuthStatus::Error(err) => return Err(ApiResponse(response_type, err)),
+        AuthStatus::Error(err) => return Err(ApiResponse(*response_type, err)),
         AuthStatus::Prompt => {
-            return Err(ApiResponse(response_type, AuthError::MissingAuthorization));
+            return Err(ApiResponse(*response_type, AuthError::MissingAuthorization));
         }
     };
 
     let origin = match origin {
         Origin::IpAddress => real_ip
             .resolve(addr.ip(), forwarded_address.map(|fa| fa.0))
-            .ok_or(ApiResponse(response_type, UploadError::Origin))?
+            .ok_or(ApiResponse(*response_type, UploadError::Origin))?
             .to_string(),
-        Origin::Username => username.ok_or(ApiResponse(response_type, UploadError::Origin))?,
+        Origin::Username => username.ok_or(ApiResponse(*response_type, UploadError::Origin))?,
     };
 
     let info = process_upload(
         pool, limiter, origin, determiner, domain_uri, dir, size, filename, body,
     )
     .await
-    .map_err(|err| ApiResponse(response_type, err))?;
-    Ok(ApiResponse(response_type, info))
+    .map_err(|err| ApiResponse(*response_type, err))?;
+    Ok(ApiResponse(*response_type, info))
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -19,6 +19,7 @@ mod main {
 
     use axum::Router;
     use clap::Parser;
+    use http_negotiator::{ContentTypeNegotiation, Negotiator};
     use hyper::Server;
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
@@ -27,6 +28,7 @@ mod main {
         exit_error, include_query,
         limit::{Chain as LimiterChain, Global as GlobalLimiter, Origin as OriginLimiter},
         options::Options,
+        response::ResponseType,
         storage::{Cleaner, Dir},
         upload::{Determiner, RealIp},
     };
@@ -105,7 +107,14 @@ mod main {
                 dir.clone(),
                 Arc::clone(&determiner),
             ))
-            .merge(super::info::router(pool.clone()));
+            .merge(super::info::router(pool.clone()))
+            .route_layer(
+                Negotiator::<ContentTypeNegotiation, _>::new([
+                    ResponseType::Json,
+                    ResponseType::Text,
+                ])
+                .unwrap_or_else(|err| exit_error!("Invalid mime types: {}", err)),
+            );
 
         let address = SocketAddr::new(options.address, options.port);
         log::info!("App is running on: {}", address);

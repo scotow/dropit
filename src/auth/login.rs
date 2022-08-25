@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::{extract::ContentLengthLimit, response::IntoResponse, Extension, Json};
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 
@@ -35,11 +36,11 @@ impl ApiHeader for LoginResponse {
 
 pub(super) async fn handler(
     Extension(auth): Extension<Arc<Authenticator>>,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     ContentLengthLimit(Json(req)): ContentLengthLimit<Json<LoginRequest>, 2048>,
 ) -> Result<impl IntoResponse, Error> {
     Ok(ApiResponse(
-        response_type,
+        response_type.into_inner(),
         LoginResponse {
             token: auth.create_session(&req.username, &req.password).await?,
         },

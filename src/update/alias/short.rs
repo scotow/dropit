@@ -1,4 +1,5 @@
 use axum::Extension;
+use http_negotiator::{ContentTypeNegotiation, Negotiation};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -16,11 +17,11 @@ pub async fn handler(
     alias: Alias,
     AdminToken(admin_token): AdminToken,
     DomainUri(domain_uri): DomainUri,
-    response_type: ResponseType,
+    response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
 ) -> Result<ApiResponse<AliasChange>, Error> {
     let new_alias = process_change(pool, alias, admin_token).await?;
     Ok(ApiResponse(
-        response_type,
+        response_type.into_inner(),
         AliasChange {
             short: Some((new_alias.clone(), format!("{}/{}", domain_uri, new_alias))),
             long: None,
