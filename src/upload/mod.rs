@@ -131,8 +131,8 @@ async fn process_upload(
             .ok_or(UploadError::TooLarge)?,
     )?;
 
-    let id = Uuid::new_v4().to_hyphenated_ref().to_string();
-    let admin = Uuid::new_v4().to_hyphenated_ref().to_string();
+    let id = Uuid::new_v4().as_hyphenated().to_string();
+    let admin = Uuid::new_v4().as_hyphenated().to_string();
 
     sqlx::query(include_query!("insert_file"))
         .bind(&id)
