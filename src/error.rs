@@ -4,7 +4,6 @@ use axum::{
 };
 use hyper::{header, http::HeaderValue, HeaderMap, StatusCode};
 use serde::{ser::SerializeStruct, Serialize, Serializer};
-use serde_json::json;
 use thiserror::Error;
 
 use crate::response::{ApiHeader, SingleLine};
@@ -136,13 +135,18 @@ impl SingleLine for Error {
 // JSON only.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        #[derive(Serialize)]
+        struct JsonResponse {
+            success: bool,
+            error: String,
+        }
         (
             self.status_code(),
             self.additional_headers(),
-            Json(json!({
-                "success": false,
-                "error": self.to_string(),
-            })),
+            Json(JsonResponse {
+                success: false,
+                error: self.to_string(),
+            }),
         )
             .into_response()
     }
