@@ -399,12 +399,22 @@ function ready() {
             }
 
             const extend = document.createElement('div');
-            extend.classList.add('item');
+            extend.classList.add('item', 'sub-menu');
             extend.innerText = 'Extend duration';
-            extend.addEventListener('click', () => {
-                if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
+
+            const extendMenu = document.createElement('div');
+            extendMenu.classList.add('menu');
+
+            const askExtension = (duration, label) => {
+                let confirmMessage;
+                if (duration === -1) {
+                    confirmMessage = 'Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?';
+                } else {
+                    confirmMessage = `Extending this file will try to set its duration to ${label}, which will still count toward your quota. Confirm?`;
+                }
+                if (confirm(confirmMessage)) {
                     const req = new XMLHttpRequest();
-                    req.open('PATCH', `/${this.info.alias.short}/expiration`, true);
+                    req.open('PATCH', `/${this.info.alias.short}/expiration/${duration === -1 ? 'full' : duration}`, true);
                     req.setRequestHeader('Authorization', this.info.admin);
                     req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
@@ -420,7 +430,94 @@ function ready() {
                     };
                     req.send();
                 }
+            };
+
+            const fullExtension = document.createElement('div');
+            fullExtension.classList.add('item');
+            fullExtension.innerText = 'Initial duration';
+            fullExtension.addEventListener('click', () => {
+                askExtension(-1);
             });
+            extendMenu.append(fullExtension, separator.cloneNode());
+
+            let extensionsGroups = [
+                { unit: 'second', factor: 1, values: [15, 30, 45] },
+                { unit: 'minute', factor: 60, values: [1, 2, 3, 5, 10, 15, 30, 45] },
+                { unit: 'hour', factor: 60 * 60, values: [1, 2, 3, 6, 12] },
+                { unit: 'day', factor: 60 * 60 * 24, values: [1, 2, 3, 7, 14, 21] },
+                { unit: 'month', factor: 60 * 60 * 24 * 30, values: [1, 2, 3, 6, 9] },
+                { unit: 'year', factor: 60 * 60 * 24 * 365, values: [1, 2, 3, 5] },
+            ];
+            if (this.info.expiration.duration.seconds > 2 * 60) {
+                extendLoop:
+                for (let group of extensionsGroups) {
+                    const groupEl = document.createElement('div');
+                    groupEl.classList.add('item', 'sub-menu');
+                    groupEl.innerText = group.unit.toTitleCase();
+
+                    const groupMenu = document.createElement('div');
+                    groupMenu.classList.add('menu');
+                    groupEl.append(groupMenu);
+
+                    for (let v of group.values) {
+                        if (group.factor * v > this.info.expiration.duration.seconds) {
+                            break extendLoop;
+                        }
+                        const duration = document.createElement('div');
+                        duration.classList.add('item');
+                        duration.innerText = `${v} ${group.unit.plural(v)}`;
+                        duration.addEventListener('click', () => {
+                            askExtension(group.factor * v, `${v} ${group.unit.plural(v)}`);
+                        });
+                        groupMenu.append(duration);
+                        if (groupMenu.childElementCount === 1) {
+                            extendMenu.append(groupEl);
+                        }
+                    }
+                }
+            } else {
+                extendLoop:
+                for (let group of extensionsGroups) {
+                    for (let v of group.values) {
+                        if (group.factor * v > this.info.expiration.duration.seconds) {
+                            break extendLoop;
+                        }
+                        const duration = document.createElement('div');
+                        duration.classList.add('item');
+                        duration.innerText = `${v} ${group.unit.plural(v)}`;
+                        duration.addEventListener('click', () => {
+                            askExtension(group.factor * v, `${v} ${group.unit.plural(v)}`);
+                        });
+                        extendMenu.append(duration);
+                    }
+                }
+            }
+
+
+
+            // const extend = document.createElement('div');
+            // extend.classList.add('item');
+            // extend.innerText = 'Extend duration';
+            // extend.addEventListener('click', () => {
+            //     if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
+            //         const req = new XMLHttpRequest();
+            //         req.open('PATCH', `/${this.info.alias.short}/expiration`, true);
+            //         req.setRequestHeader('Authorization', this.info.admin);
+            //         req.setRequestHeader('X-Authorization', this.info.admin);
+            //         req.responseType = 'json';
+            //         req.onload = () => {
+            //             if (req.status === 200) {
+            //                 delete req.response.success;
+            //                 this.info.expiration = req.response;
+            //                 FILES.save();
+            //                 updateExpirationLabel();
+            //             } else {
+            //                 alert(`An error occured while trying to extend expiration: ${req.response.error}.`);
+            //             }
+            //         };
+            //         req.send();
+            //     }
+            // });
 
             const downloads = document.createElement('div');
             downloads.classList.add('item', 'sub-menu');
@@ -489,6 +586,7 @@ function ready() {
             bottom.append(actions);
             actions.append(copyShort, dropdown, menu);
             newAlias.append(aliasMenu);
+            extend.append(extendMenu);
             downloads.append(downloadsMenu);
             menu.append(download, separator.cloneNode(), copyLong, newAlias, separator, extend, downloads, separator.cloneNode(), forget, revoke);
 

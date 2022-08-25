@@ -412,14 +412,14 @@ body.ready.has-file > .files {
     color: #ff5d24;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu {
+.files > .file > .info > .right > .bottom > .actions > .menu .sub-menu {
     position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu::after {
+.files > .file > .info > .right > .bottom > .actions > .menu .sub-menu::after {
     content: '';
     right: 6px;
     width: 9px;
@@ -429,7 +429,7 @@ body.ready.has-file > .files {
     transform: translateX(5px);
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu > .menu {
+.files > .file > .info > .right > .bottom > .actions > .menu .sub-menu > .menu {
     display: none;
     flex-direction: column;
     position: absolute;
@@ -442,15 +442,15 @@ body.ready.has-file > .files {
     border-radius: 0 3px 3px 3px;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu:hover > .menu {
+.files > .file > .info > .right > .bottom > .actions > .menu .sub-menu:hover > .menu {
     display: flex;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu > .menu.opened {
+.files > .file > .info > .right > .bottom > .actions > .menu .sub-menu > .menu.opened {
     display: flex;
 }
 
-.files > .file > .info > .right > .bottom > .actions > .menu > .separator {
+.files > .file > .info > .right > .bottom > .actions > .menu .separator {
     height: 2px;
     background: #505050;
 }
@@ -461,7 +461,7 @@ body.ready.has-file > .files {
         right: 0;
     }
 
-    .files > .file > .info > .right > .bottom > .actions > .menu > .sub-menu > .menu {
+    .files > .file > .info > .right > .bottom > .actions > .menu .sub-menu > .menu {
         left: 0;
         transform: translateX(-100%);
     }

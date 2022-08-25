@@ -69,7 +69,7 @@ pub fn router(pool: SqlitePool, dir: Dir, determiner: Arc<Determiner>) -> Router
         .route("/:alias/alias/long", patch(alias::long::handler))
         .route("/:alias/alias", patch(alias::both::handler))
         .route("/:alias/downloads/:count", patch(downloads::handler))
-        .route("/:alias/expiration", patch(expiration::handler))
+        .route("/:alias/expiration/:duration", patch(expiration::handler))
         .route("/:alias", delete(revoke::handler))
         .route_layer(Extension(pool))
         .route_layer(Extension(dir))
