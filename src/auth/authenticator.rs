@@ -127,7 +127,7 @@ impl Authenticator {
             AuthProcess::Continue | AuthProcess::Stop => return Err(AuthError::AccessForbidden),
         };
 
-        let token = Uuid::new_v4().to_hyphenated_ref().to_string();
+        let token = Uuid::new_v4().as_hyphenated().to_string();
         self.sessions
             .write()
             .await
