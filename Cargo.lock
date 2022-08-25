@@ -1925,9 +1925,9 @@ checksum = "c811ca4a8c853ef420abd8592ba53ddbbac90410fab6903b3e79972a631f7680"
 
 [[package]]
 name = "zipit"
-version = "0.2.1"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a175150c3ac3710443dfb78a5c1942cac356e85cf055749a00b357fd4701e6ce"
+checksum = "b03ff7a39c9adcf5286a51cd5fe8a23d2cbd6b345f00f6c4cf3f82cbfb5dca52"
 dependencies = [
  "chrono",
  "crc32fast",
