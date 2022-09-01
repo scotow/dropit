@@ -582,7 +582,7 @@ input[type=file] {
     }
 
     .files {
-        padding-top: 0;
+        padding: 0;
     }
 
     .files > .file {
