@@ -119,6 +119,7 @@ mod main {
         let address = SocketAddr::new(options.address, options.port);
         log::info!("App is running on: {}", address);
         Server::bind(&address)
+            .http1_title_case_headers(true)
             .serve(router.into_make_service_with_connect_info::<SocketAddr>())
             .await
             .unwrap_or_else(|err| exit_error!("Server stopped: {}", err))
