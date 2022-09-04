@@ -325,7 +325,7 @@ dependencies = [
 
 [[package]]
 name = "dropit"
-version = "0.23.1"
+version = "0.23.2"
 dependencies = [
  "async-trait",
  "axum",
@@ -622,7 +622,7 @@ dependencies = [
 [[package]]
 name = "http-negotiator"
 version = "0.1.0-alpha.1"
-source = "git+https://github.com/scotow/http-negotiator?rev=ea8aefd#ea8aefd0ec73fdcdeebe1c874be19cc2082affcc"
+source = "git+https://github.com/scotow/http-negotiator?rev=031bdce#031bdce4d6484d18a1dc21d26bb586b864675c51"
 dependencies = [
  "async-trait",
  "axum-core",
