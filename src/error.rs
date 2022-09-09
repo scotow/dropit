@@ -18,6 +18,8 @@ pub enum Error {
     TooLarge,
     #[error("cannot calculate expiration")]
     TimeCalculation,
+    #[error("expiration duration request too high")]
+    ExpirationTooHigh,
     #[error("cannot generate alias")]
     AliasGeneration,
     #[error("cannot determine origin")]
@@ -70,6 +72,7 @@ impl Error {
             FilenameHeader => StatusCode::BAD_REQUEST,
             TooLarge => StatusCode::BAD_REQUEST,
             TimeCalculation => StatusCode::INTERNAL_SERVER_ERROR,
+            ExpirationTooHigh => StatusCode::BAD_REQUEST,
             AliasGeneration => StatusCode::INTERNAL_SERVER_ERROR,
             Origin => StatusCode::BAD_REQUEST,
             Target => StatusCode::BAD_REQUEST,
@@ -193,7 +196,7 @@ pub mod alias {
 }
 
 pub mod expiration {
-    pub use super::Error::{Database, TimeCalculation, TooLarge};
+    pub use super::Error::{Database, ExpirationTooHigh, TimeCalculation, TooLarge};
 }
 
 pub mod downloads {

@@ -61,11 +61,18 @@ async fn process_extend(
 ) -> Result<Expiration, Error> {
     let (id, size, mut conn) = super::authorize(pool, &alias, &admin_token).await?;
 
+    let max_duration = determiner
+        .determine(size)
+        .ok_or(ExpirationError::TooLarge)?;
     let expiration = Expiration::try_from(match duration {
-        DurationRequest::Full => determiner
-            .determine(size)
-            .ok_or(ExpirationError::TooLarge)?,
-        DurationRequest::Custom(secs) => Duration::from_secs(secs),
+        DurationRequest::Full => max_duration,
+        DurationRequest::Custom(secs) => {
+            let dur = Duration::from_secs(secs);
+            if dur > max_duration {
+                return Err(ExpirationError::ExpirationTooHigh);
+            }
+            dur
+        }
     })?;
 
     sqlx::query(include_query!("extend_file"))
