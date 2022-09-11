@@ -1,6 +1,6 @@
 [package]
 name = "dropit"
-version = "0.23.3"
+version = "0.23.4"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"
 description = "Temporary file hosting and sharing"
@@ -33,4 +33,4 @@ zipit = { version = "0.3.1", features = ["tokio-async-io", "chrono-datetime"] }
 ldap3 = { version = "0.9.3", default-features = false, features = ["tls-rustls"] }
 rust-embed = "6.3.0"
 itertools = "0.10.3"
-http-negotiator = { git = "https://github.com/scotow/http-negotiator", rev = "031bdce", features = ["axum"] }
+http-negotiator = { git = "https://github.com/scotow/http-negotiator", rev = "fba76c2", features = ["axum"] }

@@ -5,7 +5,7 @@ html {
     font-size: 0;
     font-family: 'Source Sans Pro', sans-serif;
     color: white;
-    background: #131313;
+    background-color: #131313;
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
@@ -23,7 +23,7 @@ body::before {
     left: 0;
     right: 0;
     height: 4px;
-    background: var(--theme);
+    background-color: var(--theme);
     z-index: 10;
 }
 
@@ -34,7 +34,7 @@ body::before {
     width: 300px;
     max-width: 90%;
     padding: 8px;
-    background: #37383d;
+    background-color: #37383d;
     border: 1px solid #202020;
     border-radius: 8px;
     transform: translate(-50%, -50%);
