@@ -16,7 +16,8 @@ use crate::{
 
 #[derive(Copy, Clone, Debug)]
 pub enum DurationRequest {
-    Full,
+    Initial,
+    Maximum,
     Custom(u64),
 }
 
@@ -25,13 +26,19 @@ impl<'de> Deserialize<'de> for DurationRequest {
     where
         D: Deserializer<'de>,
     {
-        let s: &str = Deserialize::deserialize(deserializer)?;
-        if s == "full" {
-            Ok(Self::Full)
-        } else {
-            s.parse::<u64>().map(|n| Self::Custom(n)).map_err(|err| {
-                serde::de::Error::invalid_value(Unexpected::Str(&s), &err.to_string().as_str())
-            })
+        let input: &str = Deserialize::deserialize(deserializer)?;
+        match input {
+            "initial" => Ok(Self::Initial),
+            "max" => Ok(Self::Maximum),
+            _ => input
+                .parse::<u64>()
+                .map(|n| Self::Custom(n))
+                .map_err(|err| {
+                    serde::de::Error::invalid_value(
+                        Unexpected::Str(&input),
+                        &err.to_string().as_str(),
+                    )
+                }),
         }
     }
 }
@@ -61,14 +68,21 @@ async fn process_extend(
 ) -> Result<Expiration, Error> {
     let (id, size, mut conn) = super::authorize(pool, &alias, &admin_token).await?;
 
-    let max_duration = determiner
+    let (default, allowed) = determiner
         .determine(size)
         .ok_or(ExpirationError::TooLarge)?;
     let expiration = Expiration::try_from(match duration {
-        DurationRequest::Full => max_duration,
+        DurationRequest::Initial => default,
+        DurationRequest::Maximum => {
+            if let Some(duration) = allowed {
+                duration
+            } else {
+                return Err(ExpirationError::ExpirationTooHigh);
+            }
+        }
         DurationRequest::Custom(secs) => {
             let dur = Duration::from_secs(secs);
-            if dur > max_duration {
+            if dur > allowed.unwrap_or(default) {
                 return Err(ExpirationError::ExpirationTooHigh);
             }
             dur

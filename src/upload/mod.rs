@@ -22,7 +22,7 @@ use crate::{
     limit::{Chain as ChainLimiter, Limiter},
     response::{ApiResponse, ResponseType},
     storage::Dir,
-    upload::origin::ForwardedForHeader,
+    upload::{file::ExpirationDuration, origin::ForwardedForHeader},
 };
 
 mod expiration;
@@ -125,11 +125,10 @@ async fn process_upload(
         .ok_or(UploadError::AliasGeneration)?;
 
     // Expiration.
-    let expiration = Expiration::try_from(
-        determiner
-            .determine(upload_req.size)
-            .ok_or(UploadError::TooLarge)?,
-    )?;
+    let (default_duration, allowed_duration) = determiner
+        .determine(upload_req.size)
+        .ok_or(UploadError::TooLarge)?;
+    let default_expiration = Expiration::try_from(default_duration)?;
 
     let id = Uuid::new_v4().as_hyphenated().to_string();
     let admin = Uuid::new_v4().as_hyphenated().to_string();
@@ -138,7 +137,7 @@ async fn process_upload(
         .bind(&id)
         .bind(&admin)
         .bind(upload_req.origin.to_string())
-        .bind(expiration.timestamp() as i64)
+        .bind(default_expiration.timestamp() as i64)
         .bind(&upload_req.filename)
         .bind(upload_req.size as i64)
         .bind(&short)
@@ -164,7 +163,10 @@ async fn process_upload(
         upload_req.size,
         (short, long),
         domain_uri,
-        expiration,
+        (
+            default_expiration,
+            allowed_duration.map(|d| ExpirationDuration::from(d)),
+        ),
     ))
 }
 

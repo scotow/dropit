@@ -325,7 +325,7 @@ dependencies = [
 
 [[package]]
 name = "dropit"
-version = "0.23.4"
+version = "0.24.0"
 dependencies = [
  "async-trait",
  "axum",

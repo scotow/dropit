@@ -98,7 +98,7 @@ function ready() {
             const checkRemote = [];
             const now = (new Date()).getTime() / 1000;
             for (const file of this.files.filter(f => f.state === 'available')) {
-                if (file.info.expiration.date.timestamp < now) {
+                if (file.info.expiration.current.date.timestamp < now) {
                     file.buildExpired(false);
                 } else {
                     checkRemote.push(file);
@@ -286,17 +286,17 @@ function ready() {
             expirationLabel.innerText = 'Duration';
             const expirationContent = document.createElement('div');
             expirationContent.classList.add('content', 'clickable');
-            expirationContent.innerText = this.info.expiration.duration.readable;
+            expirationContent.innerText = this.info.expiration.current.duration.readable;
             let expirationFormat = 'duration';
             const updateExpirationLabel = () => {
                 switch (expirationFormat) {
                     case 'date':
                         expirationLabel.innerText = 'Expiration'
-                        expirationContent.innerText = this.info.expiration.date.readable;
+                        expirationContent.innerText = this.info.expiration.current.date.readable;
                         break;
                     case 'duration':
                         expirationLabel.innerText = 'Duration'
-                        expirationContent.innerText = this.info.expiration.duration.readable;
+                        expirationContent.innerText = this.info.expiration.current.duration.readable;
                         break;
                 }
             }
@@ -407,21 +407,27 @@ function ready() {
 
             const askExtension = (duration, label) => {
                 let confirmMessage;
-                if (duration === -1) {
-                    confirmMessage = 'Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?';
-                } else {
-                    confirmMessage = `Extending this file will try to set its duration to ${label}, which will still count toward your quota. Confirm?`;
+                switch (duration) {
+                    case 'initial':
+                        confirmMessage = 'Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?';
+                        break;
+                    case 'max':
+                        confirmMessage = 'Extending this file will try to set its duration to its maximum, which will still count toward your quota. Confirm?';
+                        break;
+                    default:
+                        confirmMessage = `Extending this file will try to set its duration to ${label}, which will still count toward your quota. Confirm?`;
+                        break;
                 }
                 if (confirm(confirmMessage)) {
                     const req = new XMLHttpRequest();
-                    req.open('PATCH', `/${this.info.alias.short}/expiration/${duration === -1 ? 'full' : duration}`, true);
+                    req.open('PATCH', `/${this.info.alias.short}/expiration/${duration}`, true);
                     req.setRequestHeader('Authorization', this.info.admin);
                     req.setRequestHeader('X-Authorization', this.info.admin);
                     req.responseType = 'json';
                     req.onload = () => {
                         if (req.status === 200) {
                             delete req.response.success;
-                            this.info.expiration = req.response;
+                            this.info.expiration.current = req.response;
                             FILES.save();
                             updateExpirationLabel();
                         } else {
@@ -432,13 +438,19 @@ function ready() {
                 }
             };
 
-            const fullExtension = document.createElement('div');
-            fullExtension.classList.add('item');
-            fullExtension.innerText = 'Initial duration';
-            fullExtension.addEventListener('click', () => {
-                askExtension(-1);
+            const initialExtension = document.createElement('div');
+            initialExtension.classList.add('item');
+            initialExtension.innerText = 'Initial duration';
+            initialExtension.addEventListener('click', () => {
+                askExtension('initial');
             });
-            extendMenu.append(fullExtension, separator.cloneNode());
+            const maxExtension = document.createElement('div');
+            maxExtension.classList.add('item');
+            maxExtension.innerText = 'Maximum duration';
+            maxExtension.addEventListener('click', () => {
+                askExtension('max');
+            });
+            extendMenu.append(initialExtension, maxExtension, separator.cloneNode());
 
             let extensionsGroups = [
                 { unit: 'second', factor: 1, values: [15, 30, 45] },
@@ -448,7 +460,7 @@ function ready() {
                 { unit: 'month', factor: 60 * 60 * 24 * 30, values: [1, 2, 3, 6, 9] },
                 { unit: 'year', factor: 60 * 60 * 24 * 365, values: [1, 2, 3, 5] },
             ];
-            if (this.info.expiration.duration.seconds > 2 * 60) {
+            if (this.info.expiration.allowed.seconds > 2 * 60) {
                 extendLoop:
                 for (let group of extensionsGroups) {
                     const groupEl = document.createElement('div');
@@ -460,7 +472,7 @@ function ready() {
                     groupEl.append(groupMenu);
 
                     for (let v of group.values) {
-                        if (group.factor * v > this.info.expiration.duration.seconds) {
+                        if (group.factor * v > this.info.expiration.allowed.seconds) {
                             break extendLoop;
                         }
                         const duration = document.createElement('div');
@@ -479,7 +491,7 @@ function ready() {
                 extendLoop:
                 for (let group of extensionsGroups) {
                     for (let v of group.values) {
-                        if (group.factor * v > this.info.expiration.duration.seconds) {
+                        if (group.factor * v > this.info.expiration.allowed.seconds) {
                             break extendLoop;
                         }
                         const duration = document.createElement('div');
@@ -492,32 +504,6 @@ function ready() {
                     }
                 }
             }
-
-
-
-            // const extend = document.createElement('div');
-            // extend.classList.add('item');
-            // extend.innerText = 'Extend duration';
-            // extend.addEventListener('click', () => {
-            //     if (confirm('Extending this file will try to reset its duration to its initial one, which will still count toward your quota. Confirm?')) {
-            //         const req = new XMLHttpRequest();
-            //         req.open('PATCH', `/${this.info.alias.short}/expiration`, true);
-            //         req.setRequestHeader('Authorization', this.info.admin);
-            //         req.setRequestHeader('X-Authorization', this.info.admin);
-            //         req.responseType = 'json';
-            //         req.onload = () => {
-            //             if (req.status === 200) {
-            //                 delete req.response.success;
-            //                 this.info.expiration = req.response;
-            //                 FILES.save();
-            //                 updateExpirationLabel();
-            //             } else {
-            //                 alert(`An error occured while trying to extend expiration: ${req.response.error}.`);
-            //             }
-            //         };
-            //         req.send();
-            //     }
-            // });
 
             const downloads = document.createElement('div');
             downloads.classList.add('item', 'sub-menu');

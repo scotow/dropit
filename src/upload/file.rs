@@ -21,7 +21,7 @@ pub struct UploadInfo {
     size: Size,
     alias: Aliases,
     link: Links,
-    expiration: Expiration,
+    expiration: ExpirationGroup,
 }
 
 impl UploadInfo {
@@ -31,7 +31,7 @@ impl UploadInfo {
         size: u64,
         alias: (String, String),
         link_base: String,
-        expiration: Expiration,
+        expiration: (Expiration, Option<ExpirationDuration>),
     ) -> Self {
         Self {
             admin,
@@ -45,7 +45,12 @@ impl UploadInfo {
                 short: format!("{}/{}", link_base, &alias.0),
                 long: format!("{}/{}", link_base, &alias.1),
             },
-            expiration,
+            expiration: ExpirationGroup {
+                current: expiration.0.clone(),
+                allowed: expiration
+                    .1
+                    .unwrap_or_else(|| expiration.0.duration.clone()),
+            },
         }
     }
 }
@@ -92,6 +97,12 @@ pub struct Links {
 }
 
 #[derive(Serialize)]
+pub struct ExpirationGroup {
+    current: Expiration,
+    allowed: ExpirationDuration,
+}
+
+#[derive(Serialize, Clone)]
 pub struct Expiration {
     duration: ExpirationDuration,
     date: ExpirationDate,
@@ -122,7 +133,7 @@ impl SingleLine for Expiration {
 
 impl ApiHeader for Expiration {}
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ExpirationDuration {
     pub seconds: u64,
     pub readable: String,
@@ -137,7 +148,7 @@ impl From<Duration> for ExpirationDuration {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ExpirationDate {
     pub timestamp: u64,
     pub readable: String,

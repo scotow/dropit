@@ -48,7 +48,7 @@ mod main {
         ]);
         let determiner = Arc::new(
             Determiner::new(options.thresholds.clone())
-                .unwrap_or_else(|| exit_error!("Invalid thresholds")),
+                .unwrap_or_else(|err| exit_error!("Invalid thresholds: {}", err)),
         );
 
         let pool = SqlitePoolOptions::new()
