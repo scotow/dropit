@@ -26,19 +26,13 @@ impl<'de> Deserialize<'de> for DurationRequest {
     where
         D: Deserializer<'de>,
     {
-        let input: &str = Deserialize::deserialize(deserializer)?;
+        let input = <&str>::deserialize(deserializer)?;
         match input {
-            "initial" => Ok(Self::Initial),
-            "max" => Ok(Self::Maximum),
-            _ => input
-                .parse::<u64>()
-                .map(|n| Self::Custom(n))
-                .map_err(|err| {
-                    serde::de::Error::invalid_value(
-                        Unexpected::Str(&input),
-                        &err.to_string().as_str(),
-                    )
-                }),
+            "init" | "initial" => Ok(Self::Initial),
+            "max" | "maximum" => Ok(Self::Maximum),
+            _ => input.parse().map(|n| Self::Custom(n)).map_err(|err| {
+                serde::de::Error::invalid_value(Unexpected::Str(&input), &err.to_string().as_str())
+            }),
         }
     }
 }
