@@ -30,8 +30,8 @@ impl<'de> Deserialize<'de> for DurationRequest {
         match input {
             "init" | "initial" => Ok(Self::Initial),
             "max" | "maximum" => Ok(Self::Maximum),
-            _ => input.parse().map(|n| Self::Custom(n)).map_err(|err| {
-                serde::de::Error::invalid_value(Unexpected::Str(&input), &err.to_string().as_str())
+            _ => input.parse().map(Self::Custom).map_err(|err| {
+                serde::de::Error::invalid_value(Unexpected::Str(input), &err.to_string().as_str())
             }),
         }
     }

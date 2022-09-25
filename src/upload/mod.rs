@@ -165,7 +165,7 @@ async fn process_upload(
         domain_uri,
         (
             default_expiration,
-            allowed_duration.map(|d| ExpirationDuration::from(d)),
+            allowed_duration.map(ExpirationDuration::from),
         ),
     ))
 }

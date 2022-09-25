@@ -19,7 +19,7 @@ mod short;
 
 const GENERATION_MAX_TENTATIVES: u8 = 20;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Alias {
     Short(String),
     Long(String),
