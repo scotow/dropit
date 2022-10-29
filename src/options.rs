@@ -1,7 +1,7 @@
 use std::{net::IpAddr, path::PathBuf};
 
 use byte_unit::{Byte, ByteError};
-use clap::{AppSettings::DeriveDisplayOrder, ArgGroup, Parser};
+use clap::{ArgAction, ArgGroup, Parser};
 use log::LevelFilter;
 
 use crate::{
@@ -10,88 +10,99 @@ use crate::{
 };
 
 #[derive(Parser, Debug)]
-#[clap(version, about, setting = DeriveDisplayOrder)]
-#[clap(
-    group(ArgGroup::new("origin").required(true).args(&["ip-origin", "username-origin"])),
-    group(ArgGroup::new("auth").multiple(true).args(&["credentials", "ldap-address"])),
-    group(ArgGroup::new("ldap-process").args(&["ldap-dn-pattern", "ldap-search-base-dn"])),
+#[command(version, about)]
+#[command(
+    group(ArgGroup::new("origin").required(true).args(&["ip_origin", "username_origin"])),
+    group(ArgGroup::new("auth").multiple(true).args(&["credentials", "ldap_address"])),
+    group(ArgGroup::new("ldap-process").args(&["ldap_dn_pattern", "ldap_search_base_dn"])),
 )]
 pub struct Options {
     /// Increase logs verbosity (Error (default), Warn, Info, Debug, Trace).
-    #[clap(short = 'v', long = "verbose", parse(from_occurrences = parse_log_level))]
-    pub log_level: LevelFilter,
+    #[arg(short = 'v', long = "verbose", action = ArgAction::Count)]
+    pub log_level: u8,
     /// Upload files directory path (relative).
-    #[clap(short = 'u', long, default_value = "uploads")]
+    #[arg(short = 'u', long, default_value = "uploads")]
     pub uploads_dir: PathBuf,
     /// Disable upload files directory automatic creation (if missing).
-    #[clap(short = 'U', long)]
+    #[arg(short = 'U', long)]
     pub no_uploads_dir_creation: bool,
     /// Metadata database path (relative).
-    #[clap(short = 'd', long, default_value = "dropit.db")]
+    #[arg(short = 'd', long, default_value = "dropit.db")]
     pub database: PathBuf,
     /// Disable metadata database automatic creation (if missing).
-    #[clap(short = 'D', long)]
+    #[arg(short = 'D', long)]
     pub no_database_creation: bool,
     /// HTTP listening address.
-    #[clap(short = 'a', long, default_value = "127.0.0.1")]
+    #[arg(short = 'a', long, default_value = "127.0.0.1")]
     pub address: IpAddr,
     /// HTTP listening port.
-    #[clap(short = 'p', long, default_value = "8080")]
+    #[arg(short = 'p', long, default_value = "8080")]
     pub port: u16,
     /// Use X-Forwarded-For, X-Forwarded-Proto and X-Forwarded-Host to determine uploads' origin.
-    #[clap(short = 'R', long = "behind-reverse-proxy")]
+    #[arg(short = 'R', long = "behind-reverse-proxy")]
     pub behind_proxy: bool,
     /// Relations between files' sizes and their durations. Must be ordered by increasing size and decreasing duration.
-    #[clap(short = 't', long = "threshold", required = true)]
+    #[arg(short = 't', long = "threshold", required = true)]
     pub thresholds: Vec<Threshold>,
     /// Use usernames as uploaders' identities.
-    #[clap(short = 'o', long)]
+    #[arg(short = 'o', long)]
     pub ip_origin: bool,
     /// Use IP addresses as uploaders' identities.
-    #[clap(short = 'O', long, requires = "auth")]
+    #[arg(short = 'O', long, requires = "auth")]
     pub username_origin: bool,
     /// Cumulative size limit from the same uploader.
-    #[clap(short = 's', long, required = true, parse(try_from_str = parse_size))]
+    #[arg(short = 's', long, required = true, value_parser(parse_size))]
     pub origin_size_sum: u64,
     /// Number of files limit from the same uploader.
-    #[clap(short = 'c', long, required = true)]
+    #[arg(short = 'c', long, required = true)]
     pub origin_file_count: usize,
     /// Cumulative size limit from all users.
-    #[clap(short = 'S', long, required = true, parse(try_from_str = parse_size))]
+    #[arg(short = 'S', long, required = true, value_parser(parse_size))]
     pub global_size_sum: u64,
     /// Protect upload endpoint with authentication.
-    #[clap(long, requires = "auth")]
+    #[arg(long, requires = "auth")]
     pub auth_upload: bool,
     /// Protect download endpoint with authentication.
-    #[clap(long, requires = "auth")]
+    #[arg(long, requires = "auth")]
     pub auth_download: bool,
     /// Static list of credentials.
-    #[clap(short = 'C', long = "credential")]
+    #[arg(short = 'C', long = "credential")]
     pub credentials: Vec<Credential>,
     /// URI of the LDAP used to authenticate users.
-    #[clap(long, requires = "ldap-process")]
+    #[arg(long, requires = "ldap-process")]
     pub ldap_address: Option<String>,
     /// LDAP DN pattern used when using single bind process.
-    #[clap(long, requires = "ldap-address")]
+    #[arg(long, requires = "ldap_address")]
     pub ldap_dn_pattern: Option<String>,
     /// LDAP base DN used during username searches.
-    #[clap(long, requires = "ldap-address")]
+    #[arg(long, requires = "ldap_address")]
     pub ldap_search_base_dn: Option<String>,
     /// LDAP attribute(s) pattern used to match usernames during searches.
-    #[clap(long, default_value = "(uid=%u)", requires = "ldap-search-base-dn")]
+    #[arg(long, default_value = "(uid=%u)", requires = "ldap_search_base_dn")]
     pub ldap_search_attribute_pattern: String,
     /// LDAP DN used to bind during username searches.
-    #[clap(long, requires_all = &["ldap-search-base-dn", "ldap-search-password"])]
+    #[arg(long, requires_all = &["ldap_search_base_dn", "ldap_search_password"])]
     pub ldap_search_dn: Option<String>,
     /// LDAP password used to bind during username searches.
-    #[clap(long, requires = "ldap-search-dn")]
+    #[arg(long, requires = "ldap_search_dn")]
     pub ldap_search_password: Option<String>,
     /// CSS color used in the web UI.
-    #[clap(short = 'T', long, default_value = "#15b154")]
+    #[arg(short = 'T', long, default_value = "#15b154")]
     pub theme: String,
 }
 
 impl Options {
+    pub fn log_level(&self) -> LevelFilter {
+        use LevelFilter::*;
+        match self.log_level {
+            0 => Error,
+            1 => Warn,
+            2 => Info,
+            3 => Debug,
+            _ => Trace,
+        }
+    }
+
     pub fn origin(&self) -> Option<Origin> {
         if self.ip_origin {
             Some(Origin::IpAddress)
@@ -140,22 +151,11 @@ fn parse_size(s: &str) -> Result<u64, ByteError> {
     Ok(s.parse::<Byte>()?.get_bytes())
 }
 
-fn parse_log_level(n: u64) -> LevelFilter {
-    use LevelFilter::*;
-    match n {
-        0 => Error,
-        1 => Warn,
-        2 => Info,
-        3 => Debug,
-        _ => Trace,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use clap::{
-        error::{ContextKind, ContextValue},
-        Error, ErrorKind, Parser,
+        error::{ContextKind, ContextValue, Error, ErrorKind},
+        Parser,
     };
     use itertools::Itertools;
 

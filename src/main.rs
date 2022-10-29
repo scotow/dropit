@@ -36,7 +36,7 @@ mod main {
     pub(super) async fn run() {
         let options = Options::parse();
         env_logger::Builder::new()
-            .filter_level(options.log_level)
+            .filter_level(options.log_level())
             .init();
 
         let limiters = LimiterChain::new(vec![
