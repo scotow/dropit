@@ -13,19 +13,17 @@ use reqwest::{header, Body, Client};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::options::{Credentials, Options};
+use crate::options::Credentials;
 
 pub struct UploadRequest {
     pub fd: File,
     pub name: Option<String>,
     pub size: u64,
-    pub endpoint: String,
-    pub credentials: Option<Credentials>,
     progress_bar: Option<ProgressBar>,
 }
 
 impl UploadRequest {
-    pub async fn new(path: &str, options: &Options) -> Result<Self, Box<dyn Error + Send + Sync>> {
+    pub async fn new(path: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let fd = File::open(&path).await?;
         let metadata = fd.metadata().await?;
         if !metadata.is_file() {
@@ -39,8 +37,6 @@ impl UploadRequest {
             fd,
             name,
             size: metadata.len(),
-            endpoint: options.endpoint.clone(),
-            credentials: options.credentials().clone(),
             progress_bar: None,
         })
     }
@@ -59,14 +55,14 @@ impl UploadRequest {
             .clone()
     }
 
-    pub async fn process(self) -> String {
+    pub async fn process(self, endpoint: &str, credentials: &Option<Credentials>) -> String {
         let client = Client::new();
         let mut req = client
-            .post("http://localhost:8080")
+            .post(endpoint)
             .header(header::CONTENT_LENGTH, self.size)
             .header(header::ACCEPT, "text/plain");
-        if let Some(credentials) = self.credentials {
-            req = req.basic_auth(credentials.username, Some(credentials.password));
+        if let Some(credentials) = credentials {
+            req = req.basic_auth(&credentials.username, Some(&credentials.password));
         }
 
         if let Some(name) = &self.name {

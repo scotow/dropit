@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     env,
     fmt::{Display, Formatter},
     str::FromStr,
@@ -8,7 +7,7 @@ use std::{
 use atty::Stream;
 use clap::{parser::ValueSource, CommandFactory, Parser};
 use config::{builder::DefaultState, ConfigBuilder};
-use itertools::{chain, Itertools};
+use itertools::chain;
 use serde::{
     de::{Error as DeError, Unexpected},
     Deserialize, Deserializer,
@@ -39,36 +38,18 @@ pub struct Options {
 
 impl Options {
     pub fn parse() -> Self {
-        // let config = ConfigBuilder::<DefaultState>::default()
-        //     .add_source(config::File::with_name("/Users/scotow/.config/dropit.toml"))
-        //     .add_source(config::Environment::with_prefix("DROPIT"))
-        //     .build()
-        //     .unwrap()
-        //     .try_deserialize::<Config>()
-        //     .unwrap();
-        //
-        // if let Some(endpoint) = config.endpoint {
-        //     env::set_var("DROPIT_ENDPOINT", endpoint);
-        // }
-        // if let Some(credentials) = config.credentials {
-        //     env::set_var("DROPIT_USERNAME", credentials.username);
-        //     env::set_var("DROPIT_PASSWORD", credentials.password);
-        // }
-        // if let Some(progress_bar) = config.progress_bar {
-        //     env::set_var("DROPIT_PROGRESS", progress_bar.to_string());
-        // }
-        //
-        // let options = <Self as Parser>::parse();
-        // dbg!(&options);
-
         let from_config = ConfigBuilder::<DefaultState>::default()
-            .add_source(config::File::with_name(&format!("{}/.config/dropit.toml", dirs::home_dir().unwrap().to_str().unwrap())))
+            .add_source(config::File::with_name(&format!(
+                "{}/.config/dropit.toml",
+                dirs::home_dir().unwrap().to_str().unwrap()
+            )))
             .build()
             .unwrap()
             .try_deserialize::<Config>()
             .unwrap();
 
         let mut args = Vec::new();
+
         let matches_from_cli = Options::command_for_update().get_matches();
         if from_config.endpoint.is_some() && !matches_from_cli.contains_id("endpoint") {
             args.extend(["--endpoint".to_owned(), from_config.endpoint.unwrap()]);
@@ -140,16 +121,6 @@ impl FromStr for DetectOption {
         }
     }
 }
-
-// impl From<Option<&str>> for DetectOption {
-//     fn from(value: Option<&str>) -> Self {
-//         match value {
-//             None => return Self::Auto,
-//             Some("false") | Some("off") | Some("0") | Some("no") => return Self::Off,
-//             _ => Self::On,
-//         }
-//     }
-// }
 
 impl<'de> Deserialize<'de> for DetectOption {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
