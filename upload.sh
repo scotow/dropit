@@ -2,7 +2,7 @@
 
 set -e -u -o pipefail
 
-readonly DOMAIN=""
+readonly DOMAIN=""   # Dont forget the protocol (HTTP(S)).
 readonly USERNAME="" # Leave empty if disabled serverside.
 readonly PASSWORD="" # Leave empty if disabled serverside.
 
@@ -34,12 +34,13 @@ upload() {
   shift
 
   if [ "$FILE" == "-" ]; then
-    curl "$@"; echo
+    curl "$@" --data-binary @-; echo
   else
-    curl "$@" --header "X-Filename: $(tr -dc '\40'-'\176' <<< $(basename $FILE))"; echo
+    declare FILENAME="$(tr -dc '\40'-'\176' <<< $(basename $FILE))"
+    curl "$@" --request POST --header "X-Filename: $FILENAME" --upload-file "$FILE"; echo
   fi
 }
 
 for FILE in $FILES; do
-  upload $FILE $CREDENTIALS --header 'Accept: text/plain' --header 'Content-Type:' --data-binary @"$FILE" "$DOMAIN"
+  upload $FILE $CREDENTIALS --header 'Accept: text/plain' --header 'Content-Type:' "$DOMAIN/upload"
 done
