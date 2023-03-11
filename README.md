@@ -1,6 +1,8 @@
-# Dropit
+[![Release](https://img.shields.io/github/v/tag/scotow/dropit?label=version)](https://github.com/scotow/dropit/tags)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/scotow/dropit/ci.yml)](https://github.com/scotow/dropit/actions)
 
-🗃 Dropit is a temporary file hosting and sharing solution 🗃
+
+![Logo](banner.png)
 
 ## Features
 
