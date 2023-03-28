@@ -58,7 +58,7 @@ Options:
       --ldap-search-password <LDAP_SEARCH_PASSWORD>                    LDAP password used to bind during username searches
   -T, --theme <THEME>                                                  CSS color used in the web UI [default: #15b154]
   -h, --help                                                           Print help information
-  -V, --version                                                        Print version information                                                        Print version information
+  -V, --version                                                        Print version information
 ```
 
 Here is an example of a Dropit instance:
