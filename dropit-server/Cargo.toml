@@ -1,5 +1,5 @@
 [package]
-name = "dropit"
+name = "dropit-server"
 version = "0.24.2"
 authors = ["Scotow <contact@scotow.com>"]
 edition = "2021"

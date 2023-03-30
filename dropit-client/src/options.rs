@@ -13,7 +13,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Default, Debug)]
 struct Config {
     endpoint: Option<String>,
     username: Option<String>,
@@ -25,6 +25,8 @@ struct Config {
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Options {
+    #[arg(short, long, env = "DROPIT_CONFIG")]
+    config: Option<String>,
     #[arg(short, long, env = "DROPIT_ENDPOINT")]
     pub endpoint: String,
     #[arg(short, long, env = "DROPIT_USERNAME", requires = "password")]
@@ -38,38 +40,64 @@ pub struct Options {
 
 impl Options {
     pub fn parse() -> Self {
+        let config_option_pos = env::args()
+            .skip(1)
+            .position(|arg| arg == "-c" || arg == "--config");
+
+        let (config_path, allow_missing) = if let Some(pos) = config_option_pos {
+            if let Some(config_path) = env::args().nth(pos + 2) {
+                (config_path, false)
+            } else {
+                panic!("missing config file path");
+            }
+        } else {
+            (
+                format!(
+                    "{}/.config/dropit.toml",
+                    dirs::home_dir().unwrap().to_str().unwrap()
+                ),
+                true,
+            )
+        };
+
         let from_config = ConfigBuilder::<DefaultState>::default()
-            .add_source(config::File::with_name(&format!(
-                "{}/.config/dropit.toml",
-                dirs::home_dir().unwrap().to_str().unwrap()
-            )))
-            .build()
-            .unwrap()
-            .try_deserialize::<Config>()
-            .unwrap();
+            .add_source(config::File::with_name(&config_path))
+            .build();
 
         let mut args = Vec::new();
 
-        let matches_from_cli = Options::command_for_update().get_matches();
-        if from_config.endpoint.is_some() && !matches_from_cli.contains_id("endpoint") {
-            args.extend(["--endpoint".to_owned(), from_config.endpoint.unwrap()]);
-        }
-        if from_config.username.is_some() && !matches_from_cli.contains_id("username") {
-            args.extend(["--username".to_owned(), from_config.username.unwrap()]);
-        }
-        if from_config.password.is_some() && !matches_from_cli.contains_id("password") {
-            args.extend(["--password".to_owned(), from_config.password.unwrap()]);
-        }
-        if from_config.progress_bar.is_some()
-            && matches!(
-                matches_from_cli.value_source("progress_bar"),
-                Some(ValueSource::DefaultValue)
-            )
-        {
-            args.extend([
-                "--progress-bar".to_owned(),
-                from_config.progress_bar.unwrap().to_string(),
-            ]);
+        match from_config {
+            Ok(config) => {
+                let from_config = config
+                    .try_deserialize::<Config>()
+                    .expect("invalid configuration");
+                let matches_from_cli = Options::command_for_update().get_matches();
+                if from_config.endpoint.is_some() && !matches_from_cli.contains_id("endpoint") {
+                    args.extend(["--endpoint".to_owned(), from_config.endpoint.unwrap()]);
+                }
+                if from_config.username.is_some() && !matches_from_cli.contains_id("username") {
+                    args.extend(["--username".to_owned(), from_config.username.unwrap()]);
+                }
+                if from_config.password.is_some() && !matches_from_cli.contains_id("password") {
+                    args.extend(["--password".to_owned(), from_config.password.unwrap()]);
+                }
+                if from_config.progress_bar.is_some()
+                    && matches!(
+                        matches_from_cli.value_source("progress_bar"),
+                        Some(ValueSource::DefaultValue)
+                    )
+                {
+                    args.extend([
+                        "--progress-bar".to_owned(),
+                        from_config.progress_bar.unwrap().to_string(),
+                    ]);
+                }
+            }
+            Err(err) => {
+                if !allow_missing {
+                    panic!("couldn't load configuration: {}", err);
+                }
+            }
         }
 
         Options::parse_from(chain!(env::args().take(1), args, env::args().skip(1)))

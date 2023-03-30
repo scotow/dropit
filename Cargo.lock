@@ -453,7 +453,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "dropit"
+name = "dropit-client"
+version = "0.1.0"
+dependencies = [
+ "atty",
+ "bytes",
+ "clap",
+ "config",
+ "dirs",
+ "flume",
+ "futures",
+ "indicatif",
+ "itertools",
+ "reqwest",
+ "serde",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "dropit-server"
 version = "0.24.2"
 dependencies = [
  "async-trait",
@@ -483,25 +502,6 @@ dependencies = [
  "tokio-util",
  "uuid",
  "zipit",
-]
-
-[[package]]
-name = "dropit-cli"
-version = "0.1.0"
-dependencies = [
- "atty",
- "bytes",
- "clap",
- "config",
- "dirs",
- "flume",
- "futures",
- "indicatif",
- "itertools",
- "reqwest",
- "serde",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]

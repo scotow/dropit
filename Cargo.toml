@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "dropit",
-    "dropit-cli",
+    "dropit-server",
+    "dropit-client",
 ]

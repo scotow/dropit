@@ -3,8 +3,6 @@ use std::{
     path::Path,
     pin::Pin,
     task::{Context, Poll},
-    thread::sleep,
-    time::Duration,
 };
 
 use futures::Stream;
@@ -113,7 +111,6 @@ impl Stream for UploadStream {
             if let Some(progress) = &self.progress {
                 progress.inc(data.len() as u64);
             }
-            sleep(Duration::from_millis(5));
         }
         polled
     }
