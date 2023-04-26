@@ -2,7 +2,11 @@ use std::{collections::VecDeque, error::Error};
 
 use futures::future::try_join_all;
 
-use crate::{client::Client, options::Options, upload_request::UploadRequest};
+use crate::{
+    client::Client,
+    options::Options,
+    upload_request::{Mode, UploadRequest},
+};
 
 mod client;
 mod options;
@@ -19,8 +23,15 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         options.credentials(),
         options.progress_bar(),
     );
-    let queue =
-        VecDeque::from(try_join_all(options.paths.iter().map(|p| UploadRequest::new(p))).await?);
+    let queue = VecDeque::from(
+        try_join_all(
+            options
+                .paths
+                .iter()
+                .map(|p| UploadRequest::new(p, Mode::Encrypted { as_command: false })),
+        )
+        .await?,
+    );
     client.run(queue).await;
 
     Ok(())

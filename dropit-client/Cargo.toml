@@ -4,15 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+aes-stream = { git = "https://github.com/scotow/aes-stream.git", rev = "dc0dd14" }
 atty = "0.2.14"
 bytes = "1.2.1"
 clap = { version = "4.0.22", features = ["derive", "env"] }
 config = "0.13.2"
-dirs = "4.0.0"
+dirs = "5.0.0"
 flume = "0.10.14"
-futures = "0.3.25"
+futures = "0.3.28"
 indicatif = { version = "0.17.1", features = ["tokio"] }
 itertools = "0.10.5"
+num-integer = "0.1.45"
 reqwest = { version = "0.11.12", features = ["stream"] }
 serde = { version = "1.0.147", features = ["derive"] }
 tokio = { version = "1.21.2", features = ["fs", "time", "sync"] }

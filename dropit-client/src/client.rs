@@ -30,8 +30,8 @@ impl Client {
     }
 
     pub async fn run(&self, mut queue: VecDeque<UploadRequest>) {
-        let (tx, rx) = flume::bounded::<(UploadRequest, Sender<String>)>(0);
-        let workers = self.spawn_workers(rx);
+        let (workers_tx, workers_rx) = flume::bounded::<(UploadRequest, Sender<String>)>(0);
+        let workers = self.spawn_workers(workers_rx);
 
         let (printer_tx, mut printer_rx) = mpsc::unbounded_channel::<Receiver<String>>();
         if self.progress.is_none() {
@@ -52,12 +52,12 @@ impl Client {
 
             let (finish_tx, finish_rx) = oneshot::channel();
             printer_tx.send(finish_rx).unwrap();
-            tx.send_async((next, finish_tx)).await.unwrap();
+            workers_tx.send_async((next, finish_tx)).await.unwrap();
 
             self.update_queue_bar(&queue);
         }
 
-        drop(tx);
+        drop(workers_tx);
         for worker in workers {
             worker.await.unwrap();
         }
@@ -91,13 +91,9 @@ impl Client {
         if queue.is_empty() {
             progress.queue.finish_and_clear();
         } else {
-            progress.queue.set_message(
-                queue
-                    .iter()
-                    .map(|u| u.name.as_deref())
-                    .map(|u| u.unwrap_or("-"))
-                    .join(", "),
-            );
+            progress
+                .queue
+                .set_message(queue.iter().map(|u| u.name().unwrap_or("-")).join(", "));
         }
     }
 }

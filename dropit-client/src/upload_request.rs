@@ -5,8 +5,11 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures::Stream;
+use aes_stream::{AesKeySize, AesSteam};
+use bytes::Bytes;
+use futures::{ready, Stream};
 use indicatif::{ProgressBar, ProgressStyle};
+use num_integer::Integer;
 use reqwest::{header, Body, Client};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
@@ -14,14 +17,15 @@ use tokio_util::io::ReaderStream;
 use crate::options::Credentials;
 
 pub struct UploadRequest {
-    pub fd: File,
-    pub name: Option<String>,
-    pub size: u64,
+    fd: File,
+    name: Option<String>,
+    size: u64,
     progress_bar: Option<ProgressBar>,
+    mode: Mode,
 }
 
 impl UploadRequest {
-    pub async fn new(path: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
+    pub async fn new(path: &str, mode: Mode) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let fd = File::open(&path).await?;
         let metadata = fd.metadata().await?;
         if !metadata.is_file() {
@@ -31,12 +35,21 @@ impl UploadRequest {
             .file_name()
             .and_then(|n| n.to_str())
             .map(|n| n.to_owned());
+        let size = match mode {
+            Mode::Raw => metadata.len(),
+            Mode::Encrypted { .. } => Integer::next_multiple_of(&(metadata.len() + 1), &16),
+        };
         Ok(Self {
             fd,
             name,
-            size: metadata.len(),
+            size,
             progress_bar: None,
+            mode,
         })
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 
     pub fn progress_bar(&mut self) -> ProgressBar {
@@ -74,6 +87,7 @@ impl UploadRequest {
             .body(Body::wrap_stream(UploadStream::new(
                 self.fd,
                 self.progress_bar.clone(),
+                self.mode,
             )))
             .send()
             .await
@@ -88,30 +102,54 @@ impl UploadRequest {
     }
 }
 
+enum DynamicSteam {
+    Raw(ReaderStream<File>),
+    Encrypted(AesSteam<ReaderStream<File>>),
+}
+
 struct UploadStream {
-    fd: ReaderStream<File>,
+    inner: DynamicSteam,
     progress: Option<ProgressBar>,
 }
 
 impl UploadStream {
-    pub fn new(fd: File, progress: Option<ProgressBar>) -> Self {
+    fn new(fd: File, progress: Option<ProgressBar>, mode: Mode) -> Self {
         Self {
-            fd: ReaderStream::new(fd),
+            inner: match mode {
+                Mode::Raw => DynamicSteam::Raw(ReaderStream::new(fd)),
+                Mode::Encrypted { .. } => DynamicSteam::Encrypted(
+                    AesSteam::new(
+                        ReaderStream::new(fd),
+                        AesKeySize::Aes128,
+                        &[0x42; 16],
+                        &[0; 16],
+                    )
+                    .unwrap(),
+                ),
+            },
             progress,
         }
     }
 }
 
 impl Stream for UploadStream {
-    type Item = <ReaderStream<File> as Stream>::Item;
+    type Item = Result<Bytes, std::io::Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let polled = Pin::new(&mut self.fd).poll_next(cx);
-        if let Poll::Ready(Some(Ok(data))) = &polled {
+        let chunk = ready!(match &mut self.inner {
+            DynamicSteam::Raw(s) => Pin::new(s).poll_next(cx),
+            DynamicSteam::Encrypted(s) => Pin::new(s).poll_next(cx),
+        });
+        if let Some(Ok(chunk)) = &chunk {
             if let Some(progress) = &self.progress {
-                progress.inc(data.len() as u64);
+                progress.inc(chunk.len() as u64);
             }
         }
-        polled
+        Poll::Ready(chunk)
     }
+}
+
+pub enum Mode {
+    Raw,
+    Encrypted { as_command: bool },
 }
