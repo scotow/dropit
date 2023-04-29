@@ -15,7 +15,7 @@ use serde::{
 
 #[derive(Deserialize, Default, Debug)]
 struct Config {
-    endpoint: Option<String>,
+    server: Option<String>,
     username: Option<String>,
     password: Option<String>,
     #[serde(alias = "progress")]
@@ -25,13 +25,13 @@ struct Config {
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Options {
-    #[arg(short, long, env = "DROPIT_CONFIG")]
+    #[arg(short = 'c', long, env = "DROPIT_CONFIG")]
     config: Option<String>,
-    #[arg(short, long, env = "DROPIT_ENDPOINT")]
-    pub endpoint: String,
-    #[arg(short, long, env = "DROPIT_USERNAME", requires = "password")]
+    #[arg(short = 's', long, env = "DROPIT_SERVER")]
+    pub server: String,
+    #[arg(short = 'u', long, env = "DROPIT_USERNAME", requires = "password")]
     username: Option<String>,
-    #[arg(short, long, env = "DROPIT_PASSWORD", requires = "username")]
+    #[arg(short = 'p', long, env = "DROPIT_PASSWORD", requires = "username")]
     password: Option<String>,
     #[arg(short = 'P', long, env = "DROPIT_PROGRESS", default_value_t)]
     progress_bar: DetectOption,
@@ -72,8 +72,8 @@ impl Options {
                     .try_deserialize::<Config>()
                     .expect("invalid configuration");
                 let matches_from_cli = Options::command_for_update().get_matches();
-                if from_config.endpoint.is_some() && !matches_from_cli.contains_id("endpoint") {
-                    args.extend(["--endpoint".to_owned(), from_config.endpoint.unwrap()]);
+                if from_config.server.is_some() && !matches_from_cli.contains_id("server") {
+                    args.extend(["--server".to_owned(), from_config.server.unwrap()]);
                 }
                 if from_config.username.is_some() && !matches_from_cli.contains_id("username") {
                     args.extend(["--username".to_owned(), from_config.username.unwrap()]);

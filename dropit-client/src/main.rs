@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let options = Options::parse();
 
     let client = Client::new(
-        options.endpoint.clone(),
+        options.server.clone(),
         options.credentials(),
         options.progress_bar(),
     );
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             options
                 .paths
                 .iter()
-                .map(|p| UploadRequest::new(p, Mode::Encrypted { as_command: false })),
+                .map(|p| UploadRequest::new(p, Mode::Encrypted { as_command: true })),
         )
         .await?,
     );

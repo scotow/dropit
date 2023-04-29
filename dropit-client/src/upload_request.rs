@@ -10,6 +10,7 @@ use bytes::Bytes;
 use futures::{ready, Stream};
 use indicatif::{ProgressBar, ProgressStyle};
 use num_integer::Integer;
+use rand::random;
 use reqwest::{header, Body, Client};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
@@ -17,11 +18,11 @@ use tokio_util::io::ReaderStream;
 use crate::options::Credentials;
 
 pub struct UploadRequest {
-    fd: File,
+    fd: Option<File>,
     name: Option<String>,
     size: u64,
     progress_bar: Option<ProgressBar>,
-    mode: Mode,
+    mode: OutputMode,
 }
 
 impl UploadRequest {
@@ -39,8 +40,16 @@ impl UploadRequest {
             Mode::Raw => metadata.len(),
             Mode::Encrypted { .. } => Integer::next_multiple_of(&(metadata.len() + 1), &16),
         };
+        let mode = match mode {
+            Mode::Raw => OutputMode::Raw,
+            Mode::Encrypted { as_command } => OutputMode::Encrypted {
+                as_command,
+                key: [(); 16].map(|_| random()),
+                iv: [(); 16].map(|_| random()),
+            },
+        };
         Ok(Self {
-            fd,
+            fd: Some(fd),
             name,
             size,
             progress_bar: None,
@@ -59,14 +68,14 @@ impl UploadRequest {
                 ProgressStyle::with_template(
                     "{prefix:.bold} [{elapsed_precise}] [{wide_bar}] {bytes}/{total_bytes} ({eta})",
                 )
-                    .unwrap()
+                    .expect("Invalid progress bar template")
                     .progress_chars("#>-")
             )
             })
             .clone()
     }
 
-    pub async fn process(self, endpoint: &str, credentials: &Option<Credentials>) -> String {
+    pub async fn process(mut self, endpoint: &str, credentials: &Option<Credentials>) -> String {
         let client = Client::new();
         let mut req = client
             .post(endpoint)
@@ -85,21 +94,79 @@ impl UploadRequest {
 
         let resp = req
             .body(Body::wrap_stream(UploadStream::new(
-                self.fd,
+                self.fd.take().expect("file already uploaded"),
                 self.progress_bar.clone(),
-                self.mode,
+                &self.mode,
             )))
             .send()
-            .await
-            .unwrap();
-        let link = resp.text().await.unwrap();
-
-        if let Some(progress) = self.progress_bar {
-            progress.set_style(ProgressStyle::with_template("{prefix:.bold} {msg}").unwrap());
-            progress.finish_with_message(link.clone());
+            .await;
+        let resp = match resp {
+            Ok(resp) => resp,
+            Err(_) => {
+                self.finalize_bar(Err("connection error"));
+                return "connection error".to_owned();
+            }
         };
-        link
+
+        let status = resp.status();
+        let text = match resp.text().await {
+            Ok(link) => link,
+            Err(_) => {
+                self.finalize_bar(Err("invalid body"));
+                return "invalid body".to_owned();
+            }
+        };
+
+        if !status.is_success() {
+            self.finalize_bar(Err(&text));
+            return text;
+        }
+
+        let output = match &self.mode {
+            OutputMode::Raw => text,
+            OutputMode::Encrypted {
+                as_command,
+                key,
+                iv,
+            } => {
+                if *as_command {
+                    format!(
+                        "curl -s {} | openssl enc -aes-128-cbc -d -K {} -iv {} -nosalt",
+                        text,
+                        hex::encode(&key),
+                        hex::encode(&iv)
+                    )
+                } else {
+                    format!("{} key={} iv={}", text, hex::encode(&key), hex::encode(&iv))
+                }
+            }
+        };
+
+        self.finalize_bar(Ok(&output));
+        output
     }
+
+    fn finalize_bar(&self, message: Result<&str, &str>) {
+        if let Some(progress) = &self.progress_bar {
+            progress.set_style(
+                ProgressStyle::with_template("{prefix:.bold} {msg}")
+                    .expect("Invalid final progress bar template"),
+            );
+            progress.finish_with_message(match message {
+                Ok(m) => m.to_owned(),
+                Err(m) => format!("error: {}", m),
+            });
+        };
+    }
+}
+
+enum OutputMode {
+    Raw,
+    Encrypted {
+        as_command: bool,
+        key: [u8; 16],
+        iv: [u8; 16],
+    },
 }
 
 enum DynamicSteam {
@@ -113,18 +180,17 @@ struct UploadStream {
 }
 
 impl UploadStream {
-    fn new(fd: File, progress: Option<ProgressBar>, mode: Mode) -> Self {
+    fn new(fd: File, progress: Option<ProgressBar>, mode: &OutputMode) -> Self {
         Self {
             inner: match mode {
-                Mode::Raw => DynamicSteam::Raw(ReaderStream::new(fd)),
-                Mode::Encrypted { .. } => DynamicSteam::Encrypted(
-                    AesSteam::new(
-                        ReaderStream::new(fd),
-                        AesKeySize::Aes128,
-                        &[0x42; 16],
-                        &[0; 16],
-                    )
-                    .unwrap(),
+                OutputMode::Raw => DynamicSteam::Raw(ReaderStream::new(fd)),
+                OutputMode::Encrypted {
+                    as_command: _as_command,
+                    key,
+                    iv,
+                } => DynamicSteam::Encrypted(
+                    AesSteam::new(ReaderStream::new(fd), AesKeySize::Aes128, key, iv)
+                        .expect("Invalid key or iv"),
                 ),
             },
             progress,
