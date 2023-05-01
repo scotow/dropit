@@ -12,20 +12,27 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{options::Credentials, upload_request::UploadRequest, DEFAULT_CONCURRENT_UPLOAD};
+use crate::{options::Credentials, upload_request::UploadRequest};
 
 pub struct Client {
     endpoint: String,
     credentials: Option<Credentials>,
     progress: Option<Progress>,
+    concurrent_uploads: usize,
 }
 
 impl Client {
-    pub fn new(endpoint: String, credentials: Option<Credentials>, progress: bool) -> Self {
+    pub fn new(
+        endpoint: String,
+        credentials: Option<Credentials>,
+        progress: bool,
+        concurrent_uploads: usize,
+    ) -> Self {
         Self {
             endpoint,
             credentials,
             progress: progress.then(|| Progress::new()),
+            concurrent_uploads,
         }
     }
 
@@ -67,8 +74,8 @@ impl Client {
         &self,
         rx: MpmcReceiver<(UploadRequest, Sender<String>)>,
     ) -> Vec<JoinHandle<()>> {
-        let mut handlers = Vec::with_capacity(DEFAULT_CONCURRENT_UPLOAD);
-        for _ in 0..DEFAULT_CONCURRENT_UPLOAD {
+        let mut handlers = Vec::with_capacity(self.concurrent_uploads);
+        for _ in 0..self.concurrent_uploads {
             let rx = rx.clone();
             let endpoint = self.endpoint.clone();
             let credentials = self.credentials.clone();

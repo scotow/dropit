@@ -8,8 +8,6 @@ mod client;
 mod options;
 mod upload_request;
 
-const DEFAULT_CONCURRENT_UPLOAD: usize = 4;
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let options = Options::parse();
@@ -18,6 +16,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         options.server.clone(),
         options.credentials(),
         options.progress_bar(),
+        options.concurrent_uploads,
     );
     let queue = VecDeque::from(
         try_join_all(

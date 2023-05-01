@@ -14,6 +14,7 @@ use serde::{
 };
 
 #[derive(Deserialize, Default, Debug)]
+#[serde(rename_all = "kebab-case")]
 struct Config {
     server: Option<String>,
     username: Option<String>,
@@ -21,6 +22,8 @@ struct Config {
     #[serde(alias = "progress")]
     progress_bar: Option<DetectOption>,
     mode: Option<Mode>,
+    #[serde(alias = "uploads")]
+    concurrent_uploads: Option<usize>,
 }
 
 #[derive(Parser, Debug)]
@@ -42,6 +45,8 @@ pub struct Options {
     encrypt: bool,
     #[arg(short = 'E', long, env = "DROPIT_ENCRYPT_RAW", group = "mode")]
     encrypt_raw: bool,
+    #[arg(short = 'U', long, env = "DROPIT_UPLOADS", default_value_t = 4)]
+    pub concurrent_uploads: usize,
     pub paths: Vec<String>,
 }
 
@@ -101,6 +106,14 @@ impl Options {
                 }
                 if from_config.mode.is_some() && !matches_from_cli.contains_id("mode") {
                     args.push(from_config.mode.unwrap().as_command().to_owned());
+                }
+                if from_config.concurrent_uploads.is_some()
+                    && matches!(
+                        matches_from_cli.value_source("concurrent_uploads"),
+                        Some(ValueSource::DefaultValue)
+                    )
+                {
+                    args.extend(["--concurrent-uploads".to_owned(), from_config.concurrent_uploads.unwrap().to_string()]);
                 }
             }
             Err(err) => {
