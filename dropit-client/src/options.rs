@@ -20,6 +20,7 @@ struct Config {
     password: Option<String>,
     #[serde(alias = "progress")]
     progress_bar: Option<DetectOption>,
+    mode: Option<Mode>,
 }
 
 #[derive(Parser, Debug)]
@@ -35,6 +36,12 @@ pub struct Options {
     password: Option<String>,
     #[arg(short = 'P', long, env = "DROPIT_PROGRESS", default_value_t)]
     progress_bar: DetectOption,
+    #[arg(short = 'l', long, env = "DROPIT_LINK", group = "mode")]
+    link: bool,
+    #[arg(short = 'e', long, env = "DROPIT_ENCRYPT", group = "mode")]
+    encrypt: bool,
+    #[arg(short = 'E', long, env = "DROPIT_ENCRYPT_RAW", group = "mode")]
+    encrypt_raw: bool,
     pub paths: Vec<String>,
 }
 
@@ -92,6 +99,9 @@ impl Options {
                         from_config.progress_bar.unwrap().to_string(),
                     ]);
                 }
+                if from_config.mode.is_some() && !matches_from_cli.contains_id("mode") {
+                    args.push(from_config.mode.unwrap().as_command().to_owned());
+                }
             }
             Err(err) => {
                 if !allow_missing {
@@ -116,9 +126,19 @@ impl Options {
 
     pub fn progress_bar(&self) -> bool {
         match self.progress_bar {
-            DetectOption::Auto => atty::is(Stream::Stderr),
+            DetectOption::Auto => atty::is(Stream::Stdout) && atty::is(Stream::Stderr),
             DetectOption::On => true,
             DetectOption::Off => false,
+        }
+    }
+
+    pub fn mode(&self) -> Mode {
+        if self.encrypt {
+            Mode::Encrypted
+        } else if self.encrypt_raw {
+            Mode::EncryptedRaw
+        } else {
+            Mode::Link
         }
     }
 }
@@ -178,6 +198,27 @@ impl Display for DetectOption {
             DetectOption::Auto => f.write_str("auto"),
             DetectOption::On => f.write_str("on"),
             DetectOption::Off => f.write_str("off"),
+        }
+    }
+}
+
+#[derive(Deserialize, Copy, Clone, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum Mode {
+    #[serde(alias = "raw")]
+    Link,
+    #[serde(alias = "encrypt")]
+    Encrypted,
+    #[serde(alias = "encrypt-raw")]
+    EncryptedRaw,
+}
+
+impl Mode {
+    fn as_command(self) -> &'static str {
+        match self {
+            Mode::Link => "--link",
+            Mode::Encrypted => "--encrypt",
+            Mode::EncryptedRaw => "--encrypt-raw",
         }
     }
 }

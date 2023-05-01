@@ -7,7 +7,7 @@ edition = "2021"
 aes-stream = { git = "https://github.com/scotow/aes-stream.git", rev = "dc0dd14" }
 atty = "0.2.14"
 bytes = "1.2.1"
-clap = { version = "4.0.22", features = ["derive", "env"] }
+clap = { version = "4.2.5", features = ["derive", "env"] }
 config = "0.13.2"
 dirs = "5.0.0"
 flume = "0.10.14"

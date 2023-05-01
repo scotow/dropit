@@ -15,7 +15,7 @@ use reqwest::{header, Body, Client};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::options::Credentials;
+use crate::options::{Credentials, Mode};
 
 pub struct UploadRequest {
     fd: Option<File>,
@@ -37,13 +37,15 @@ impl UploadRequest {
             .and_then(|n| n.to_str())
             .map(|n| n.to_owned());
         let size = match mode {
-            Mode::Raw => metadata.len(),
-            Mode::Encrypted { .. } => Integer::next_multiple_of(&(metadata.len() + 1), &16),
+            Mode::Link => metadata.len(),
+            Mode::Encrypted | Mode::EncryptedRaw => {
+                Integer::next_multiple_of(&(metadata.len() + 1), &16)
+            }
         };
         let mode = match mode {
-            Mode::Raw => OutputMode::Raw,
-            Mode::Encrypted { as_command } => OutputMode::Encrypted {
-                as_command,
+            Mode::Link => OutputMode::Link,
+            Mode::Encrypted | Mode::EncryptedRaw => OutputMode::Encrypted {
+                as_command: matches!(mode, Mode::Encrypted),
                 key: [(); 16].map(|_| random()),
                 iv: [(); 16].map(|_| random()),
             },
@@ -123,7 +125,7 @@ impl UploadRequest {
         }
 
         let output = match &self.mode {
-            OutputMode::Raw => text,
+            OutputMode::Link => text,
             OutputMode::Encrypted {
                 as_command,
                 key,
@@ -161,7 +163,7 @@ impl UploadRequest {
 }
 
 enum OutputMode {
-    Raw,
+    Link,
     Encrypted {
         as_command: bool,
         key: [u8; 16],
@@ -183,7 +185,7 @@ impl UploadStream {
     fn new(fd: File, progress: Option<ProgressBar>, mode: &OutputMode) -> Self {
         Self {
             inner: match mode {
-                OutputMode::Raw => DynamicSteam::Raw(ReaderStream::new(fd)),
+                OutputMode::Link => DynamicSteam::Raw(ReaderStream::new(fd)),
                 OutputMode::Encrypted {
                     as_command: _as_command,
                     key,
@@ -213,9 +215,4 @@ impl Stream for UploadStream {
         }
         Poll::Ready(chunk)
     }
-}
-
-pub enum Mode {
-    Raw,
-    Encrypted { as_command: bool },
 }

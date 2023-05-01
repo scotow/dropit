@@ -2,11 +2,7 @@ use std::{collections::VecDeque, error::Error};
 
 use futures::future::try_join_all;
 
-use crate::{
-    client::Client,
-    options::Options,
-    upload_request::{Mode, UploadRequest},
-};
+use crate::{client::Client, options::Options, upload_request::UploadRequest};
 
 mod client;
 mod options;
@@ -28,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             options
                 .paths
                 .iter()
-                .map(|p| UploadRequest::new(p, Mode::Encrypted { as_command: true })),
+                .map(|p| UploadRequest::new(p, options.mode())),
         )
         .await?,
     );
