@@ -113,7 +113,10 @@ impl Options {
                         Some(ValueSource::DefaultValue)
                     )
                 {
-                    args.extend(["--concurrent-uploads".to_owned(), from_config.concurrent_uploads.unwrap().to_string()]);
+                    args.extend([
+                        "--concurrent-uploads".to_owned(),
+                        from_config.concurrent_uploads.unwrap().to_string(),
+                    ]);
                 }
             }
             Err(err) => {

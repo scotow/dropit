@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aes-stream = { git = "https://github.com/scotow/aes-stream.git", rev = "dc0dd14" }
+aes-stream = { git = "https://github.com/scotow/aes-stream.git", rev = "f0d5530" }
 atty = "0.2.14"
 bytes = "1.2.1"
 clap = { version = "4.2.5", features = ["derive", "env"] }

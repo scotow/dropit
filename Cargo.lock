@@ -16,12 +16,13 @@ dependencies = [
 [[package]]
 name = "aes-stream"
 version = "0.1.0"
-source = "git+https://github.com/scotow/aes-stream.git?rev=dc0dd14#dc0dd142e7a58f6525238ed5d56d3219e5de7e8a"
+source = "git+https://github.com/scotow/aes-stream.git?rev=f0d5530#f0d5530e22cb74f9756be5a9355ff5d272725be1"
 dependencies = [
  "aes",
  "bytes",
  "cbc",
  "futures",
+ "num-integer",
  "pin-project",
 ]
 
