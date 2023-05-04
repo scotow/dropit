@@ -8,20 +8,22 @@ use std::{
 use aes_stream::{AesKeySize, AesSteam};
 use bytes::Bytes;
 use futures::{ready, Stream};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressBar;
 use num_integer::Integer;
 use rand::random;
 use reqwest::{header, Body, Client};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::options::{Credentials, Mode};
+use crate::{
+    options::{Credentials, Mode},
+    reporter::Reporter,
+};
 
 pub struct UploadRequest {
     fd: Option<File>,
     name: Option<String>,
     size: u64,
-    progress_bar: Option<ProgressBar>,
     mode: OutputMode,
 }
 
@@ -54,7 +56,6 @@ impl UploadRequest {
             fd: Some(fd),
             name,
             size,
-            progress_bar: None,
             mode,
         })
     }
@@ -63,21 +64,16 @@ impl UploadRequest {
         self.name.as_deref()
     }
 
-    pub fn progress_bar(&mut self) -> ProgressBar {
-        self.progress_bar
-            .get_or_insert_with(|| {
-                ProgressBar::new(self.size).with_style(
-                ProgressStyle::with_template(
-                    "{prefix:.bold} [{elapsed_precise}] [{wide_bar}] {bytes}/{total_bytes} ({eta})",
-                )
-                    .expect("Invalid progress bar template")
-                    .progress_chars("#>-")
-            )
-            })
-            .clone()
+    pub fn size(&self) -> u64 {
+        self.size
     }
 
-    pub async fn process(mut self, endpoint: &str, credentials: &Option<Credentials>) -> String {
+    pub async fn process(
+        mut self,
+        endpoint: &str,
+        credentials: &Option<Credentials>,
+        reporter: Reporter,
+    ) {
         let client = Client::new();
         let mut req = client
             .post(endpoint)
@@ -88,16 +84,13 @@ impl UploadRequest {
         }
 
         if let Some(name) = &self.name {
-            if let Some(progress) = &self.progress_bar {
-                progress.set_prefix(name.clone());
-            }
             req = req.header("X-Filename", name);
         }
 
         let resp = req
             .body(Body::wrap_stream(UploadStream::new(
                 self.fd.take().expect("file already uploaded"),
-                self.progress_bar.clone(),
+                reporter.progress_bar(),
                 &self.mode,
             )))
             .send()
@@ -105,8 +98,8 @@ impl UploadRequest {
         let resp = match resp {
             Ok(resp) => resp,
             Err(_) => {
-                self.finalize_bar(Err("connection error"));
-                return "connection error".to_owned();
+                reporter.finalize(Err("connection error"));
+                return;
             }
         };
 
@@ -114,14 +107,14 @@ impl UploadRequest {
         let text = match resp.text().await {
             Ok(link) => link,
             Err(_) => {
-                self.finalize_bar(Err("invalid body"));
-                return "invalid body".to_owned();
+                reporter.finalize(Err("invalid body"));
+                return;
             }
         };
 
         if !status.is_success() {
-            self.finalize_bar(Err(&text));
-            return text;
+            reporter.finalize(Err(text));
+            return;
         }
 
         let output = match &self.mode {
@@ -144,21 +137,7 @@ impl UploadRequest {
             }
         };
 
-        self.finalize_bar(Ok(&output));
-        output
-    }
-
-    fn finalize_bar(&self, message: Result<&str, &str>) {
-        if let Some(progress) = &self.progress_bar {
-            progress.set_style(
-                ProgressStyle::with_template("{prefix:.bold} {msg}")
-                    .expect("Invalid final progress bar template"),
-            );
-            progress.finish_with_message(match message {
-                Ok(m) => m.to_owned(),
-                Err(m) => format!("error: {}", m),
-            });
-        };
+        reporter.finalize(Ok(output))
     }
 }
 

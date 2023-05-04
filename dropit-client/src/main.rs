@@ -6,6 +6,7 @@ use crate::{client::Client, options::Options, upload_request::UploadRequest};
 
 mod client;
 mod options;
+mod reporter;
 mod upload_request;
 
 #[tokio::main]
