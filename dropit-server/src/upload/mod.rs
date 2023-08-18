@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, net::SocketAddr, sync::Arc};
+use std::{convert::TryFrom, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
     extract::{BodyStream, ConnectInfo},
@@ -41,7 +41,7 @@ pub struct UploadRequest {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn handler(
+async fn handler(
     Extension(pool): Extension<SqlitePool>,
     response_type: Negotiation<ContentTypeNegotiation, ResponseType>,
     authenticator: Extension<Arc<Authenticator>>,
@@ -108,6 +108,8 @@ async fn process_upload(
         size,
         origin,
     };
+    tokio::time::sleep(Duration::from_millis(1200)).await;
+    return Err(UploadError::QuotaExceeded);
     let mut conn = pool.acquire().await.map_err(|_| UploadError::Database)?;
 
     // Quota.
@@ -206,7 +208,7 @@ async fn clean_failed_upload(dir: &Dir, id: &str, pool: &SqlitePool) {
         return;
     }
     if let Err(err) = sqlx::query(include_query!("delete_file"))
-        .bind(&id)
+        .bind(id)
         .execute(pool)
         .await
     {

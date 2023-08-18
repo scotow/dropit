@@ -97,8 +97,10 @@ impl UploadRequest {
             .await;
         let resp = match resp {
             Ok(resp) => resp,
-            Err(_) => {
+            Err(err) => {
+                // err.is
                 reporter.finalize(Err("connection error"));
+                println!("{}", err);
                 return;
             }
         };
@@ -128,11 +130,11 @@ impl UploadRequest {
                     format!(
                         "curl -s {} | openssl enc -aes-128-cbc -d -K {} -iv {} -nosalt",
                         text,
-                        hex::encode(&key),
-                        hex::encode(&iv)
+                        hex::encode(key),
+                        hex::encode(iv)
                     )
                 } else {
-                    format!("{} key={} iv={}", text, hex::encode(&key), hex::encode(&iv))
+                    format!("{} key={} iv={}", text, hex::encode(key), hex::encode(iv))
                 }
             }
         };

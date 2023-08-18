@@ -99,7 +99,7 @@ impl Options {
             1 => Warn,
             2 => Info,
             3 => Debug,
-            _ => Trace,
+            4.. => Trace,
         }
     }
 

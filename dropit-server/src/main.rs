@@ -126,7 +126,7 @@ mod main {
     }
 }
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     main::run().await
 }

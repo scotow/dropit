@@ -7,11 +7,11 @@ description = "Temporary file hosting and sharing"
 license = "MIT"
 
 [dependencies]
-tokio = { version = "1.21.2", features = ["io-util", "macros", "sync", "fs", "rt-multi-thread"] }
+tokio = { version = "1.28.0", features = ["io-util", "macros", "sync", "fs", "rt-multi-thread"] }
 hyper = { version = "0.14.19", features = ["stream"] }
 axum = { version = "0.5.13", features = ["headers", "query"] }
 futures = "0.3.21"
-sqlx = { version = "0.6.1", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
+sqlx = { version = "0.6.3", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
 tokio-util = { version = "0.7.3", default-features = false, features = ["io", "compat"] }
 lazy_static = "1.4.0"
 rand = "0.8.5"

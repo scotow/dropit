@@ -28,14 +28,14 @@ impl Client {
         Self {
             endpoint,
             credentials,
-            progress: progress.then(|| Progress::new()),
+            progress: progress.then(Progress::new),
             concurrent_uploads,
         }
     }
 
     pub async fn run(&self, mut queue: VecDeque<UploadRequest>) {
         let (workers_tx, workers_rx) = flume::bounded::<(UploadRequest, Reporter)>(0);
-        let workers = self.spawn_workers(workers_rx);
+        let workers = self.spawn_workers(workers_rx, self.concurrent_uploads.min(queue.len()));
 
         let (printer_tx, mut printer_rx) = mpsc::unbounded_channel::<Receiver<String>>();
         if self.progress.is_none() {
@@ -76,9 +76,13 @@ impl Client {
         }
     }
 
-    fn spawn_workers(&self, rx: MpmcReceiver<(UploadRequest, Reporter)>) -> Vec<JoinHandle<()>> {
+    fn spawn_workers(
+        &self,
+        rx: MpmcReceiver<(UploadRequest, Reporter)>,
+        count: usize,
+    ) -> Vec<JoinHandle<()>> {
         let mut handlers = Vec::with_capacity(self.concurrent_uploads);
-        for _ in 0..self.concurrent_uploads {
+        for _ in 0..count {
             let rx = rx.clone();
             let endpoint = self.endpoint.clone();
             let credentials = self.credentials.clone();
