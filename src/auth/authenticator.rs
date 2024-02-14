@@ -98,7 +98,12 @@ impl Authenticator {
         }
     }
 
-    async fn verify_credentials(&self, username: &str, password: &str) -> AuthProcess {
+    async fn verify_credentials(&self, mut username: &str, password: &str) -> AuthProcess {
+        username = username.trim();
+        if username.is_empty() || password.is_empty() {
+            return AuthProcess::Stop;
+        }
+
         if let Some(p) = self.static_credentials.get(username) {
             return if password == p {
                 AuthProcess::Valid(username.to_owned())

@@ -21,7 +21,7 @@ pub(super) async fn handler(
     dir: Dir,
 ) -> Result<Response, Error> {
     let mut name_occurrences = HashMap::new();
-    for mut info in &mut files_info {
+    for info in &mut files_info {
         let occurrence = name_occurrences.entry(info.name.clone()).or_insert(0u16);
         *occurrence += 1;
         if *occurrence >= 2 {

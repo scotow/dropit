@@ -167,6 +167,7 @@ impl From<hyper::Error> for Error {
     }
 }
 
+#[allow(unused_imports)]
 pub mod upload {
     pub use super::Error::{
         AliasGeneration, CopyFile, CreateFile, Database, FilenameHeader, Origin, QuotaAccess,
@@ -174,12 +175,14 @@ pub mod upload {
     };
 }
 
+#[allow(unused_imports)]
 pub mod download {
     pub use super::Error::{
         AliasExtract, Database, FileNotFound, FilenameHeader, InvalidAlias, OpenFile,
     };
 }
 
+#[allow(unused_imports)]
 pub mod admin {
     pub use super::Error::{
         AliasExtract, Database, FileNotFound, InvalidAdminToken, InvalidAlias,
@@ -187,30 +190,37 @@ pub mod admin {
     };
 }
 
+#[allow(unused_imports)]
 pub mod revoke {
     pub use super::Error::{PartialRemove, RemoveFile};
 }
 
+#[allow(unused_imports)]
 pub mod alias {
     pub use super::Error::{AliasGeneration, Database, Target, UnexpectedFileModification};
 }
 
+#[allow(unused_imports)]
 pub mod expiration {
     pub use super::Error::{Database, ExpirationTooHigh, TimeCalculation, TooLarge};
 }
 
+#[allow(unused_imports)]
 pub mod downloads {
     pub use super::Error::UnexpectedFileModification;
 }
 
+#[allow(unused_imports)]
 pub mod valid {
     pub use super::Error::{AliasExtract, Database, InvalidAlias};
 }
 
+#[allow(unused_imports)]
 pub mod assets {
     pub use super::Error::AssetNotFound;
 }
 
+#[allow(unused_imports)]
 pub mod auth {
     pub use super::Error::{AccessForbidden, InvalidAuthorizationHeader, MissingAuthorization};
 }
